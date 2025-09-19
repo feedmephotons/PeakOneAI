@@ -156,7 +156,7 @@ export default function DashboardWidgets() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome back, John!</h1>
-          <p className="text-gray-500 mt-1">Here's what's happening in your workspace today</p>
+          <p className="text-gray-500 mt-1">Here&apos;s what&apos;s happening in your workspace today</p>
         </div>
         <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all">
           <span>Generate AI Report</span>

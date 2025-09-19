@@ -53,7 +53,7 @@ export default function VideoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200">
             <div className="p-6 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Today's Meetings</h3>
+              <h3 className="font-semibold text-gray-900">Today&apos;s Meetings</h3>
             </div>
             <div className="divide-y divide-gray-200">
               {[

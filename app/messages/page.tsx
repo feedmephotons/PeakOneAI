@@ -67,7 +67,7 @@ export default function MessagesPage() {
                 <div className="flex items-start space-x-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
                   <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
-                    <p className="text-sm">Hey! How's the project coming along?</p>
+                    <p className="text-sm">Hey! How&apos;s the project coming along?</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3 justify-end">

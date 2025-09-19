@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import MobileMenu from '@/components/ui/MobileMenu';
 
 interface ResponsiveLayoutProps {
