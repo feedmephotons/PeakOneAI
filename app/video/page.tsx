@@ -316,7 +316,7 @@ export default function VideoPage() {
         {/* Meetings View */}
         {selectedView === 'meetings' && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Schedule</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Today&apos;s Schedule</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {todayMeetings.map((meeting) => (
                 <MeetingCard key={meeting.id} meeting={meeting} />

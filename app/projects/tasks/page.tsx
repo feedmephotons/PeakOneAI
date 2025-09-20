@@ -280,7 +280,7 @@ export default function TasksPage() {
             <div>
               <h3 className="text-xl font-bold flex items-center">
                 <span className="mr-2">🤖</span>
-                Lisa's Task Intelligence
+                Lisa&apos;s Task Intelligence
               </h3>
               <p className="text-violet-100 mt-1">AI-powered task suggestions and insights</p>
             </div>
@@ -486,7 +486,7 @@ export default function TasksPage() {
                   <span className="font-medium">Lisa suggests:</span>
                 </div>
                 <p className="text-sm text-violet-600 mt-1">
-                  Based on your recent meetings, this task might be related to the API optimization discussed yesterday. Consider adding the "performance" tag.
+                  Based on your recent meetings, this task might be related to the API optimization discussed yesterday. Consider adding the &quot;performance&quot; tag.
                 </p>
               </div>
             </div>

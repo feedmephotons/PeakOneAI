@@ -411,7 +411,7 @@ export default function PhonePage() {
                   <div className="mt-4 p-4 bg-violet-50 rounded-lg">
                     <div className="flex items-center text-sm text-violet-700 mb-2">
                       <span className="mr-2">🤖</span>
-                      <span className="font-medium">Lisa's Summary:</span>
+                      <span className="font-medium">Lisa&apos;s Summary:</span>
                     </div>
                     <p className="text-sm text-gray-700">
                       Discussed project timeline and deliverables. Action items: 1) Send updated proposal by Friday, 2) Schedule follow-up meeting next week, 3) Review budget allocation.

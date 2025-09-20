@@ -26,26 +26,33 @@ function MainActionCard({ icon, title, subtitle, href, gradient, onClick }: Main
   return (
     <button
       onClick={handleClick}
-      className="group relative bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-xl hover:scale-105 transition-all duration-300 text-left w-full"
+      className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl hover:scale-105 transition-all duration-300 text-left w-full overflow-hidden"
     >
+      {/* Gradient border */}
+      <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-100`} />
+      <div className="absolute inset-[1px] bg-white rounded-2xl" />
+
+      {/* Hover overlay */}
       <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
 
-      <div className={`inline-flex p-4 rounded-2xl ${gradient} bg-opacity-10 mb-6`}>
-        {icon}
-      </div>
+      <div className="relative z-10">
+        <div className={`inline-flex p-4 rounded-2xl ${gradient} bg-opacity-10 mb-6`}>
+          {icon}
+        </div>
 
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-        {title}
-      </h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          {title}
+        </h3>
 
-      <p className="text-sm text-gray-500">
-        {subtitle}
-      </p>
+        <p className="text-sm text-gray-500">
+          {subtitle}
+        </p>
 
-      <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
-        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
     </button>
   );
@@ -85,7 +92,7 @@ function AIAssistant({ name, avatar }: AIAssistantProps) {
 
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              Hi! I'm {name}, your AI partner. I can help you with:
+              Hi! I&apos;m {name}, your AI partner. I can help you with:
             </p>
             <ul className="space-y-2 text-sm text-gray-500">
               <li className="flex items-center space-x-2">
@@ -188,6 +195,17 @@ export default function AppleDashboard() {
       subtitle: "Record and transcribe calls automatically",
       href: "/phone",
       gradient: "bg-gradient-to-br from-orange-500 to-red-600"
+    },
+    {
+      icon: (
+        <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      title: "Calendar",
+      subtitle: "Schedule and manage your appointments",
+      href: "/calendar",
+      gradient: "bg-gradient-to-br from-pink-500 to-rose-600"
     }
   ];
 

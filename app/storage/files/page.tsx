@@ -16,10 +16,6 @@ interface FileItem {
   fileType?: string;
 }
 
-interface ViewMode {
-  type: 'grid' | 'list';
-  icon: React.ReactNode;
-}
 
 export default function FilesPage() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -321,7 +317,7 @@ export default function FilesPage() {
             <div>
               <h3 className="text-xl font-bold flex items-center">
                 <span className="mr-2">🤖</span>
-                Lisa's File Intelligence
+                Lisa&apos;s File Intelligence
               </h3>
               <p className="text-violet-100 mt-1">
                 AI-powered organization and insights for your documents
