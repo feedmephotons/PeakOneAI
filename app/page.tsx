@@ -1,10 +1,5 @@
-import ResponsiveLayout from '@/components/layout/ResponsiveLayout';
-import DashboardWidgets from '@/components/dashboard/DashboardWidgets';
+import AppleDashboard from '@/components/dashboard/AppleDashboard';
 
 export default function Home() {
-  return (
-    <ResponsiveLayout>
-      <DashboardWidgets />
-    </ResponsiveLayout>
-  );
+  return <AppleDashboard />;
 }
