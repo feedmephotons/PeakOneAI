@@ -15,7 +15,7 @@ interface Event {
 }
 
 export default function CalendarPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
 
   const events: Event[] = [
@@ -54,9 +54,7 @@ export default function CalendarPage() {
   // Generate calendar days for current month view
   const generateCalendarDays = () => {
     const days = [];
-    const today = new Date();
     const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -249,7 +247,7 @@ export default function CalendarPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold flex items-center">
               <span className="mr-2">🤖</span>
-              Lisa's Scheduling Insights
+              Lisa&apos;s Scheduling Insights
             </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

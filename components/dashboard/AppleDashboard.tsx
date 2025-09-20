@@ -10,9 +10,10 @@ interface MainActionCardProps {
   href: string;
   gradient: string;
   onClick?: () => void;
+  delay?: number;
 }
 
-function MainActionCard({ icon, title, subtitle, href, gradient, onClick }: MainActionCardProps) {
+function MainActionCard({ icon, title, subtitle, href, gradient, onClick, delay = 0 }: MainActionCardProps) {
   const router = useRouter();
 
   const handleClick = () => {
@@ -26,7 +27,8 @@ function MainActionCard({ icon, title, subtitle, href, gradient, onClick }: Main
   return (
     <button
       onClick={handleClick}
-      className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl hover:scale-105 transition-all duration-300 text-left w-full overflow-hidden"
+      className={`group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl hover:scale-105 transition-all duration-300 text-left w-full overflow-hidden opacity-0 animate-fade-in-up animation-delay-${delay}`}
+      style={{ animationDelay: `${delay}ms` }}
     >
       {/* Gradient border */}
       <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-100`} />
@@ -36,8 +38,10 @@ function MainActionCard({ icon, title, subtitle, href, gradient, onClick }: Main
       <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
 
       <div className="relative z-10">
-        <div className={`inline-flex p-4 rounded-2xl ${gradient} bg-opacity-10 mb-6`}>
-          {icon}
+        <div className={`inline-flex p-4 rounded-2xl ${gradient} mb-6`}>
+          <div className="text-white">
+            {icon}
+          </div>
         </div>
 
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -140,7 +144,7 @@ export default function AppleDashboard() {
   const mainActions = [
     {
       icon: (
-        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
       ),
@@ -151,21 +155,18 @@ export default function AppleDashboard() {
     },
     {
       icon: (
-        <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
       title: "AI Assistant",
       subtitle: "Your intelligent partner for productivity",
       href: "/ai/assistant",
-      gradient: "bg-gradient-to-br from-violet-500 to-purple-600",
-      onClick: () => {
-        document.getElementById('ai-assistant-trigger')?.click();
-      }
+      gradient: "bg-gradient-to-br from-violet-500 to-purple-600"
     },
     {
       icon: (
-        <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
       ),
@@ -176,7 +177,7 @@ export default function AppleDashboard() {
     },
     {
       icon: (
-        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
       ),
@@ -187,7 +188,7 @@ export default function AppleDashboard() {
     },
     {
       icon: (
-        <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
       ),
@@ -198,7 +199,7 @@ export default function AppleDashboard() {
     },
     {
       icon: (
-        <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       ),
@@ -258,7 +259,7 @@ export default function AppleDashboard() {
             : 'grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto'
         }`}>
           {(viewMode === 'all-in-one' ? mainActions : quickStartActions).map((action, index) => (
-            <MainActionCard key={index} {...action} />
+            <MainActionCard key={index} {...action} delay={index * 100} />
           ))}
         </div>
 
