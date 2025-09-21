@@ -1,0 +1,421 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  name            String?
+  avatarUrl       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  workspaces      WorkspaceMember[]
+  files           File[]
+  tasks           Task[]
+  taskAssignments TaskAssignment[]
+  comments        Comment[]
+  messages        Message[]
+  calls           Call[]
+  events          CalendarEvent[]
+  eventAttendees  EventAttendee[]
+  aiConversations AIConversation[]
+  activities      Activity[]
+}
+
+// Workspace/Organization
+model Workspace {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  logoUrl     String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  members     WorkspaceMember[]
+  projects    Project[]
+  folders     Folder[]
+  files       File[]
+  calls       Call[]
+  events      CalendarEvent[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  role        Role      @default(MEMBER)
+  joinedAt    DateTime  @default(now())
+
+  // Relations
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// Files & Storage
+model Folder {
+  id          String    @id @default(cuid())
+  name        String
+  path        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  parentId    String?
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]  @relation("FolderHierarchy")
+  files       File[]
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, path])
+}
+
+model File {
+  id            String    @id @default(cuid())
+  name          String
+  mimeType      String
+  size          BigInt
+  url           String
+  thumbnailUrl  String?
+  aiSummary     String?   @db.Text
+  aiTags        String[]
+  version       Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  uploaderId    String
+  uploader      User      @relation(fields: [uploaderId], references: [id])
+  folderId      String?
+  folder        Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  versions      FileVersion[]
+
+  @@index([workspaceId, folderId])
+}
+
+model FileVersion {
+  id        String   @id @default(cuid())
+  version   Int
+  url       String
+  size      BigInt
+  createdAt DateTime @default(now())
+
+  // Relations
+  fileId    String
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+// Projects & Tasks
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  status      ProjectStatus @default(PLANNING)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([workspaceId])
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  status      TaskStatus @default(TODO)
+  priority    Priority  @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  aiSuggested Boolean   @default(false)
+  position    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User      @relation(fields: [creatorId], references: [id])
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignees   TaskAssignment[]
+  comments    Comment[]
+
+  @@index([projectId, status])
+}
+
+model TaskAssignment {
+  id         String   @id @default(cuid())
+  assignedAt DateTime @default(now())
+
+  // Relations
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// Messages & Communication
+model Conversation {
+  id        String   @id @default(cuid())
+  name      String?
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages  Message[]
+  participants ConversationParticipant[]
+}
+
+model ConversationParticipant {
+  id           String       @id @default(cuid())
+  joinedAt     DateTime     @default(now())
+  lastReadAt   DateTime?
+
+  // Relations
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  edited    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  senderId      String
+  sender        User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// Calls (Phone & Video)
+model Call {
+  id            String    @id @default(cuid())
+  type          CallType
+  status        CallStatus
+  duration      Int?      // in seconds
+  recordingUrl  String?
+  transcription String?   @db.Text
+  aiSummary     String?   @db.Text
+  startedAt     DateTime
+  endedAt       DateTime?
+
+  // Relations
+  initiatorId   String
+  initiator     User      @relation(fields: [initiatorId], references: [id])
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  participants  CallParticipant[]
+
+  @@index([workspaceId, startedAt])
+}
+
+model CallParticipant {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
+
+  // Relations
+  callId   String
+  call     Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  userId   String
+
+  @@unique([callId, userId])
+}
+
+enum CallType {
+  PHONE
+  VIDEO
+}
+
+enum CallStatus {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+// Calendar & Events
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  location    String?
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean   @default(false)
+  recurring   Boolean   @default(false)
+  recurrenceRule String?
+  color       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User      @relation(fields: [creatorId], references: [id])
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  attendees   EventAttendee[]
+
+  @@index([workspaceId, startTime])
+}
+
+model EventAttendee {
+  id         String        @id @default(cuid())
+  status     AttendeeStatus @default(PENDING)
+  response   String?
+
+  // Relations
+  eventId    String
+  event      CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+// AI Assistant (Lisa)
+model AIConversation {
+  id        String   @id @default(cuid())
+  title     String?
+  context   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model AIMessage {
+  id        String   @id @default(cuid())
+  role      AIRole
+  content   String   @db.Text
+  metadata  Json?    // Store tool calls, function results, etc.
+  createdAt DateTime @default(now())
+
+  // Relations
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+enum AIRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  FUNCTION
+}
+
+// Activity Feed
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  entityType  String       // 'task', 'file', 'project', etc.
+  entityId    String
+  description String
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+enum ActivityType {
+  CREATED
+  UPDATED
+  DELETED
+  COMPLETED
+  ASSIGNED
+  COMMENTED
+  UPLOADED
+  SHARED
+}

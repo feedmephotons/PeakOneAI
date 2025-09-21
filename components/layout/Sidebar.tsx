@@ -38,6 +38,7 @@ const menuItems: MenuItem[] = [
     icon: '🤖',
     href: '#',
     subItems: [
+      { id: 'lisa-chat', label: 'Chat with Lisa', icon: '💬', href: '/lisa', badge: 'NEW' },
       { id: 'meeting-intel', label: 'Meeting Intelligence', icon: '🧠', href: '/ai/meetings' },
       { id: 'transcriptions', label: 'Transcriptions', icon: '📝', href: '/ai/transcriptions', badge: '3' },
       { id: 'summaries', label: 'Summaries', icon: '📄', href: '/ai/summaries' },
@@ -66,7 +67,7 @@ const menuItems: MenuItem[] = [
     icon: '☁️',
     href: '#',
     subItems: [
-      { id: 'files', label: 'Files', icon: '📁', href: '/storage/files' },
+      { id: 'files', label: 'Files', icon: '📁', href: '/files/upload' },
       { id: 'documents', label: 'Documents', icon: '📄', href: '/storage/documents' },
       { id: 'media', label: 'Media', icon: '🎬', href: '/storage/media' },
       { id: 'shared', label: 'Shared', icon: '🔗', href: '/storage/shared' },
