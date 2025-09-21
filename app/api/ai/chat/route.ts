@@ -23,11 +23,8 @@ export async function POST(request: Request) {
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
-        let fullResponse = ''
-
         for await (const chunk of completion) {
           const content = chunk.choices[0]?.delta?.content || ''
-          fullResponse += content
 
           // Send chunk to client
           controller.enqueue(

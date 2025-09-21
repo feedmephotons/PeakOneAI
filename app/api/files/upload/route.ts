@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}/${Date.now()}.${fileExt}`
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('files')
       .upload(fileName, file)
 

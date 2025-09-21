@@ -21,7 +21,7 @@ async function setupStorage() {
 
   try {
     // Create 'files' bucket for general file storage
-    const { data: filesBucket, error: filesError } = await supabase.storage
+    const { error: filesError } = await supabase.storage
       .createBucket('files', {
         public: false,
         allowedMimeTypes: ['image/*', 'application/pdf', 'text/*', 'video/*', 'audio/*'],
@@ -35,7 +35,7 @@ async function setupStorage() {
     }
 
     // Create 'avatars' bucket for user profile pictures
-    const { data: avatarsBucket, error: avatarsError } = await supabase.storage
+    const { error: avatarsError } = await supabase.storage
       .createBucket('avatars', {
         public: true,
         allowedMimeTypes: ['image/*'],
@@ -49,7 +49,7 @@ async function setupStorage() {
     }
 
     // Create 'recordings' bucket for call recordings
-    const { data: recordingsBucket, error: recordingsError } = await supabase.storage
+    const { error: recordingsError } = await supabase.storage
       .createBucket('recordings', {
         public: false,
         fileSizeLimit: 52428800, // 50MB - same as files bucket

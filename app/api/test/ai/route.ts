@@ -29,11 +29,11 @@ export async function POST(request: Request) {
       message: 'AI integration working',
       response
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('AI test error:', error)
     return NextResponse.json({
       success: false,
-      error: error?.message || 'AI test failed'
+      error: error instanceof Error ? error.message : 'AI test failed'
     }, { status: 500 })
   }
 }

@@ -5,9 +5,18 @@ import { Upload, File, X, Sparkles, CheckCircle, Loader, FileText, Image, Film, 
 
 export default function FileUploadPage() {
   const [isDragging, setIsDragging] = useState(false)
-  const [files, setFiles] = useState<any[]>([])
+  const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
+  interface UploadedFile {
+    id?: string
+    fileName: string
+    fileSize: number
+    analysis?: {
+      summary?: string
+      tags?: string[]
+    }
+  }
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -48,7 +57,7 @@ export default function FileUploadPage() {
 
   const getFileIcon = (file: File) => {
     const type = file.type
-    if (type.startsWith('image/')) return <Image className="w-5 h-5" />
+    if (type.startsWith('image/')) return <Image className="w-5 h-5" alt="Image file" />
     if (type.startsWith('video/')) return <Film className="w-5 h-5" />
     if (type.startsWith('audio/')) return <Music className="w-5 h-5" />
     if (type.includes('pdf') || type.includes('document')) return <FileText className="w-5 h-5" />

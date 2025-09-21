@@ -3,8 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Sparkles, Send, Loader, User, Bot, Mic, Paperclip, Settings, X, FileText, Image as ImageIcon } from 'lucide-react'
 
+interface Message {
+  role: string
+  content: string
+  timestamp: Date | null
+  attachments?: Array<{ name: string; size: number; type: string }>
+}
+
 export default function LisaChatPage() {
-  const [messages, setMessages] = useState<any[]>([
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
       content: "Hello! I'm Lisa, your AI assistant powered by GPT-5. I can help you with tasks, analyze files, summarize meetings, and much more. What would you like to do today?",
@@ -17,7 +24,7 @@ export default function LisaChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaFileInputRef = useRef<HTMLInputElement>(null)
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversationId] = useState<string | null>(null)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
 
   const scrollToBottom = () => {
@@ -26,9 +33,12 @@ export default function LisaChatPage() {
 
   useEffect(() => {
     // Set initial message timestamp on client side
-    if (messages.length === 1 && messages[0].timestamp === null) {
-      setMessages([{ ...messages[0], timestamp: new Date() }])
-    }
+    setMessages(msgs => {
+      if (msgs.length === 1 && msgs[0].timestamp === null) {
+        return [{ ...msgs[0], timestamp: new Date() }]
+      }
+      return msgs
+    })
   }, [])
 
   useEffect(() => {
@@ -115,7 +125,7 @@ export default function LisaChatPage() {
                   return newMessages
                 })
               }
-            } catch (e) {
+            } catch {
               // Ignore parse errors
             }
           }

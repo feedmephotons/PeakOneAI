@@ -3,8 +3,15 @@
 import { useState } from 'react'
 import { Sparkles, CheckCircle, XCircle, Loader } from 'lucide-react'
 
+interface TestResults {
+  database?: boolean
+  storage?: boolean
+  ai?: boolean
+  aiResponse?: string
+}
+
 export default function TestPage() {
-  const [results, setResults] = useState<any>({})
+  const [results, setResults] = useState<TestResults>({})
   const [loading, setLoading] = useState(false)
 
   const runTests = async () => {
@@ -16,7 +23,7 @@ export default function TestPage() {
       const dbTest = await fetch('/api/test/db')
       const dbResult = await dbTest.json()
       setResults(prev => ({ ...prev, database: dbResult.success }))
-    } catch (error) {
+    } catch {
       setResults(prev => ({ ...prev, database: false }))
     }
 
@@ -25,7 +32,7 @@ export default function TestPage() {
       const storageTest = await fetch('/api/test/storage')
       const storageResult = await storageTest.json()
       setResults(prev => ({ ...prev, storage: storageResult.success }))
-    } catch (error) {
+    } catch {
       setResults(prev => ({ ...prev, storage: false }))
     }
 
@@ -38,7 +45,7 @@ export default function TestPage() {
       })
       const aiResult = await aiTest.json()
       setResults(prev => ({ ...prev, ai: aiResult.success, aiResponse: aiResult.response }))
-    } catch (error) {
+    } catch {
       setResults(prev => ({ ...prev, ai: false }))
     }
 
