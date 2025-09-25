@@ -37,7 +37,7 @@ export default function FilePreview({ file, onClose }: FilePreviewProps) {
         {/* Preview area */}
         <div className="flex-1 bg-gray-100 dark:bg-gray-900 rounded-l-xl flex items-center justify-center p-8">
           {isImage && file.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={file.thumbnailUrl}
               alt={file.name}
