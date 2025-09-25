@@ -126,6 +126,7 @@ export default function TaskCard({ task, isDragging }: TaskCardProps) {
         {/* Assignee */}
         {task.assignee && (
           <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={task.assignee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${task.assignee.name}`}
               alt={task.assignee.name}

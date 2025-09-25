@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import {
   Upload, FolderPlus, Search, Grid, List, Trash2, Share2,
-  MoreHorizontal, File, Image, FileText, Video, Music, Archive,
+  MoreHorizontal, File, Image as ImageIcon, FileText, Video, Music, Archive,
   ChevronRight, Home, Star, Clock, HardDrive
 } from 'lucide-react'
 import FilePreview from '@/components/files/FilePreview'
@@ -143,7 +143,7 @@ export default function FilesPage() {
     if (file.type === 'folder') return <FolderPlus className="w-5 h-5" />
 
     const mimeType = file.mimeType || ''
-    if (mimeType.startsWith('image/')) return <Image className="w-5 h-5" />
+    if (mimeType.startsWith('image/')) return <ImageIcon className="w-5 h-5" />
     if (mimeType.startsWith('video/')) return <Video className="w-5 h-5" />
     if (mimeType.startsWith('audio/')) return <Music className="w-5 h-5" />
     if (mimeType.includes('pdf')) return <FileText className="w-5 h-5" />
@@ -296,6 +296,7 @@ export default function FilesPage() {
                         file.type === 'folder' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700'
                       }`}>
                         {file.thumbnailUrl ? (
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded" />
                         ) : (
                           <div className={`${

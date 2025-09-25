@@ -7,13 +7,28 @@ import DarkModeToggle from './DarkModeToggle'
 import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity } from 'lucide-react'
 
 // Conditionally import Clerk components only if available
-let OrganizationSwitcher: any = null
-let UserButton: any = null
+let OrganizationSwitcher: React.ComponentType<{
+  appearance?: Record<string, unknown>
+  hidePersonal?: boolean
+}> | null = null
 
-if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-  const ClerkComponents = require('@clerk/nextjs')
-  OrganizationSwitcher = ClerkComponents.OrganizationSwitcher
-  UserButton = ClerkComponents.UserButton
+let UserButton: React.ComponentType<{
+  appearance?: Record<string, unknown>
+  afterSignOutUrl?: string
+}> | null = null
+
+// Dynamic import to avoid build-time issues
+try {
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    const ClerkComponents = require('@clerk/nextjs') as {
+      OrganizationSwitcher: typeof OrganizationSwitcher
+      UserButton: typeof UserButton
+    }
+    OrganizationSwitcher = ClerkComponents.OrganizationSwitcher
+    UserButton = ClerkComponents.UserButton
+  }
+} catch {
+  // Clerk not available, components remain null
 }
 
 const navItems = [
