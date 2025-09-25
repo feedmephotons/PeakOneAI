@@ -10,14 +10,17 @@ datasource db {
 // User and Authentication
 model User {
   id              String          @id @default(cuid())
+  clerkId         String          @unique // Clerk user ID
   email           String          @unique
-  name            String?
+  firstName       String?
+  lastName        String?
+  name            String? // Full name
   avatarUrl       String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   // Relations
-  workspaces      WorkspaceMember[]
+  workspaces      UserWorkspace[]
   files           File[]
   tasks           Task[]
   taskAssignments TaskAssignment[]
@@ -33,14 +36,16 @@ model User {
 // Workspace/Organization
 model Workspace {
   id          String            @id @default(cuid())
+  clerkOrgId  String            @unique // Clerk organization ID
   name        String
   slug        String            @unique
   logoUrl     String?
+  metadata    Json?             // Store Clerk organization metadata
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
   // Relations
-  members     WorkspaceMember[]
+  members     UserWorkspace[]
   projects    Project[]
   folders     Folder[]
   files       File[]
@@ -48,7 +53,7 @@ model Workspace {
   events      CalendarEvent[]
 }
 
-model WorkspaceMember {
+model UserWorkspace {
   id          String    @id @default(cuid())
   role        Role      @default(MEMBER)
   joinedAt    DateTime  @default(now())

@@ -1,64 +1,56 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/webhooks(.*)',
+  '/demo(.*)',
+  '/test(.*)',
+])
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
+// Define routes that require organization selection
+const isOrgProtectedRoute = createRouteMatcher([
+  '/files(.*)',
+  '/tasks(.*)',
+  '/calendar(.*)',
+  '/video(.*)',
+  '/activity(.*)',
+  '/lisa(.*)',
+])
 
-  // Refresh session if expired
-  const { data: { user } } = await supabase.auth.getUser()
+export default clerkMiddleware(async (auth, req) => {
+  const { userId, orgId } = await auth()
 
-  // Protected routes
-  const protectedPaths = [
-    '/storage',
-    '/projects',
-    '/ai',
-    '/video',
-    '/phone',
-    '/calendar',
-    '/messages',
-  ]
-
-  const isProtectedPath = protectedPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  if (isProtectedPath && !user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/auth/login'
-    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return NextResponse.next()
   }
 
-  return supabaseResponse
-}
+  // Redirect to sign-in if not authenticated
+  if (!userId) {
+    const signInUrl = new URL('/sign-in', req.url)
+    signInUrl.searchParams.set('redirect_url', req.url)
+    return NextResponse.redirect(signInUrl)
+  }
+
+  // For organization-protected routes, ensure user has selected an org
+  if (isOrgProtectedRoute(req) && !orgId) {
+    const orgSelectionUrl = new URL('/org-selection', req.url)
+    orgSelectionUrl.searchParams.set('redirect_url', req.url)
+    return NextResponse.redirect(orgSelectionUrl)
+  }
+
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
   ],
 }
