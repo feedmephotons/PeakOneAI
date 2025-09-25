@@ -18,17 +18,13 @@ let UserButton: React.ComponentType<{
 }> | null = null
 
 // Dynamic import to avoid build-time issues
-try {
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    const ClerkComponents = require('@clerk/nextjs') as {
-      OrganizationSwitcher: typeof OrganizationSwitcher
-      UserButton: typeof UserButton
-    }
-    OrganizationSwitcher = ClerkComponents.OrganizationSwitcher
-    UserButton = ClerkComponents.UserButton
-  }
-} catch {
-  // Clerk not available, components remain null
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  import('@clerk/nextjs').then((ClerkComponents) => {
+    OrganizationSwitcher = ClerkComponents.OrganizationSwitcher as typeof OrganizationSwitcher
+    UserButton = ClerkComponents.UserButton as typeof UserButton
+  }).catch(() => {
+    // Clerk not available, components remain null
+  })
 }
 
 const navItems = [
