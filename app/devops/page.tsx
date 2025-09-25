@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { Plus, CheckCircle2, Bug, Lightbulb, RefreshCw, User, Clock, X } from 'lucide-react'
+import { Plus, CheckCircle2, Bug, Lightbulb, RefreshCw, User, Clock, X, Check } from 'lucide-react'
 
 interface DevTask {
   id: string
@@ -35,17 +34,8 @@ const COMPLETED_FEATURES = [
 
 export default function DevOpsPage() {
   const [tasks, setTasks] = useState<DevTask[]>([])
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [isAddingTask, setIsAddingTask] = useState(false)
+  const [isAddingTask, setIsAddingTask] = useState<false | 'feature' | 'bug' | 'revision'>(false)
   const [newTask, setNewTask] = useState({ title: '', description: '', createdBy: '' })
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  )
 
   // Load tasks from localStorage
   useEffect(() => {
@@ -60,36 +50,14 @@ export default function DevOpsPage() {
     localStorage.setItem('devops-tasks', JSON.stringify(tasks))
   }, [tasks])
 
-  const handleDragStart = (event: { active: { id: string } }) => {
-    setActiveId(event.active.id)
-  }
-
-  const handleDragEnd = (event: { active: { id: string }, over: { id: string } | null }) => {
-    const { active, over } = event
-    if (!over) return
-
-    const activeTask = tasks.find(t => t.id === active.id)
-    if (!activeTask) return
-
-    if (COLUMNS.find(col => col.id === over.id)) {
-      setTasks(tasks.map(task =>
-        task.id === active.id
-          ? { ...task, status: over.id as DevTask['status'] }
-          : task
-      ))
-    }
-
-    setActiveId(null)
-  }
-
-  const handleAddTask = () => {
+  const handleAddTask = (status: 'feature' | 'bug' | 'revision') => {
     if (!newTask.title || !newTask.createdBy) return
 
     const task: DevTask = {
       id: Date.now().toString(),
       title: newTask.title,
       description: newTask.description,
-      status: 'feature',
+      status: status,
       createdAt: new Date().toISOString(),
       createdBy: newTask.createdBy,
     }
@@ -103,7 +71,13 @@ export default function DevOpsPage() {
     setTasks(tasks.filter(t => t.id !== taskId))
   }
 
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null
+  const handleCompleteTask = (taskId: string) => {
+    setTasks(tasks.map(task =>
+      task.id === taskId
+        ? { ...task, status: 'done' }
+        : task
+    ))
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -120,36 +94,24 @@ export default function DevOpsPage() {
 
         {/* Feature Request Board */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Client Feedback Board
             </h2>
-            <button
-              onClick={() => setIsAddingTask(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add Request
-            </button>
           </div>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {COLUMNS.map(column => {
-                const Icon = column.icon
-                const columnTasks = tasks.filter(t => t.status === column.id)
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {COLUMNS.map(column => {
+              const Icon = column.icon
+              const columnTasks = tasks.filter(t => t.status === column.id)
 
-                return (
-                  <div
-                    key={column.id}
-                    className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 min-h-[400px]"
-                  >
-                    <div className="flex items-center gap-2 mb-4">
+              return (
+                <div
+                  key={column.id}
+                  className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 min-h-[400px]"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 ${column.color} rounded-lg flex items-center justify-center`}>
                         <Icon className="w-4 h-4 text-white" />
                       </div>
@@ -160,56 +122,68 @@ export default function DevOpsPage() {
                         {columnTasks.length}
                       </span>
                     </div>
+                    {column.id !== 'done' && (
+                      <button
+                        onClick={() => setIsAddingTask(column.id as 'feature' | 'bug' | 'revision')}
+                        className="p-1.5 bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition"
+                        title={`Add ${column.title.slice(0, -1)}`}
+                      >
+                        <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                      </button>
+                    )}
+                  </div>
 
-                    <div className="space-y-2">
-                      {columnTasks.map(task => (
-                        <div
-                          key={task.id}
-                          className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 cursor-move group"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                              {task.title}
-                            </h4>
+                  <div className="space-y-2">
+                    {columnTasks.map(task => (
+                      <div
+                        key={task.id}
+                        className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 group"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                            {task.title}
+                          </h4>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                            {task.status !== 'done' && (
+                              <button
+                                onClick={() => handleCompleteTask(task.id)}
+                                className="text-green-500 hover:text-green-600 transition"
+                                title="Mark as complete"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDeleteTask(task.id)}
-                              className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition"
+                              className="text-red-500 hover:text-red-600 transition"
+                              title="Delete"
                             >
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          {task.description && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              {task.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {task.createdBy}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {new Date(task.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
                         </div>
-                      ))}
-                    </div>
+                        {task.description && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {task.createdBy}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(task.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )
-              })}
-            </div>
-            <DragOverlay>
-              {activeTask ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-xl border border-gray-200 dark:border-gray-600 opacity-80">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                    {activeTask.title}
-                  </h4>
                 </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+              )
+            })}
+          </div>
         </div>
 
         {/* Completed Features List */}
@@ -248,7 +222,7 @@ export default function DevOpsPage() {
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Add New Request
+                Add New {isAddingTask === 'feature' ? 'Feature Request' : isAddingTask === 'bug' ? 'Bug Report' : 'Revision Request'}
               </h3>
 
               <div className="space-y-4">
@@ -274,7 +248,7 @@ export default function DevOpsPage() {
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Add video calling feature"
+                    placeholder={isAddingTask === 'bug' ? 'Button not working on mobile' : isAddingTask === 'revision' ? 'Change button color to blue' : 'Add video calling feature'}
                   />
                 </div>
 
@@ -294,16 +268,19 @@ export default function DevOpsPage() {
 
               <div className="flex items-center justify-end gap-3 mt-6">
                 <button
-                  onClick={() => setIsAddingTask(false)}
+                  onClick={() => {
+                    setIsAddingTask(false)
+                    setNewTask({ title: '', description: '', createdBy: '' })
+                  }}
                   className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleAddTask}
+                  onClick={() => handleAddTask(isAddingTask as 'feature' | 'bug' | 'revision')}
                   className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
                 >
-                  Add Request
+                  Add {isAddingTask === 'feature' ? 'Feature' : isAddingTask === 'bug' ? 'Bug' : 'Revision'}
                 </button>
               </div>
             </div>
