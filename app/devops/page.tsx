@@ -20,16 +20,18 @@ const COLUMNS = [
 ]
 
 const COMPLETED_FEATURES = [
-  { date: '2024-01-24', feature: 'Clerk Authentication System', description: 'Multi-tenant auth with organizations' },
-  { date: '2024-01-24', feature: 'Task Management System', description: 'Kanban board with drag-and-drop' },
-  { date: '2024-01-24', feature: 'File Manager', description: 'Drag-drop uploads with AI analysis' },
-  { date: '2024-01-24', feature: 'Global Search (Cmd+K)', description: 'Quick search across all modules' },
-  { date: '2024-01-24', feature: 'Dark Mode', description: 'System preference detection + toggle' },
-  { date: '2024-01-24', feature: 'Activity Dashboard', description: 'Real-time activity tracking' },
-  { date: '2024-01-24', feature: 'Sentry Error Tracking', description: 'Production error monitoring' },
-  { date: '2024-01-24', feature: 'Lisa AI Integration', description: 'GPT-4 powered assistant' },
-  { date: '2024-01-24', feature: 'Multi-tenant Architecture', description: 'Complete data isolation per org' },
-  { date: '2024-01-24', feature: 'Onboarding Flow', description: '3-step org creation wizard' },
+  { date: '2025-09-23', feature: 'Clerk Authentication System', description: 'Multi-tenant auth with organizations' },
+  { date: '2025-09-23', feature: 'Multi-tenant Architecture', description: 'Complete data isolation per org' },
+  { date: '2025-09-23', feature: 'Lisa AI Integration', description: 'GPT-4 powered assistant' },
+  { date: '2025-09-24', feature: 'Task Management System', description: 'Kanban board with status updates' },
+  { date: '2025-09-24', feature: 'File Manager', description: 'Drag-drop uploads with AI analysis' },
+  { date: '2025-09-24', feature: 'Global Search (Cmd+K)', description: 'Quick search across all modules' },
+  { date: '2025-09-24', feature: 'Dark Mode', description: 'System preference detection + toggle' },
+  { date: '2025-09-24', feature: 'Activity Dashboard', description: 'Real-time activity tracking' },
+  { date: '2025-09-25', feature: 'Sentry Error Tracking', description: 'Production error monitoring' },
+  { date: '2025-09-25', feature: 'Onboarding Flow', description: '3-step org creation wizard' },
+  { date: '2025-09-25', feature: 'DevOps Dashboard', description: 'Client feedback tracking system' },
+  { date: '2025-09-25', feature: 'Optional Authentication', description: 'App works without Clerk keys' },
 ]
 
 export default function DevOpsPage() {
