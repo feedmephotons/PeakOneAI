@@ -1,29 +1,17 @@
 'use client'
 
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Calendar, MessageSquare, Paperclip, Flag, MoreHorizontal } from 'lucide-react'
+import { Calendar, MessageSquare, Paperclip, Flag, MoreHorizontal, ChevronRight, Trash2 } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
+import { useState } from 'react'
 
 interface TaskCardProps {
   task: Task
-  isDragging?: boolean
+  onUpdateStatus: (taskId: string, newStatus: Task['status']) => void
+  onDelete: (taskId: string) => void
 }
 
-export default function TaskCard({ task, isDragging }: TaskCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging: isSortableDragging,
-  } = useSortable({ id: task.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
+export default function TaskCard({ task, onUpdateStatus, onDelete }: TaskCardProps) {
+  const [showMenu, setShowMenu] = useState(false)
 
   const getPriorityColor = (priority: Task['priority']) => {
     switch (priority) {
@@ -48,26 +36,53 @@ export default function TaskCard({ task, isDragging }: TaskCardProps) {
     return { text: dueDate.toLocaleDateString(), color: 'text-gray-600 dark:text-gray-400' }
   }
 
-  const isActuallyDragging = isDragging || isSortableDragging
+  const nextStatus = {
+    'TODO': 'IN_PROGRESS' as const,
+    'IN_PROGRESS': 'IN_REVIEW' as const,
+    'IN_REVIEW': 'COMPLETED' as const,
+    'COMPLETED': 'TODO' as const
+  }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all ${
-        isActuallyDragging ? 'opacity-50 rotate-2 scale-105' : ''
-      }`}
-    >
+    <div className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all group relative">
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
           {task.title}
         </h4>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition">
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-40">
+              <button
+                onClick={() => {
+                  onUpdateStatus(task.id, nextStatus[task.status])
+                  setShowMenu(false)
+                }}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <ChevronRight className="w-4 h-4" />
+                Move to {nextStatus[task.status].replace('_', ' ').toLowerCase()}
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(task.id)
+                  setShowMenu(false)
+                }}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Description */}
