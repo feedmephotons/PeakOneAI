@@ -31,7 +31,7 @@ export default function OnboardingPage() {
 
     setLoading(true)
     try {
-      const org = await createOrganization({
+      await createOrganization({
         name: formData.orgName,
         // Store additional metadata
         publicMetadata: {

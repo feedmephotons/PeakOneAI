@@ -70,7 +70,7 @@ export async function POST(req: Request) {
   }
 
   if (eventType === 'organization.created' || eventType === 'organization.updated') {
-    const { id, name, slug, image_url, created_at, public_metadata } = evt.data
+    const { id, name, slug, image_url, public_metadata } = evt.data
 
     try {
       await prisma.workspace.upsert({
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
           name,
           slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
           logoUrl: image_url || null,
-          metadata: public_metadata as any,
+          metadata: public_metadata as Record<string, unknown>,
         },
         create: {
           id: id,
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
           name,
           slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
           logoUrl: image_url || null,
-          metadata: public_metadata as any,
+          metadata: public_metadata as Record<string, unknown>,
         },
       })
     } catch (error) {

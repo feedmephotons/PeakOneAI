@@ -15,7 +15,7 @@ export async function getTenantPrisma() {
   // Return a proxy that automatically adds workspaceId to queries
   return new Proxy(prisma, {
     get(target, prop: string) {
-      const originalModel = (target as any)[prop]
+      const originalModel = (target as Record<string, unknown>)[prop]
 
       if (!originalModel || typeof originalModel !== 'object') {
         return originalModel
@@ -30,7 +30,7 @@ export async function getTenantPrisma() {
           }
 
           // Intercept query methods
-          return function(...args: any[]) {
+          return function(...args: unknown[]) {
             const [queryArgs] = args
 
             // Add workspaceId to where clause for find operations
@@ -52,7 +52,7 @@ export async function getTenantPrisma() {
             // Add workspaceId to data for createMany operations
             if (modelProp === 'createMany' && queryArgs?.data) {
               if (Array.isArray(queryArgs.data)) {
-                queryArgs.data = queryArgs.data.map((item: any) => ({
+                queryArgs.data = queryArgs.data.map((item: Record<string, unknown>) => ({
                   ...item,
                   workspaceId: workspace.id,
                 }))
@@ -149,7 +149,7 @@ export async function getTenantTasks(projectId?: string) {
     throw new Error('No organization context')
   }
 
-  const where: any = {
+  const where: Record<string, unknown> = {
     project: {
       workspaceId: workspace.id,
     },

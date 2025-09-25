@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { Plus, Search, Filter, Calendar, User, Tag } from 'lucide-react'
+import { Plus, Search, Filter } from 'lucide-react'
 import TaskColumn from '@/components/tasks/TaskColumn'
 import TaskCard from '@/components/tasks/TaskCard'
 import CreateTaskModal from '@/components/tasks/CreateTaskModal'
@@ -136,11 +135,11 @@ export default function TasksPage() {
     }, 500)
   }, [])
 
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: { active: { id: string } }) => {
     setActiveId(event.active.id)
   }
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: { active: { id: string }, over: { id: string } | null }) => {
     const { active, over } = event
 
     if (!over) return

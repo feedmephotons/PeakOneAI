@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import {
-  Upload, FolderPlus, Search, Grid, List, Download, Trash2, Share2,
+  Upload, FolderPlus, Search, Grid, List, Trash2, Share2,
   MoreHorizontal, File, Image, FileText, Video, Music, Archive,
   ChevronRight, Home, Star, Clock, HardDrive
 } from 'lucide-react'
@@ -30,7 +30,6 @@ interface FileItem {
 export default function FilesPage() {
   const [files, setFiles] = useState<FileItem[]>([])
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPath, setCurrentPath] = useState<string[]>([])
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
@@ -124,7 +123,9 @@ export default function FilesPage() {
             }
             setFiles(prevFiles => [...prevFiles, newFile])
             // Clean up progress
-            const { [fileId]: _, ...rest } = prev
+            const rest = Object.fromEntries(
+              Object.entries(prev).filter(([key]) => key !== fileId)
+            )
             return rest
           }
           return { ...prev, [fileId]: Math.min(current + 20, 100) }

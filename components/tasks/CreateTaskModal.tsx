@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Calendar, Flag, User, Tag } from 'lucide-react'
+import { X, Calendar, Flag, Tag } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
 
 interface CreateTaskModalProps {

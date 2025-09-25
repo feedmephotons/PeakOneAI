@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, MessageSquare, CheckCircle, Calendar, Video, Upload, Edit, Trash2, User, Clock } from 'lucide-react'
+import { FileText, MessageSquare, CheckCircle, Calendar, Video, Upload, Edit, Trash2, User } from 'lucide-react'
 
 interface Activity {
   id: string
@@ -10,7 +10,7 @@ interface Activity {
   target: string
   user: string
   timestamp: Date
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export default function ActivityPage() {

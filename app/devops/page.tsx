@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { Plus, CheckCircle2, Bug, Lightbulb, RefreshCw, Check, Calendar, User, Clock, X } from 'lucide-react'
+import { Plus, CheckCircle2, Bug, Lightbulb, RefreshCw, User, Clock, X } from 'lucide-react'
 
 interface DevTask {
   id: string
@@ -60,11 +60,11 @@ export default function DevOpsPage() {
     localStorage.setItem('devops-tasks', JSON.stringify(tasks))
   }, [tasks])
 
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: { active: { id: string } }) => {
     setActiveId(event.active.id)
   }
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: { active: { id: string }, over: { id: string } | null }) => {
     const { active, over } = event
     if (!over) return
 

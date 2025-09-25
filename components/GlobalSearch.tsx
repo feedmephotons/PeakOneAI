@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, X, FileText, MessageSquare, CheckCircle, Calendar, Video, Phone } from 'lucide-react'
+import { Search, X, FileText, MessageSquare, CheckCircle, Calendar, Video } from 'lucide-react'
 
 interface SearchResult {
   id: string
