@@ -63,3 +63,10 @@ npx prisma studio
 - Database password needs to be added to DATABASE_URL in .env.local and Vercel
 - OpenAI API key needs to be obtained and added
 - .env.local is gitignored for security
+
+## DevOps Dashboard
+- URL: `/devops` (no authentication required)
+- Purpose: Internal development tracking and client feedback
+- Features: Kanban board for feature requests, bugs, revisions
+- Data: Stored in localStorage (no database needed)
+- **IMPORTANT**: Update the completed features list in `/app/devops/page.tsx` as new features are added

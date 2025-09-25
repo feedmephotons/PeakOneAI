@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
   '/demo(.*)',
   '/test(.*)',
+  '/devops(.*)',  // DevOps dashboard - no auth required
 ])
 
 // Define routes that require organization selection
