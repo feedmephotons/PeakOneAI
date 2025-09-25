@@ -4,8 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import GlobalSearch from './GlobalSearch'
 import DarkModeToggle from './DarkModeToggle'
-import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
 import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity } from 'lucide-react'
+
+// Conditionally import Clerk components only if available
+let OrganizationSwitcher: any = null
+let UserButton: any = null
+
+if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  const ClerkComponents = require('@clerk/nextjs')
+  OrganizationSwitcher = ClerkComponents.OrganizationSwitcher
+  UserButton = ClerkComponents.UserButton
+}
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -57,24 +66,30 @@ export default function Navigation() {
           {/* Right side - Search, Org Switcher, Dark mode and User */}
           <div className="flex items-center gap-4">
             <GlobalSearch />
-            <OrganizationSwitcher
-              appearance={{
-                elements: {
-                  rootBox: "flex items-center",
-                  organizationSwitcherTrigger: "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800",
-                }
-              }}
-              hidePersonal
-            />
+            {OrganizationSwitcher && (
+              <OrganizationSwitcher
+                appearance={{
+                  elements: {
+                    rootBox: "flex items-center",
+                    organizationSwitcherTrigger: "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800",
+                  }
+                }}
+                hidePersonal
+              />
+            )}
             <DarkModeToggle />
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-9 h-9",
-                }
-              }}
-              afterSignOutUrl="/"
-            />
+            {UserButton ? (
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-9 h-9",
+                  }
+                }}
+                afterSignOutUrl="/"
+              />
+            ) : (
+              <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full" />
+            )}
           </div>
         </div>
       </div>

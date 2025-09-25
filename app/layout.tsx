@@ -25,31 +25,43 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <ClerkProvider
-      appearance={{
-        baseTheme: dark,
-        variables: {
-          colorPrimary: '#6B46C1',
-          colorBackground: '#ffffff',
-          colorText: '#111827',
-          colorInputBackground: '#ffffff',
-          borderRadius: '0.5rem',
-        },
-        elements: {
-          formButtonPrimary: 'bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90',
-          card: 'shadow-xl',
-        }
-      }}
-    >
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          suppressHydrationWarning
-        >
-          <AppLayout>{children}</AppLayout>
-        </body>
-      </html>
-    </ClerkProvider>
+  // Only use ClerkProvider if we have the required keys
+  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  const content = (
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
+      >
+        <AppLayout>{children}</AppLayout>
+      </body>
+    </html>
   );
+
+  if (clerkPublishableKey) {
+    return (
+      <ClerkProvider
+        publishableKey={clerkPublishableKey}
+        appearance={{
+          baseTheme: dark,
+          variables: {
+            colorPrimary: '#6B46C1',
+            colorBackground: '#ffffff',
+            colorText: '#111827',
+            colorInputBackground: '#ffffff',
+            borderRadius: '0.5rem',
+          },
+          elements: {
+            formButtonPrimary: 'bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90',
+            card: 'shadow-xl',
+          }
+        }}
+      >
+        {content}
+      </ClerkProvider>
+    );
+  }
+
+  return content;
 }
