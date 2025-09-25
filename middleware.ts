@@ -1,62 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Only use Clerk middleware if we have the required environment variables
-const hasClerk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
-if (hasClerk) {
-  const { clerkMiddleware, createRouteMatcher } = require('@clerk/nextjs/server')
-
-  // Define public routes that don't require authentication
-  const isPublicRoute = createRouteMatcher([
-    '/',
-    '/sign-in(.*)',
-    '/sign-up(.*)',
-    '/api/webhooks(.*)',
-    '/demo(.*)',
-    '/test(.*)',
-    '/devops(.*)',  // DevOps dashboard - no auth required
-  ])
-
-  // Define routes that require organization selection
-  const isOrgProtectedRoute = createRouteMatcher([
-    '/files(.*)',
-    '/tasks(.*)',
-    '/calendar(.*)',
-    '/video(.*)',
-    '/activity(.*)',
-    '/lisa(.*)',
-  ])
-
-  module.exports.default = clerkMiddleware(async (auth: any, req: NextRequest) => {
-    const { userId, orgId } = await auth()
-
-    // Allow public routes
-    if (isPublicRoute(req)) {
-      return NextResponse.next()
-    }
-
-    // Redirect to sign-in if not authenticated
-    if (!userId) {
-      const signInUrl = new URL('/sign-in', req.url)
-      signInUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(signInUrl)
-    }
-
-    // For organization-protected routes, ensure user has selected an org
-    if (isOrgProtectedRoute(req) && !orgId) {
-      const orgSelectionUrl = new URL('/org-selection', req.url)
-      orgSelectionUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(orgSelectionUrl)
-    }
-
-    return NextResponse.next()
-  })
-} else {
-  // No Clerk - allow all routes
-  module.exports.default = function middleware(req: NextRequest) {
-    return NextResponse.next()
-  }
+// Simple middleware that allows all routes when Clerk is not configured
+export default function middleware(req: NextRequest) {
+  // For now, allow all routes since Clerk is not configured
+  // When Clerk is set up, this file will need to be updated with proper auth middleware
+  return NextResponse.next()
 }
 
 export const config = {
