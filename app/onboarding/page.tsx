@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUser, useOrganization } from '@clerk/nextjs'
 import { Building2, Users, Briefcase, GraduationCap, Heart } from 'lucide-react'
 
 const organizationTypes = [
@@ -15,8 +14,6 @@ const organizationTypes = [
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user } = useUser()
-  const { createOrganization } = useOrganization()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -26,27 +23,21 @@ export default function OnboardingPage() {
     role: '',
   })
 
+
   const handleCreateOrganization = async () => {
-    if (!formData.orgName || !createOrganization) return
+    if (!formData.orgName) return
 
     setLoading(true)
-    try {
-      await createOrganization({
-        name: formData.orgName,
-        // Store additional metadata
-        publicMetadata: {
-          type: formData.orgType,
-          teamSize: formData.teamSize,
-          createdBy: user?.id,
-        }
-      })
 
-      // After creating org, redirect to the main app
-      router.push('/files')
-    } catch (error) {
-      console.error('Failed to create organization:', error)
-      setLoading(false)
+    // Store onboarding data in localStorage for later use
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboardingData', JSON.stringify(formData))
     }
+
+    // Simulate organization creation
+    setTimeout(() => {
+      router.push('/files')
+    }, 500)
   }
 
   return (
