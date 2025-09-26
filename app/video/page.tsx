@@ -27,6 +27,8 @@ interface Recording {
 
 export default function VideoPage() {
   const [showNewMeetingModal, setShowNewMeetingModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
   const [selectedView, setSelectedView] = useState<'meetings' | 'recordings'>('meetings');
   const [aiEnabled, setAiEnabled] = useState(true);
 
@@ -97,13 +99,17 @@ export default function VideoPage() {
 
         <div className="flex space-x-2">
           {meeting.status === 'live' && (
-            <button className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium">
+            <button
+              onClick={() => window.location.href = `/video/room/${meeting.id}`}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium">
               Join Now
             </button>
           )}
           {meeting.status === 'upcoming' && (
             <>
-              <button className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
+              <button
+                onClick={() => window.location.href = `/video/room/${meeting.id}`}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
                 Start Meeting
               </button>
               <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
@@ -200,7 +206,12 @@ export default function VideoPage() {
               >
                 Schedule Meeting
               </button>
-              <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  const roomId = Math.random().toString(36).substring(2, 9);
+                  window.location.href = `/video/room/${roomId}`;
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
@@ -226,7 +237,12 @@ export default function VideoPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
+            <button
+              onClick={() => {
+                const roomId = Math.random().toString(36).substring(2, 9);
+                window.location.href = `/video/room/${roomId}`;
+              }}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -236,7 +252,9 @@ export default function VideoPage() {
               <p className="text-sm text-violet-100">Begin instant meeting with link sharing</p>
             </button>
 
-            <button className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -376,6 +394,67 @@ export default function VideoPage() {
           </div>
         </div>
       </div>
+
+      {/* Join Meeting Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Join Meeting</h2>
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meeting ID or Link</label>
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                  placeholder="Enter meeting ID or paste link..."
+                />
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs text-gray-500">
+                  Enter a meeting ID (e.g., abc123) or paste a full meeting link.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (joinCode) {
+                    // Extract room ID from link if full URL is provided
+                    const roomId = joinCode.includes('/')
+                      ? joinCode.split('/').pop()
+                      : joinCode;
+                    window.location.href = `/video/room/${roomId}`;
+                  }
+                }}
+                className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium"
+              >
+                Join Meeting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Meeting Modal */}
       {showNewMeetingModal && (

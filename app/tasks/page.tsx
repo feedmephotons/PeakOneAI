@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, Filter } from 'lucide-react'
 import TaskColumn from '@/components/tasks/TaskColumn'
 import CreateTaskModal from '@/components/tasks/CreateTaskModal'
+import { useNotifications } from '@/components/notifications/NotificationProvider'
+import { notifications } from '@/lib/notifications'
 
 export interface Task {
   id: string
@@ -32,6 +34,7 @@ const COLUMNS = [
 ]
 
 export default function TasksPage() {
+  const { showNotification } = useNotifications()
   const [tasks, setTasks] = useState<Task[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -134,18 +137,31 @@ export default function TasksPage() {
       updatedAt: new Date()
     }
     setTasks([...tasks, task])
+    notifications.task.created(newTask.title)
   }
 
   const handleUpdateTaskStatus = (taskId: string, newStatus: Task['status']) => {
+    const task = tasks.find(t => t.id === taskId)
     setTasks(tasks.map(task =>
       task.id === taskId
         ? { ...task, status: newStatus, updatedAt: new Date() }
         : task
     ))
+    if (task && newStatus === 'COMPLETED') {
+      notifications.task.completed(task.title)
+    }
   }
 
   const handleDeleteTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId)
     setTasks(tasks.filter(task => task.id !== taskId))
+    if (task) {
+      showNotification({
+        type: 'success',
+        title: 'Task deleted',
+        message: `"${task.title}" has been removed`
+      })
+    }
   }
 
   // Filter tasks based on search and priority

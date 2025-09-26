@@ -1,45 +1,258 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Sparkles, Send, Loader, User, Bot, Mic, Paperclip, Settings, X, FileText, Image as ImageIcon } from 'lucide-react'
+import {
+  Sparkles, Send, User, Bot, Mic, Paperclip, Settings, X, FileText,
+  Image as ImageIcon, Calendar, CheckSquare, FileSearch, Brain,
+  TrendingUp, Users, Mail, Phone, Globe, Code, Database, Shield,
+  Zap, BookOpen, Heart
+} from 'lucide-react'
 
 interface Message {
-  role: string
+  role: 'user' | 'assistant'
   content: string
-  timestamp: Date | null
+  timestamp: Date
   attachments?: Array<{ name: string; size: number; type: string }>
+  suggestions?: string[]
 }
 
-export default function LisaChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: "Hello! I'm Lisa, your AI assistant powered by GPT-5. I can help you with tasks, analyze files, summarize meetings, and much more. What would you like to do today?",
-      timestamp: null // Will be set client-side
+// Simulated AI responses based on keywords and context
+const getAIResponse = (input: string): { response: string; suggestions?: string[] } => {
+  const lowerInput = input.toLowerCase()
+
+  // Task management
+  if (lowerInput.includes('task') || lowerInput.includes('todo') || lowerInput.includes('organize')) {
+    return {
+      response: `I can help you organize your tasks! Here's what I suggest:
+
+📋 **Current Priority Tasks:**
+1. Review pending pull requests
+2. Update project documentation
+3. Prepare for tomorrow's standup meeting
+4. Complete code review for the authentication module
+
+Would you like me to:
+- Create a new task list
+- Set priorities for existing tasks
+- Schedule reminders for deadlines
+- Analyze your productivity patterns?`,
+      suggestions: ['Create a new task', 'View all tasks', 'Set priorities', 'Schedule reminder']
     }
-  ])
+  }
+
+  // Document analysis
+  if (lowerInput.includes('document') || lowerInput.includes('analyze') || lowerInput.includes('file')) {
+    return {
+      response: `I can analyze documents and files for you!
+
+📄 **Document Analysis Capabilities:**
+- Extract key information and summaries
+- Identify important dates and deadlines
+- Find patterns and insights
+- Generate reports and visualizations
+
+To analyze a document, simply upload it using the paperclip icon. I support:
+- PDF files
+- Word documents (.doc, .docx)
+- Text files
+- Spreadsheets
+- Images with text
+
+What type of document would you like to analyze?`,
+      suggestions: ['Upload document', 'Recent analyses', 'Generate report', 'Extract data']
+    }
+  }
+
+  // Meeting/Calendar
+  if (lowerInput.includes('meeting') || lowerInput.includes('schedule') || lowerInput.includes('calendar')) {
+    return {
+      response: `Let me help you with scheduling! 📅
+
+**Your Upcoming Schedule:**
+- 10:00 AM - Team standup (in 2 hours)
+- 2:00 PM - Client presentation
+- 3:30 PM - Code review session
+- Tomorrow 9:00 AM - Sprint planning
+
+**Available time slots today:**
+- 11:00 AM - 12:00 PM
+- 12:30 PM - 1:30 PM
+- 4:00 PM - 5:30 PM
+
+Would you like to:
+- Schedule a new meeting
+- Send calendar invites
+- Find common availability
+- Set up recurring meetings?`,
+      suggestions: ['Schedule meeting', 'View calendar', 'Find time slot', 'Send invites']
+    }
+  }
+
+  // Activity summary
+  if (lowerInput.includes('activity') || lowerInput.includes('recent') || lowerInput.includes('summary')) {
+    return {
+      response: `Here's your activity summary: 📊
+
+**Today's Activity:**
+- 12 tasks completed ✅
+- 8 files uploaded
+- 23 messages sent
+- 3 meetings attended
+
+**Weekly Stats:**
+- Productivity: Up 15% from last week
+- Most active: Tuesday (45 tasks)
+- Focus time: 28 hours
+- Collaboration: 15 team interactions
+
+**Trending Topics in Your Work:**
+1. Authentication implementation
+2. Database optimization
+3. UI/UX improvements
+4. Testing coverage
+
+Need more detailed analytics?`,
+      suggestions: ['Detailed report', 'Export data', 'Team activity', 'Productivity tips']
+    }
+  }
+
+  // Code/Development help
+  if (lowerInput.includes('code') || lowerInput.includes('debug') || lowerInput.includes('error') || lowerInput.includes('implement')) {
+    return {
+      response: `I can help with your development tasks! 💻
+
+**Development Assistance:**
+- Code review and optimization
+- Bug identification and fixes
+- Implementation suggestions
+- Best practices and patterns
+
+**Recent Code Activities:**
+- Fixed authentication bug in login flow
+- Optimized database queries (40% faster)
+- Added unit tests (coverage: 78%)
+- Refactored payment module
+
+What specific coding task do you need help with?`,
+      suggestions: ['Review code', 'Debug error', 'Optimize performance', 'Write tests']
+    }
+  }
+
+  // Help command
+  if (lowerInput.includes('help') || lowerInput === '?' || lowerInput.includes('what can you do')) {
+    return {
+      response: `I'm Lisa, your AI assistant! Here's how I can help you: 🚀
+
+**My Capabilities:**
+📋 **Task Management** - Organize, prioritize, and track tasks
+📄 **Document Analysis** - Extract insights from files
+📅 **Smart Scheduling** - Manage calendars and meetings
+📊 **Analytics** - Track productivity and patterns
+💻 **Code Assistant** - Help with development tasks
+💬 **Communication** - Draft emails and messages
+🔍 **Smart Search** - Find information quickly
+🎯 **Project Planning** - Roadmaps and timelines
+
+Just ask me anything or click on a quick action to get started!`,
+      suggestions: ['Organize tasks', 'Analyze document', 'Schedule meeting', 'Show analytics']
+    }
+  }
+
+  // Email/Communication
+  if (lowerInput.includes('email') || lowerInput.includes('message') || lowerInput.includes('draft')) {
+    return {
+      response: `I'll help you with your communications! ✉️
+
+**Draft Templates Ready:**
+1. Project update email
+2. Meeting follow-up
+3. Client proposal
+4. Team announcement
+
+**Recent Communications:**
+- Sent: 5 emails today
+- Received: 12 new messages
+- Pending: 3 draft responses
+
+Would you like me to:
+- Draft a new email
+- Summarize unread messages
+- Schedule email send
+- Create email templates?`,
+      suggestions: ['Draft email', 'View inbox', 'Create template', 'Schedule send']
+    }
+  }
+
+  // Data/Analytics
+  if (lowerInput.includes('data') || lowerInput.includes('analytics') || lowerInput.includes('report')) {
+    return {
+      response: `Let me generate analytics for you! 📈
+
+**Performance Metrics:**
+- Project completion: 87% on track
+- Team velocity: 42 story points/sprint
+- Code quality: A- (improved from B+)
+- Customer satisfaction: 4.6/5.0
+
+**Key Insights:**
+✅ Productivity peaks on Tuesdays
+📈 30% faster task completion this month
+🎯 Meeting efficiency improved by 25%
+💡 Suggestion: Batch similar tasks for better focus
+
+What specific metrics would you like to explore?`,
+      suggestions: ['Generate report', 'Export data', 'Team metrics', 'Custom dashboard']
+    }
+  }
+
+  // Default response with context awareness
+  return {
+    response: `I understand you're asking about "${input}". Let me help you with that!
+
+Based on your request, I can:
+- Search for relevant information
+- Create action items
+- Provide recommendations
+- Connect you with the right resources
+
+How would you like me to assist you specifically with this?`,
+    suggestions: ['Tell me more', 'Search information', 'Create task', 'Get recommendations']
+  }
+}
+
+export default function LisaAIPage() {
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaFileInputRef = useRef<HTMLInputElement>(null)
-  const [conversationId] = useState<string | null>(null)
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Initialize with welcome message
+  useEffect(() => {
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: `Hello! I'm Lisa, your AI assistant. 👋
+
+I'm here to help you be more productive and organized. I can assist with:
+- Task management and prioritization
+- Document analysis and summarization
+- Smart scheduling and calendar management
+- Code reviews and development help
+- Data analytics and insights
+- And much more!
+
+How can I help you today?`,
+      timestamp: new Date(),
+      suggestions: ['Help me organize tasks', 'Analyze a document', 'Schedule a meeting', 'Show my activity']
+    }
+    setMessages([welcomeMessage])
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
-
-  useEffect(() => {
-    // Set initial message timestamp on client side
-    setMessages(msgs => {
-      if (msgs.length === 1 && msgs[0].timestamp === null) {
-        return [{ ...msgs[0], timestamp: new Date() }]
-      }
-      return msgs
-    })
-  }, [])
 
   useEffect(() => {
     scrollToBottom()
@@ -56,92 +269,57 @@ export default function LisaChatPage() {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const sendMessage = async () => {
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return
+  const sendMessage = async (messageText?: string) => {
+    const textToSend = messageText || input
+    if ((!textToSend.trim() && attachedFiles.length === 0)) return
 
-    let messageContent = input
+    let messageContent = textToSend
+    const attachments = attachedFiles.map(f => ({
+      name: f.name,
+      size: f.size,
+      type: f.type
+    }))
+
     if (attachedFiles.length > 0) {
       const fileNames = attachedFiles.map(f => f.name).join(', ')
-      messageContent = `${input}${input ? '\n\n' : ''}[Attached files: ${fileNames}]`
+      messageContent = `${textToSend}${textToSend ? '\n\n' : ''}[Attached files: ${fileNames}]`
     }
 
-    const userMessage = {
+    // Add user message
+    const userMessage: Message = {
       role: 'user',
       content: messageContent,
       timestamp: new Date(),
-      attachments: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
+      attachments: attachments.length > 0 ? attachments : undefined
     }
 
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setAttachedFiles([])
-    setIsLoading(true)
     setIsTyping(true)
 
-    try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: messageContent,
-          conversationId
-        })
-      })
+    // Simulate AI processing time
+    setTimeout(() => {
+      const { response, suggestions } = getAIResponse(textToSend)
 
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-      let assistantMessage = ''
-
-      // Add empty assistant message
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: '',
-        timestamp: new Date()
-      }])
-      setIsTyping(false)
-
-      while (reader) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') break
-
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.content) {
-                assistantMessage += parsed.content
-                // Update the last message
-                setMessages(prev => {
-                  const newMessages = [...prev]
-                  newMessages[newMessages.length - 1].content = assistantMessage
-                  return newMessages
-                })
-              }
-            } catch {
-              // Ignore parse errors
-            }
-          }
-        }
+      // If files were attached, add file analysis context
+      let finalResponse = response
+      if (attachments.length > 0) {
+        finalResponse = `I've received ${attachments.length} file(s) for analysis:\n${
+          attachments.map(a => `- ${a.name} (${(a.size / 1024).toFixed(1)} KB)`).join('\n')
+        }\n\n${response}`
       }
-    } catch (error) {
-      console.error('Chat error:', error)
-      setMessages(prev => [...prev, {
+
+      const assistantMessage: Message = {
         role: 'assistant',
-        content: "I'm sorry, I encountered an error. Please try again.",
-        timestamp: new Date()
-      }])
-    } finally {
-      setIsLoading(false)
+        content: finalResponse,
+        timestamp: new Date(),
+        suggestions
+      }
+
+      setMessages(prev => [...prev, assistantMessage])
       setIsTyping(false)
-    }
+    }, 1000 + Math.random() * 1000) // Random delay 1-2 seconds
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -152,74 +330,83 @@ export default function LisaChatPage() {
   }
 
   const quickActions = [
-    "Help me organize my tasks",
-    "Analyze a document",
-    "Schedule a meeting",
-    "Summarize recent activity"
+    { icon: CheckSquare, label: "Organize my tasks", action: "Help me organize my tasks" },
+    { icon: FileSearch, label: "Analyze document", action: "I need to analyze a document" },
+    { icon: Calendar, label: "Schedule meeting", action: "Help me schedule a meeting" },
+    { icon: TrendingUp, label: "Show analytics", action: "Show me my activity summary" },
+    { icon: Mail, label: "Draft email", action: "Help me draft an email" },
+    { icon: Code, label: "Code help", action: "I need help with code" }
+  ]
+
+  const capabilities = [
+    { icon: Brain, title: "Smart AI Assistant", desc: "Powered by advanced language models" },
+    { icon: Zap, title: "Instant Responses", desc: "Get help in real-time" },
+    { icon: Shield, title: "Secure & Private", desc: "Your data stays protected" },
+    { icon: Globe, title: "Multi-domain Expert", desc: "Help across all areas" },
+    { icon: Database, title: "Context Aware", desc: "Remembers your preferences" },
+    { icon: Heart, title: "Personalized", desc: "Learns and adapts to you" }
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
+      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Lisa AI</h2>
-              <p className="text-sm text-green-600 flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lisa AI</h2>
+              <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
                 Online & Ready
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h3>
           <div className="space-y-2">
-            {quickActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={() => setInput(action)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                {action}
-              </button>
-            ))}
+            {quickActions.map((action, index) => {
+              const Icon = action.icon
+              return (
+                <button
+                  key={index}
+                  onClick={() => sendMessage(action.action)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-violet-500" />
+                  <span>{action.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        <div className="flex-1 p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Capabilities</h3>
-          <div className="space-y-3 text-sm text-gray-500">
-            <div className="flex items-start space-x-2">
-              <span className="text-violet-500">•</span>
-              <span>Task management & prioritization</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-violet-500">•</span>
-              <span>Document analysis & summarization</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-violet-500">•</span>
-              <span>Meeting transcription & notes</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-violet-500">•</span>
-              <span>Smart scheduling & reminders</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-violet-500">•</span>
-              <span>File organization & search</span>
-            </div>
+        <div className="flex-1 p-4 overflow-y-auto">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Capabilities</h3>
+          <div className="space-y-3">
+            {capabilities.map((capability, index) => {
+              const Icon = capability.icon
+              return (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{capability.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{capability.desc}</p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-100">
-          <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             <Settings className="w-4 h-4" />
             <span className="text-sm">Settings</span>
           </button>
@@ -229,26 +416,21 @@ export default function LisaChatPage() {
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Chat Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">Chat with Lisa</h1>
-            <div className="flex items-center space-x-2">
-              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Chat with Lisa</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Your intelligent AI assistant</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <Mic className="w-5 h-5" />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={(e) => handleFileSelect(e.target.files)}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Paperclip className="w-5 h-5" />
+              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <Phone className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <BookOpen className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -257,35 +439,59 @@ export default function LisaChatPage() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex max-w-2xl ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.role === 'user'
-                    ? 'bg-gray-200'
-                    : 'bg-gradient-to-br from-violet-500 to-purple-600'
-                }`}>
-                  {message.role === 'user' ? (
-                    <User className="w-4 h-4 text-gray-600" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-white" />
-                  )}
-                </div>
-                <div className={`px-4 py-2 rounded-2xl ${
-                  message.role === 'user'
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white ml-3'
-                    : 'bg-white border border-gray-200 text-gray-800 mr-3'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  {message.timestamp && (
-                    <p className={`text-xs mt-1 ${
-                      message.role === 'user' ? 'text-violet-100' : 'text-gray-400'
+            <div key={index}>
+              <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex max-w-3xl ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    message.role === 'user'
+                      ? 'bg-gray-200 dark:bg-gray-700'
+                      : 'bg-gradient-to-br from-violet-500 to-purple-600'
+                  }`}>
+                    {message.role === 'user' ? (
+                      <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    ) : (
+                      <Bot className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <div className={`px-4 py-3 rounded-2xl ${
+                      message.role === 'user'
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200'
                     }`}>
-                      {new Date(message.timestamp).toLocaleTimeString()}
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {message.attachments.map((file, i) => (
+                            <div key={i} className={`flex items-center gap-2 text-xs ${
+                              message.role === 'user' ? 'text-violet-100' : 'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                              <span>{file.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-xs mt-1 ${
+                      message.role === 'user' ? 'text-gray-500 dark:text-gray-400 text-right' : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                  )}
+                    {message.suggestions && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, i) => (
+                          <button
+                            key={i}
+                            onClick={() => sendMessage(suggestion)}
+                            className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -293,12 +499,12 @@ export default function LisaChatPage() {
 
           {isTyping && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3">
+              <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl">
-                  <div className="flex space-x-1">
+                <div className="px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl">
+                  <div className="flex gap-1">
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -312,21 +518,21 @@ export default function LisaChatPage() {
         </div>
 
         {/* Input Area */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
           {/* Attached Files Display */}
           {attachedFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
               {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-lg">
+                <div key={index} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                   {file.type.startsWith('image/') ? (
-                    <ImageIcon className="w-4 h-4 text-gray-500" />
+                    <ImageIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   ) : (
-                    <FileText className="w-4 h-4 text-gray-500" />
+                    <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   )}
-                  <span className="text-sm text-gray-700">{file.name}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{file.name}</span>
                   <button
                     onClick={() => removeAttachedFile(index)}
-                    className="text-gray-400 hover:text-red-500"
+                    className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -335,46 +541,43 @@ export default function LisaChatPage() {
             </div>
           )}
 
-          <div className="flex items-end space-x-3">
+          <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                placeholder="Ask Lisa anything..."
+                className="w-full px-4 py-3 pr-12 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
                 rows={1}
                 style={{ minHeight: '48px', maxHeight: '120px' }}
               />
               <input
-                ref={textareaFileInputRef}
+                ref={fileInputRef}
                 type="file"
                 multiple
                 onChange={(e) => handleFileSelect(e.target.files)}
                 className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt"
+                accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
               />
               <button
-                onClick={() => textareaFileInputRef.current?.click()}
-                className="absolute right-2 bottom-3 p-1 text-gray-400 hover:text-gray-600"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute right-3 bottom-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
             </div>
             <button
-              onClick={sendMessage}
-              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-              className="p-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              onClick={() => sendMessage()}
+              disabled={!input.trim() && attachedFiles.length === 0}
+              className="p-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
-                <Loader className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
+              <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Lisa can help with tasks, documents, scheduling, and more. Just ask!
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Lisa AI is here to help with tasks, analysis, scheduling, and more. No API key required!
           </p>
         </div>
       </div>
