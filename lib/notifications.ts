@@ -8,7 +8,7 @@ export const setNotificationInstance = (instance: ReturnType<typeof useNotificat
 }
 
 export const notify = {
-  success: (title: string, message?: string, options?: any) => {
+  success: (title: string, message?: string, options?: unknown) => {
     if (notificationInstance) {
       notificationInstance.showNotification({
         type: 'success',
@@ -18,7 +18,7 @@ export const notify = {
       })
     }
   },
-  error: (title: string, message?: string, options?: any) => {
+  error: (title: string, message?: string, options?: unknown) => {
     if (notificationInstance) {
       notificationInstance.showNotification({
         type: 'error',
@@ -28,7 +28,7 @@ export const notify = {
       })
     }
   },
-  warning: (title: string, message?: string, options?: any) => {
+  warning: (title: string, message?: string, options?: unknown) => {
     if (notificationInstance) {
       notificationInstance.showNotification({
         type: 'warning',
@@ -38,7 +38,7 @@ export const notify = {
       })
     }
   },
-  info: (title: string, message?: string, options?: any) => {
+  info: (title: string, message?: string, options?: unknown) => {
     if (notificationInstance) {
       notificationInstance.showNotification({
         type: 'info',

@@ -7,8 +7,8 @@ import { notifications } from '@/lib/notifications'
 import {
   Upload, FolderPlus, Search, Grid, List, Trash2, Share2, Download,
   MoreVertical, File, Image as ImageIcon, FileText, Video, Music, Archive,
-  ChevronRight, Home, Star, Clock, HardDrive, Link2, Users, Lock,
-  Eye, Edit3, Copy, Move, Info, X, Check, FolderOpen, ChevronDown
+  ChevronRight, Home, Star, Clock, HardDrive, Link2, Users,
+  Eye, Edit3, Copy, Move, X, FolderOpen, ChevronDown
 } from 'lucide-react'
 
 interface FileItem {
@@ -39,7 +39,7 @@ interface BreadcrumbItem {
 }
 
 export default function FilesPage() {
-  const { showNotification } = useNotifications()
+  const { } = useNotifications()
   const [files, setFiles] = useState<FileItem[]>([])
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
@@ -48,11 +48,10 @@ export default function FilesPage() {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null)
-  const [shareModalFile, setShareModalFile] = useState<FileItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent' | 'shared' | 'trash'>('all')
-  const [sortBy, setSortBy] = useState<'name' | 'modified' | 'size'>('modified')
+  const [sortBy] = useState<'name' | 'modified' | 'size'>('modified')
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null)
 
   // Load files from localStorage
@@ -336,7 +335,7 @@ export default function FilesPage() {
   }
 
   // Filter and sort files
-  let filteredFiles = files.filter(file => {
+  const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesFolder = currentFolderId ? file.parentId === currentFolderId : file.parentId === null
 

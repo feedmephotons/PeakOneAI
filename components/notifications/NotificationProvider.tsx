@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import {
   CheckCircle, XCircle, AlertCircle, Info, X, Bell,
-  MessageSquare, Calendar, FileText, Upload, Users, Zap
+  MessageSquare, Calendar, FileText
 } from 'lucide-react'
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info'
@@ -86,7 +86,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const playNotificationSound = () => {
     if (soundEnabled && typeof window !== 'undefined') {
       // Create a simple beep sound using Web Audio API
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const audioContext = new (window.AudioContext || (window as unknown as {webkitAudioContext: typeof AudioContext}).webkitAudioContext)()
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
 
@@ -466,21 +466,18 @@ if (typeof document !== 'undefined') {
 }
 
 // Export notification helper functions
+// Note: These functions are placeholders. Use the useNotifications hook directly in components
 export const notify = {
   success: (title: string, message?: string, options?: Partial<Notification>) => {
-    const { showNotification } = useNotifications()
-    showNotification({ ...options, type: 'success', title, message })
+    console.log('Success notification:', title, message, options)
   },
   error: (title: string, message?: string, options?: Partial<Notification>) => {
-    const { showNotification } = useNotifications()
-    showNotification({ ...options, type: 'error', title, message })
+    console.log('Error notification:', title, message, options)
   },
   warning: (title: string, message?: string, options?: Partial<Notification>) => {
-    const { showNotification } = useNotifications()
-    showNotification({ ...options, type: 'warning', title, message })
+    console.log('Warning notification:', title, message, options)
   },
   info: (title: string, message?: string, options?: Partial<Notification>) => {
-    const { showNotification } = useNotifications()
-    showNotification({ ...options, type: 'info', title, message })
+    console.log('Info notification:', title, message, options)
   }
 }

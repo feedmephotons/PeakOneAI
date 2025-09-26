@@ -6,7 +6,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import {
   ChevronRight, ChevronLeft, Check, Rocket, User, Bell,
   Palette, Shield, Zap, MessageSquare, FileText, Calendar,
-  Video, CheckCircle, X, ArrowRight
+  Video, CheckCircle, ArrowRight, Sun, Moon, Monitor, Mail, Smartphone
 } from 'lucide-react'
 
 interface OnboardingStep {
@@ -256,7 +256,7 @@ export const OnboardingFlow: React.FC = () => {
       component: (
         <div className="space-y-6">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Select the features you'd like to explore first. You can always enable more later.
+            Select the features you&apos;d like to explore first. You can always enable more later.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
@@ -348,7 +348,7 @@ export const OnboardingFlow: React.FC = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 z-50">
         <div className="text-center text-white">
           <Check className="w-16 h-16 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-2">You're all set!</h2>
+          <h2 className="text-3xl font-bold mb-2">You&apos;re all set!</h2>
           <p className="text-lg opacity-90">Redirecting to your workspace...</p>
         </div>
       </div>

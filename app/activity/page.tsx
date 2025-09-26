@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import {
-  FileText, MessageSquare, CheckCircle, Calendar, Video, Upload, Edit, Trash2, User,
-  TrendingUp, Activity, Clock, Users, Zap, Filter, Download, RefreshCw, BarChart3,
-  FolderOpen, Phone, Mail, Share2, Star, AlertCircle, ArrowUp, ArrowDown, Bot
+  FileText, MessageSquare, CheckCircle, Calendar, Upload, User,
+  Activity, Clock, Users, Download, RefreshCw,
+  Phone, Share2, ArrowUp, ArrowDown, Bot
 } from 'lucide-react'
 
 interface ActivityItem {
@@ -652,7 +652,7 @@ export default function ActivityPage() {
                                 </p>
                                 {activity.metadata?.preview && (
                                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    "{activity.metadata.preview}"
+                                    &quot;{activity.metadata.preview}&quot;
                                   </p>
                                 )}
                                 {activity.metadata?.aiSummary && (

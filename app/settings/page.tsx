@@ -711,7 +711,7 @@ export default function SettingsPage() {
                             checked={settings.privacy.profileVisibility === visibility}
                             onChange={(e) => setSettings({
                               ...settings,
-                              privacy: { ...settings.privacy, profileVisibility: e.target.value as any }
+                              privacy: { ...settings.privacy, profileVisibility: e.target.value as 'public' | 'team' | 'private' }
                             })}
                             className="w-4 h-4 text-purple-600 focus:ring-purple-500"
                           />

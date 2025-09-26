@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users,
-  Video, Calendar, Bell, X, Edit, Trash2
+  Video, Calendar, Bell, X, Trash2
 } from 'lucide-react'
 
 interface Event {

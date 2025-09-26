@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, Send, User, Bot, Mic, Paperclip, Settings, X, FileText,
   Image as ImageIcon, Calendar, CheckSquare, FileSearch, Brain,
-  TrendingUp, Users, Mail, Phone, Globe, Code, Database, Shield,
+  TrendingUp, Mail, Phone, Globe, Code, Database, Shield,
   Zap, BookOpen, Heart
 } from 'lucide-react'
 
