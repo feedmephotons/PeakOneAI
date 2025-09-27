@@ -113,8 +113,8 @@ export default function Mockup5() {
         <div className="max-w-5xl mx-auto px-8 py-24 text-center">
           <div className="w-16 h-px bg-amber-400 mx-auto mb-8"></div>
           <blockquote className="text-2xl font-light leading-relaxed mb-8 text-gray-300">
-            "Sovereign's AI capabilities have fundamentally transformed our operations.
-            The level of sophistication and support is unparalleled in the industry."
+            &quot;Sovereign&apos;s AI capabilities have fundamentally transformed our operations.
+            The level of sophistication and support is unparalleled in the industry.&quot;
           </blockquote>
           <cite className="text-sm text-amber-400 tracking-widest uppercase not-italic">
             Michael Chen • CEO, Global Finance Corp

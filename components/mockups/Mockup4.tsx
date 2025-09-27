@@ -126,9 +126,9 @@ export default function Mockup4() {
               <div className="text-green-400 mb-2"># Install</div>
               <div className="text-gray-300 mb-4">npm install @forge/ai</div>
               <div className="text-green-400 mb-2"># Initialize</div>
-              <div className="text-gray-300 mb-4">const ai = new Forge('api_key')</div>
+              <div className="text-gray-300 mb-4">const ai = new Forge(&apos;api_key&apos;)</div>
               <div className="text-green-400 mb-2"># Ship</div>
-              <div className="text-gray-300">await ai.complete('Build me something amazing')</div>
+              <div className="text-gray-300">await ai.complete(&apos;Build me something amazing&apos;)</div>
             </div>
           </div>
         </div>

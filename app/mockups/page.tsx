@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Grid3X3, Maximize2 } from 'lucide-react'
 
 // Import all mockup components
@@ -70,12 +71,12 @@ export default function MockupsPage() {
               </button>
             </div>
             {/* Close Button */}
-            <a
+            <Link
               href="/"
               className="text-gray-400 hover:text-white transition"
             >
               Back to App
-            </a>
+            </Link>
           </div>
         </div>
       </div>

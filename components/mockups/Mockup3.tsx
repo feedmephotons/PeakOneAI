@@ -103,8 +103,8 @@ export default function Mockup3() {
       <section className="bg-black text-white">
         <div className="max-w-4xl mx-auto px-6 py-32 text-center">
           <blockquote className="text-4xl font-serif italic leading-relaxed mb-8">
-            "Atlas represents a fundamental shift in how we think about artificial intelligence—
-            not as a tool, but as a partner in human progress."
+            &quot;Atlas represents a fundamental shift in how we think about artificial intelligence—
+            not as a tool, but as a partner in human progress.&quot;
           </blockquote>
           <cite className="text-sm font-light not-italic">
             Dr. Sarah Chen, Chief Technology Officer
