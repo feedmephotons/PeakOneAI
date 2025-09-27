@@ -99,7 +99,7 @@ export default function MockupsPage() {
             </div>
 
             {/* Navigation */}
-            <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/80 backdrop-blur-xl rounded-full px-6 py-3 border border-white/10">
+            <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4 bg-black/80 backdrop-blur-xl rounded-full px-6 py-3 border border-white/10">
               <button
                 onClick={previousMockup}
                 className="p-2 hover:bg-white/10 rounded-full transition"
