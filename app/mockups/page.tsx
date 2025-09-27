@@ -5,24 +5,24 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Grid3X3, Maximize2 } from 'lucide-react'
 
 // Import all mockup components
-import Mockup1 from '@/components/mockups/Mockup1'
-import Mockup2 from '@/components/mockups/Mockup2'
-import Mockup3 from '@/components/mockups/Mockup3'
-import Mockup4 from '@/components/mockups/Mockup4'
-import Mockup5 from '@/components/mockups/Mockup5'
-import Mockup6 from '@/components/mockups/Mockup6'
-import Mockup7 from '@/components/mockups/Mockup7'
-import Mockup8 from '@/components/mockups/Mockup8'
+import HomepageMockup1 from '@/components/mockups/HomepageMockup1'
+import HomepageMockup2 from '@/components/mockups/HomepageMockup2'
+import HomepageMockup3 from '@/components/mockups/HomepageMockup3'
+import HomepageMockup4 from '@/components/mockups/HomepageMockup4'
+import HomepageMockup5 from '@/components/mockups/HomepageMockup5'
+import HomepageMockup6 from '@/components/mockups/HomepageMockup6'
+import HomepageMockup7 from '@/components/mockups/HomepageMockup7'
+import HomepageMockup8 from '@/components/mockups/HomepageMockup8'
 
 const mockups = [
-  { id: 1, name: 'Monochrome Minimal', component: Mockup1, theme: 'Pure black & white with geometric shapes' },
-  { id: 2, name: 'Dark Gradient', component: Mockup2, theme: 'Subtle dark purple gradients with glass morphism' },
-  { id: 3, name: 'Editorial Clean', component: Mockup3, theme: 'Magazine-style typography focus' },
-  { id: 4, name: 'Tech Brutalist', component: Mockup4, theme: 'Bold, stark contrasts with sharp edges' },
-  { id: 5, name: 'Luxury Minimal', component: Mockup5, theme: 'Premium feel with gold accents' },
-  { id: 6, name: 'Swiss Design', component: Mockup6, theme: 'Grid-based, systematic layout' },
-  { id: 7, name: 'Neo-Morphic', component: Mockup7, theme: 'Soft shadows and depth' },
-  { id: 8, name: 'Future Vision', component: Mockup8, theme: 'Holographic effects and modern gradients' }
+  { id: 1, name: 'Monochrome Minimal', component: HomepageMockup1, theme: 'Pure black & white with geometric shapes' },
+  { id: 2, name: 'Dark Gradient', component: HomepageMockup2, theme: 'Subtle dark purple gradients with glass morphism' },
+  { id: 3, name: 'Editorial Clean', component: HomepageMockup3, theme: 'Magazine-style typography focus' },
+  { id: 4, name: 'Tech Brutalist', component: HomepageMockup4, theme: 'Bold, stark contrasts with sharp edges' },
+  { id: 5, name: 'Luxury Minimal', component: HomepageMockup5, theme: 'Premium feel with gold accents' },
+  { id: 6, name: 'Swiss Design', component: HomepageMockup6, theme: 'Grid-based, systematic layout' },
+  { id: 7, name: 'Neo-Morphic', component: HomepageMockup7, theme: 'Soft shadows and depth' },
+  { id: 8, name: 'Future Vision', component: HomepageMockup8, theme: 'Holographic effects and modern gradients' }
 ]
 
 export default function MockupsPage() {
