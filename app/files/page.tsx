@@ -454,10 +454,32 @@ export default function FilesPage() {
             >
               <Copy className="w-4 h-4" /> Copy
             </button>
-            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+            <button
+              onClick={() => {
+                const targetFolderId = prompt('Enter folder ID to move to (or leave empty for root):')
+                const updated = files.map(f =>
+                  f.id === contextMenu.file.id ? { ...f, parentId: targetFolderId || null } : f
+                )
+                setFiles(updated)
+                setContextMenu(null)
+                notifications.general.success('File moved successfully')
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            >
               <Move className="w-4 h-4" /> Move
             </button>
-            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (contextMenu.file.url) {
+                  const link = document.createElement('a')
+                  link.href = contextMenu.file.url
+                  link.download = contextMenu.file.name
+                  link.click()
+                }
+                setContextMenu(null)
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            >
               <Download className="w-4 h-4" /> Download
             </button>
             <hr className="my-2 border-gray-200 dark:border-gray-700" />
@@ -952,7 +974,17 @@ export default function FilesPage() {
                     </div>
                   )}
                   <div className="flex items-center justify-center gap-3 mt-6">
-                    <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (previewFile.url) {
+                          const link = document.createElement('a')
+                          link.href = previewFile.url
+                          link.download = previewFile.name
+                          link.click()
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2"
+                    >
                       <Download className="w-4 h-4" />
                       Download
                     </button>

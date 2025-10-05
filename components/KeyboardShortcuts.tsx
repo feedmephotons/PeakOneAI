@@ -3,9 +3,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useNotifications } from '@/components/notifications/NotificationProvider'
+import GlobalSearch from '@/components/search/GlobalSearch'
 import {
   Command, MessageSquare, FileText, CheckCircle, Video,
-  Calendar, Settings, HelpCircle, LogOut, Plus, Search
+  Calendar, Settings, HelpCircle, LogOut, Plus, Search, Clock
 } from 'lucide-react'
 
 interface Shortcut {
@@ -34,6 +35,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
   const router = useRouter()
   const { showNotification } = useNotifications()
   const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   const shortcuts: Shortcut[] = [
     {
@@ -42,20 +44,13 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
       metaKey: true,
       description: 'Open command palette',
       icon: <Command className="w-4 h-4" />,
-      action: () => {
-        // Trigger global search (already implemented)
-        const searchButton = document.querySelector('[data-search-trigger]') as HTMLElement
-        searchButton?.click()
-      }
+      action: () => setIsSearchOpen(true)
     },
     {
       key: '/',
       description: 'Focus search',
       icon: <Search className="w-4 h-4" />,
-      action: () => {
-        const searchInput = document.querySelector('[data-search-input]') as HTMLInputElement
-        searchInput?.focus()
-      }
+      action: () => setIsSearchOpen(true)
     },
     {
       key: 'h',
@@ -113,19 +108,53 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
       action: () => router.push('/settings')
     },
     {
+      key: 'm',
+      ctrlKey: true,
+      metaKey: true,
+      description: 'Go to Messages',
+      icon: <MessageSquare className="w-4 h-4" />,
+      action: () => router.push('/messages')
+    },
+    {
+      key: 'a',
+      ctrlKey: true,
+      metaKey: true,
+      description: 'Go to Activity',
+      icon: <Clock className="w-4 h-4" />,
+      action: () => router.push('/activity')
+    },
+    {
+      key: 'p',
+      ctrlKey: true,
+      metaKey: true,
+      description: 'Go to Phone',
+      action: () => router.push('/phone')
+    },
+    {
       key: 'n',
       ctrlKey: true,
       metaKey: true,
-      description: 'Create new...',
+      description: 'New Task',
       icon: <Plus className="w-4 h-4" />,
-      action: () => {
-        showNotification({
-          type: 'info',
-          title: 'Quick Create',
-          message: 'Press T for Task, F for File, E for Event',
-          duration: 3000
-        })
-      }
+      action: () => router.push('/tasks?action=new')
+    },
+    {
+      key: 'n',
+      ctrlKey: true,
+      metaKey: true,
+      shiftKey: true,
+      description: 'New File',
+      icon: <FileText className="w-4 h-4" />,
+      action: () => router.push('/files?action=new')
+    },
+    {
+      key: 'e',
+      ctrlKey: true,
+      metaKey: true,
+      shiftKey: true,
+      description: 'New Event',
+      icon: <Calendar className="w-4 h-4" />,
+      action: () => router.push('/calendar?action=new')
     },
     {
       key: '?',
@@ -176,6 +205,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
   return (
     <KeyboardShortcutsContext.Provider value={{ shortcuts, isHelpOpen, setIsHelpOpen }}>
       {children}
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <ShortcutsHelp />
     </KeyboardShortcutsContext.Provider>
   )
