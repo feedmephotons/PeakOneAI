@@ -43,7 +43,7 @@ export default function DataManager() {
         message: `Your data has been exported to ${filename}`,
         duration: 3000
       })
-    } catch (error) {
+    } catch {
       showNotification({
         type: 'error',
         title: 'Export Failed',
@@ -73,7 +73,7 @@ export default function DataManager() {
       } else {
         throw new Error('Import failed')
       }
-    } catch (error) {
+    } catch {
       showNotification({
         type: 'error',
         title: 'Import Failed',

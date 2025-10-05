@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Repeat, Calendar as CalendarIcon, X } from 'lucide-react'
+import { Repeat, X } from 'lucide-react'
 
 export interface RecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'

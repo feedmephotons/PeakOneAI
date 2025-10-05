@@ -2,11 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useNotifications } from '@/components/notifications/NotificationProvider'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import {
   Command, MessageSquare, FileText, CheckCircle, Video,
-  Calendar, Settings, HelpCircle, LogOut, Plus, Search, Clock
+  Calendar, Settings, HelpCircle, Plus, Search, Clock
 } from 'lucide-react'
 
 interface Shortcut {
@@ -33,7 +32,6 @@ export const useKeyboardShortcuts = () => useContext(KeyboardShortcutsContext)
 
 export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
-  const { showNotification } = useNotifications()
   const [isHelpOpen, setIsHelpOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 

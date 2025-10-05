@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
 import { useNotifications } from '@/components/notifications/NotificationProvider'
 import { notifications } from '@/lib/notifications'
@@ -608,7 +609,7 @@ export default function FilesPage() {
                 >
                   <Home className="w-4 h-4" />
                 </button>
-                {breadcrumbs.map((crumb, index) => (
+                {breadcrumbs.map((crumb) => (
                   <React.Fragment key={crumb.id}>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                     <button
@@ -718,7 +719,7 @@ export default function FilesPage() {
                         file.type === 'folder' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700'
                       }`}>
                         {file.thumbnailUrl ? (
-                          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded" />
+                          <Image src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded" width={300} height={200} />
                         ) : (
                           <div className={`${
                             file.type === 'folder' ? 'text-blue-500' : 'text-gray-400'
@@ -947,11 +948,16 @@ export default function FilesPage() {
             </div>
             <div className="p-8 overflow-auto max-h-[calc(90vh-80px)]">
               {previewFile.thumbnailUrl || previewFile.mimeType?.startsWith('image/') ? (
-                <img
-                  src={previewFile.thumbnailUrl || previewFile.url}
-                  alt={previewFile.name}
-                  className="max-w-full mx-auto rounded-lg"
-                />
+                <div className="relative w-full min-h-[400px]">
+                  <Image
+                    src={previewFile.thumbnailUrl || previewFile.url || ''}
+                    alt={previewFile.name}
+                    className="max-w-full mx-auto rounded-lg"
+                    width={800}
+                    height={600}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">

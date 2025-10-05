@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   TrendingUp, TrendingDown, Activity, FileText, CheckSquare, Calendar,
-  MessageSquare, Clock, Users, BarChart3, PieChart, Target
+  MessageSquare, Clock, BarChart3, PieChart, Target
 } from 'lucide-react'
 
 interface AnalyticsData {

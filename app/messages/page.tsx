@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Search, Plus, Send, Paperclip, Phone, Video, MoreVertical,
-  Hash, Lock, Users, Circle, Star, Settings, Smile, Image,
-  File, Mic, X, Check, Bell, BellOff
+  Hash, Users, Star, Smile, Image,
+  File, Mic, BellOff
 } from 'lucide-react'
 
 interface Message {

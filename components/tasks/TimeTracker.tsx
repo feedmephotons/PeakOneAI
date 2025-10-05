@@ -15,7 +15,7 @@ interface TimeTrackerProps {
   taskTitle: string
 }
 
-export default function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
+export default function TimeTracker({ taskId }: TimeTrackerProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [entries, setEntries] = useState<TimeEntry[]>([])

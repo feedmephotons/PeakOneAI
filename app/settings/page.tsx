@@ -1,14 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useNotifications } from '@/components/notifications/NotificationProvider'
-import { notifications } from '@/lib/notifications'
+import Image from 'next/image'
 import {
-  User, Mail, Phone, MapPin, Globe, Camera, Shield, Bell, Moon, Sun,
-  Monitor, Palette, Key, Lock, LogOut, Trash2, Download, Upload,
-  Save, X, Check, AlertCircle, Eye, EyeOff, Settings2, ChevronRight,
-  Smartphone, Laptop, Languages, Volume2, Mic, Video as VideoIcon,
-  Wifi, Battery, Zap, HardDrive, Database, Cloud, CreditCard
+  User, Camera, Shield, Bell, Moon, Sun,
+  Monitor, Palette, Trash2, Download, Upload,
+  Save, Eye, EyeOff, Settings2, ChevronRight,
+  Database, CreditCard
 } from 'lucide-react'
 
 interface UserProfile {
@@ -74,7 +72,6 @@ const TABS = [
 ]
 
 export default function SettingsPage() {
-  const { showNotification } = useNotifications()
   const [activeTab, setActiveTab] = useState('profile')
   const [profile, setProfile] = useState<UserProfile>({
     id: '1',
@@ -243,7 +240,7 @@ export default function SettingsPage() {
           if (data.profile) setProfile(data.profile)
           if (data.settings) setSettings(data.settings)
           handleSave()
-        } catch (error) {
+        } catch {
           alert('Invalid file format')
         }
       }
@@ -313,10 +310,12 @@ export default function SettingsPage() {
                   {/* Avatar */}
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <img
+                      <Image
                         src={profile.avatar || `https://ui-avatars.com/api/?name=${profile.name}&background=6366f1&color=fff`}
                         alt={profile.name}
                         className="w-24 h-24 rounded-full object-cover"
+                        width={96}
+                        height={96}
                       />
                       <label className="absolute bottom-0 right-0 p-1 bg-white dark:bg-gray-700 rounded-full shadow-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
                         <Camera className="w-4 h-4 text-gray-600 dark:text-gray-400" />
