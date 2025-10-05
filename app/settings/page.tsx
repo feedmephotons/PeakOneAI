@@ -6,7 +6,7 @@ import {
   User, Camera, Shield, Bell, Moon, Sun,
   Monitor, Palette, Trash2, Download, Upload,
   Save, Eye, EyeOff, Settings2, ChevronRight,
-  Database, CreditCard
+  Database, CreditCard, Check
 } from 'lucide-react'
 
 interface UserProfile {

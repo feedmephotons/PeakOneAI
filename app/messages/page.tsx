@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Search, Plus, Send, Paperclip, Phone, Video, MoreVertical,
-  Hash, Users, Star, Smile, Image,
+  Hash, Users, Star, Smile, Image as ImageIcon,
   File, Mic, BellOff
 } from 'lucide-react'
 
@@ -522,7 +522,7 @@ export default function MessagesPage() {
                 accept="image/*,.pdf,.doc,.docx,.txt"
               />
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-                <Image className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex-1 relative">
                 <input
@@ -715,7 +715,7 @@ function MessageBubble({
         ) : message.type === 'image' ? (
           <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
             <div className="w-64 h-48 bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-              <Image className="w-12 h-12 text-gray-400" />
+              <ImageIcon className="w-12 h-12 text-gray-400" />
             </div>
             <div className="px-3 py-2">
               <p className="text-xs text-gray-600 dark:text-gray-400">{message.fileName}</p>
