@@ -31,11 +31,11 @@ function MainActionCard({ icon, title, subtitle, href, gradient, onClick, delay 
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Gradient border */}
-      <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-100`} />
-      <div className="absolute inset-[1px] bg-white rounded-2xl" />
+      <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-100 pointer-events-none`} />
+      <div className="absolute inset-[1px] bg-white rounded-2xl pointer-events-none" />
 
       {/* Hover overlay */}
-      <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
+      <div className={`absolute inset-0 rounded-2xl ${gradient} opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none`} />
 
       <div className="relative z-10">
         <div className={`inline-flex p-4 rounded-2xl ${gradient} mb-6`}>
