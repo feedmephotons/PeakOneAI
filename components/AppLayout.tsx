@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { NotificationProvider } from '@/components/notifications/NotificationProvider'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { KeyboardShortcutsProvider } from '@/components/KeyboardShortcuts'
+import KeyboardShortcutsHint from './KeyboardShortcutsHint'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -25,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {children}
             </main>
+            <KeyboardShortcutsHint />
           </div>
         </KeyboardShortcutsProvider>
       </NotificationProvider>
