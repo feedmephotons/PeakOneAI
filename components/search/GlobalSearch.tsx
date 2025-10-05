@@ -24,7 +24,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
 
-  const quickActions: SearchResult[] = [
+  const quickActions: SearchResult[] = React.useMemo(() => [
     {
       id: 'new-file',
       type: 'action',
@@ -115,7 +115,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         onClose()
       }
     }
-  ]
+  ], [router, onClose])
 
   const searchAllModules = useCallback((searchQuery: string): SearchResult[] => {
     if (!searchQuery.trim()) {
