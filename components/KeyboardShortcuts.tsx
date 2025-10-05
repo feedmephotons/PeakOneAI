@@ -175,9 +175,17 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
+      // Don't trigger shortcuts when typing in inputs or interacting with interactive elements
       const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.tagName === 'BUTTON' ||
+        target.tagName === 'A' ||
+        target.contentEditable === 'true' ||
+        target.isContentEditable
+      ) {
         // Allow Escape to work in inputs
         if (e.key !== 'Escape') return
       }
