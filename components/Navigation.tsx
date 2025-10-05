@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import GlobalSearch from './GlobalSearch'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
 import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity } from 'lucide-react'
@@ -75,9 +74,8 @@ export default function Navigation() {
             </div>
           </div>
 
-          {/* Right side - Search, Org Switcher, Notifications, Dark mode and User */}
+          {/* Right side - Org Switcher, Notifications, Dark mode and User */}
           <div className="flex items-center gap-4">
-            <GlobalSearch />
             {OrganizationSwitcher && (
               <OrganizationSwitcher
                 appearance={{
