@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import {
@@ -35,7 +35,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
   const [isHelpOpen, setIsHelpOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  const shortcuts: Shortcut[] = [
+  const shortcuts: Shortcut[] = useMemo(() => [
     {
       key: 'k',
       ctrlKey: true,
@@ -171,7 +171,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
         closeButtons.forEach(button => (button as HTMLElement).click())
       }
     }
-  ]
+  ], [router, setIsHelpOpen, setIsSearchOpen])
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -184,7 +184,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
 
       const matchingShortcut = shortcuts.find(shortcut => {
         const keyMatch = shortcut.key.toLowerCase() === e.key.toLowerCase()
-        const ctrlMatch = shortcut.ctrlKey ? (e.ctrlKey || e.metaKey) : true
+        const ctrlMatch = shortcut.ctrlKey || shortcut.metaKey ? (e.ctrlKey || e.metaKey) : !e.ctrlKey && !e.metaKey
         const shiftMatch = shortcut.shiftKey ? e.shiftKey : !e.shiftKey
 
         return keyMatch && ctrlMatch && shiftMatch
