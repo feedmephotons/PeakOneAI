@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity } from 'lucide-react'
+import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity, Search } from 'lucide-react'
+import { useKeyboardShortcuts } from './KeyboardShortcuts'
 
 // Conditionally import Clerk components only if available
 let OrganizationSwitcher: React.ComponentType<{
@@ -39,6 +40,7 @@ const navItems = [
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { openSearch } = useKeyboardShortcuts()
 
   return (
     <nav className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
@@ -74,8 +76,16 @@ export default function Navigation() {
             </div>
           </div>
 
-          {/* Right side - Org Switcher, Notifications, Dark mode and User */}
+          {/* Right side - Search, Org Switcher, Notifications, Dark mode and User */}
           <div className="flex items-center gap-4">
+            <button
+              onClick={openSearch}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden md:inline">Search</span>
+              <kbd className="hidden md:inline px-1.5 py-0.5 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">⌘K</kbd>
+            </button>
             {OrganizationSwitcher && (
               <OrganizationSwitcher
                 appearance={{

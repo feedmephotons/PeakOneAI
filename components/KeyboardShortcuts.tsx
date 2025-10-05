@@ -22,10 +22,12 @@ const KeyboardShortcutsContext = createContext<{
   shortcuts: Shortcut[]
   isHelpOpen: boolean
   setIsHelpOpen: (open: boolean) => void
+  openSearch: () => void
 }>({
   shortcuts: [],
   isHelpOpen: false,
-  setIsHelpOpen: () => {}
+  setIsHelpOpen: () => {},
+  openSearch: () => {}
 })
 
 export const useKeyboardShortcuts = () => useContext(KeyboardShortcutsContext)
@@ -209,7 +211,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
   }, [shortcuts])
 
   return (
-    <KeyboardShortcutsContext.Provider value={{ shortcuts, isHelpOpen, setIsHelpOpen }}>
+    <KeyboardShortcutsContext.Provider value={{ shortcuts, isHelpOpen, setIsHelpOpen, openSearch: () => setIsSearchOpen(true) }}>
       {children}
       <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <ShortcutsHelp />
