@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import TaskCard from './TaskCard'
 import { Task } from '@/app/tasks/page'
 
@@ -15,8 +16,36 @@ interface TaskColumnProps {
 }
 
 export default function TaskColumn({ column, tasks, onUpdateStatus, onDeleteTask }: TaskColumnProps) {
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    const taskId = e.dataTransfer.getData('taskId')
+    if (taskId) {
+      onUpdateStatus(taskId, column.id as Task['status'])
+    }
+  }
+
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[600px]">
+    <div
+      className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[600px] transition-colors ${
+        isDragOver ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={`w-3 h-3 ${column.color} rounded-full`} />

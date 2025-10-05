@@ -43,8 +43,17 @@ export default function TaskCard({ task, onUpdateStatus, onDelete }: TaskCardPro
     'COMPLETED': 'TODO' as const
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('taskId', task.id)
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all group relative">
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all group relative cursor-move"
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
