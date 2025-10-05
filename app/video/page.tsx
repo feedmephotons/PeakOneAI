@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import VideoCall from '@/components/video/VideoCall';
 
 interface Meeting {
   id: string;
@@ -31,6 +32,8 @@ export default function VideoPage() {
   const [joinCode, setJoinCode] = useState('');
   const [selectedView, setSelectedView] = useState<'meetings' | 'recordings'>('meetings');
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [inCall, setInCall] = useState(false);
+  const [activeMeetingId, setActiveMeetingId] = useState<string>('');
 
   const todayMeetings: Meeting[] = [
     { id: '1', title: 'Daily Standup', time: '10:00 AM', participants: 8, status: 'completed', hasAI: true, duration: '15 min' },
@@ -100,7 +103,10 @@ export default function VideoPage() {
         <div className="flex space-x-2">
           {meeting.status === 'live' && (
             <button
-              onClick={() => window.location.href = `/video/room/${meeting.id}`}
+              onClick={() => {
+                setActiveMeetingId(meeting.id)
+                setInCall(true)
+              }}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium">
               Join Now
             </button>
@@ -108,7 +114,10 @@ export default function VideoPage() {
           {meeting.status === 'upcoming' && (
             <>
               <button
-                onClick={() => window.location.href = `/video/room/${meeting.id}`}
+                onClick={() => {
+                  setActiveMeetingId(meeting.id)
+                  setInCall(true)
+                }}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
                 Start Meeting
               </button>
@@ -188,6 +197,31 @@ export default function VideoPage() {
     </div>
   );
 
+  const startInstantMeeting = () => {
+    const meetingId = `meet-${Math.random().toString(36).substr(2, 9)}`
+    setActiveMeetingId(meetingId)
+    setInCall(true)
+  }
+
+  const joinMeetingWithCode = () => {
+    if (joinCode.trim()) {
+      setActiveMeetingId(joinCode)
+      setInCall(true)
+      setShowJoinModal(false)
+      setJoinCode('')
+    }
+  }
+
+  const handleLeaveCall = () => {
+    setInCall(false)
+    setActiveMeetingId('')
+  }
+
+  // Show video call interface when in a call
+  if (inCall && activeMeetingId) {
+    return <VideoCall meetingId={activeMeetingId} onLeave={handleLeaveCall} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -207,10 +241,7 @@ export default function VideoPage() {
                 Schedule Meeting
               </button>
               <button
-                onClick={() => {
-                  const roomId = Math.random().toString(36).substring(2, 9);
-                  window.location.href = `/video/room/${roomId}`;
-                }}
+                onClick={startInstantMeeting}
                 className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -438,15 +469,7 @@ export default function VideoPage() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (joinCode) {
-                    // Extract room ID from link if full URL is provided
-                    const roomId = joinCode.includes('/')
-                      ? joinCode.split('/').pop()
-                      : joinCode;
-                    window.location.href = `/video/room/${roomId}`;
-                  }
-                }}
+                onClick={joinMeetingWithCode}
                 className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium"
               >
                 Join Meeting
