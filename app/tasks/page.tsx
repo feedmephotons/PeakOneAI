@@ -15,6 +15,8 @@ import TemplateManager from '@/components/templates/TemplateManager'
 import AdvancedSearch from '@/components/search/AdvancedSearch'
 import SavedSearches from '@/components/search/SavedSearches'
 import { SearchQuery, advancedSearch, SearchableItem } from '@/lib/search'
+import AutomationManager from '@/components/automation/AutomationManager'
+import { automationEngine } from '@/lib/automation'
 
 export interface Task {
   id: string
@@ -53,6 +55,7 @@ export default function TasksPage() {
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false)
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)
   const [isSavedSearchesOpen, setIsSavedSearchesOpen] = useState(false)
+  const [isAutomationManagerOpen, setIsAutomationManagerOpen] = useState(false)
   const [activeSearchQuery, setActiveSearchQuery] = useState<SearchQuery | null>(null)
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -161,6 +164,16 @@ export default function TasksPage() {
 
     setTasks([...tasks, task])
     notifications.task.created(newTask.title)
+
+    // Trigger automation
+    automationEngine.executeRules('task_created', {
+      taskId: task.id,
+      title: task.title,
+      priority: task.priority,
+      status: task.status,
+      itemId: taskId,
+      itemType: 'task'
+    })
   }
 
   const handleUpdateTaskStatus = (taskId: string, newStatus: Task['status']) => {
@@ -170,8 +183,27 @@ export default function TasksPage() {
         ? { ...task, status: newStatus, updatedAt: new Date() }
         : task
     ))
-    if (task && newStatus === 'COMPLETED') {
-      notifications.task.completed(task.title)
+    if (task) {
+      if (newStatus === 'COMPLETED') {
+        notifications.task.completed(task.title)
+
+        // Trigger completion automation
+        automationEngine.executeRules('task_completed', {
+          taskId: task.id,
+          title: task.title,
+          priority: task.priority,
+          status: newStatus
+        })
+      }
+
+      // Trigger status change automation
+      automationEngine.executeRules('task_status_changed', {
+        taskId: task.id,
+        title: task.title,
+        priority: task.priority,
+        status: newStatus,
+        oldStatus: task.status
+      })
     }
   }
 
@@ -333,6 +365,17 @@ export default function TasksPage() {
               <Star className="w-4 h-4" />
             </button>
 
+            {/* Automation */}
+            <button
+              onClick={() => setIsAutomationManagerOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
+              title="Automation"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </button>
+
             {/* Create button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -403,6 +446,12 @@ export default function TasksPage() {
           onClose={() => setIsSavedSearchesOpen(false)}
           onSelectSearch={handleSavedSearchSelect}
           entityType="task"
+        />
+
+        {/* Automation Manager Modal */}
+        <AutomationManager
+          isOpen={isAutomationManagerOpen}
+          onClose={() => setIsAutomationManagerOpen(false)}
         />
       </div>
     </div>
