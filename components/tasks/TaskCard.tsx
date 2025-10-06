@@ -8,9 +8,11 @@ interface TaskCardProps {
   task: Task
   onUpdateStatus: (taskId: string, newStatus: Task['status']) => void
   onDelete: (taskId: string) => void
+  isSelected?: boolean
+  onToggleSelect?: (taskId: string) => void
 }
 
-export default function TaskCard({ task, onUpdateStatus, onDelete }: TaskCardProps) {
+export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, onToggleSelect }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   const getPriorityColor = (priority: Task['priority']) => {
@@ -52,10 +54,25 @@ export default function TaskCard({ task, onUpdateStatus, onDelete }: TaskCardPro
     <div
       draggable
       onDragStart={handleDragStart}
-      className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all group relative cursor-move"
+      className={`bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border transition-all group relative cursor-move ${
+        isSelected ? 'border-purple-500 ring-2 ring-purple-200 dark:ring-purple-900/50' : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
+      }`}
     >
+      {/* Selection checkbox */}
+      {onToggleSelect && (
+        <div className="absolute top-2 left-2 z-10">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(task.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer"
+          />
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-2">
+      <div className={`flex items-start justify-between mb-2 ${onToggleSelect ? 'ml-6' : ''}`}>
         <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
           {task.title}
         </h4>
