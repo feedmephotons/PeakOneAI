@@ -11,7 +11,7 @@ import ActivityFeedWidget from './widgets/ActivityFeedWidget'
 import AnalyticsWidget from './widgets/AnalyticsWidget'
 
 export default function CustomizableDashboard() {
-  const [layout, setLayout] = useState(dashboardManager.getActiveLayout())
+  const [layout, setLayout] = useState<ReturnType<typeof dashboardManager.getActiveLayout> | null>(null)
   const [isWidgetPickerOpen, setIsWidgetPickerOpen] = useState(false)
   const [draggingWidget, setDraggingWidget] = useState<string | null>(null)
 
@@ -20,16 +20,19 @@ export default function CustomizableDashboard() {
   }, [])
 
   const handleAddWidget = (type: WidgetType) => {
+    if (!layout) return
     const widget = dashboardManager.addWidget(layout.id, type)
     setLayout(dashboardManager.getActiveLayout())
   }
 
   const handleRemoveWidget = (widgetId: string) => {
+    if (!layout) return
     dashboardManager.removeWidget(layout.id, widgetId)
     setLayout(dashboardManager.getActiveLayout())
   }
 
   const handleMoveWidget = (widgetId: string, newPosition: { x: number; y: number }) => {
+    if (!layout) return
     dashboardManager.updateWidget(layout.id, widgetId, { position: newPosition })
     setLayout(dashboardManager.getActiveLayout())
   }
@@ -51,6 +54,18 @@ export default function CustomizableDashboard() {
           </div>
         )
     }
+  }
+
+  if (!layout) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

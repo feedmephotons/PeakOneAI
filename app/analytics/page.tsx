@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { analytics } from '@/lib/analytics'
 import LineChart from '@/components/charts/LineChart'
 import BarChart from '@/components/charts/BarChart'
@@ -8,6 +9,24 @@ import ActivityHeatmap from '@/components/charts/ActivityHeatmap'
 import { TrendingUp, TrendingDown, Minus, Download } from 'lucide-react'
 
 export default function AnalyticsPage() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Loading analytics...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const metrics = analytics.getProductivityMetrics()
   const taskTrend = analytics.getTaskCompletionTrend(30)
   const tasksByStatus = analytics.getTasksByStatus()

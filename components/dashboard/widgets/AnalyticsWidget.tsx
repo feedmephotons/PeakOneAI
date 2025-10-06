@@ -1,10 +1,21 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { analytics } from '@/lib/analytics'
 import LineChart from '@/components/charts/LineChart'
 import PieChart from '@/components/charts/PieChart'
 
 export default function AnalyticsWidget() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <div className="text-gray-500 text-sm">Loading...</div>
+  }
+
   const taskTrend = analytics.getTaskCompletionTrend(7)
   const tasksByStatus = analytics.getTasksByStatus()
 
