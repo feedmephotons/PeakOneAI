@@ -11,6 +11,7 @@ import TagManager from '@/components/tags/TagManager'
 import { tagManager } from '@/lib/tags'
 import BulkActionBar from '@/components/bulk/BulkActionBar'
 import { bulkOperationUtils } from '@/lib/bulk-operations'
+import TemplateManager from '@/components/templates/TemplateManager'
 
 export interface Task {
   id: string
@@ -46,6 +47,7 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState<string>('all')
   const [filterTagIds, setFilterTagIds] = useState<string[]>([])
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false)
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
@@ -338,6 +340,13 @@ export default function TasksPage() {
         <TagManager
           isOpen={isTagManagerOpen}
           onClose={() => setIsTagManagerOpen(false)}
+        />
+
+        {/* Template Manager Modal */}
+        <TemplateManager
+          isOpen={isTemplateManagerOpen}
+          onClose={() => setIsTemplateManagerOpen(false)}
+          type="task"
         />
       </div>
     </div>

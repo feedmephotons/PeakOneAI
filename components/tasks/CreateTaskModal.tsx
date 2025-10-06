@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { X, Calendar, Flag } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
 import TagSelector from '@/components/tags/TagSelector'
+import TemplateSelector from '@/components/templates/TemplateSelector'
+import TemplateManager from '@/components/templates/TemplateManager'
 
 interface CreateTaskModalProps {
   onClose: () => void
@@ -19,6 +21,21 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
     dueDate: '',
     tagIds: [] as string[],
   })
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false)
+
+  const handleTemplateSelect = (content: string) => {
+    // Parse the template content and populate form fields
+    // Templates typically have title on first line, then description
+    const lines = content.split('\n')
+    const title = lines[0] || ''
+    const description = lines.slice(1).join('\n').trim()
+
+    setFormData({
+      ...formData,
+      title,
+      description
+    })
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +68,19 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
+            {/* Template Selector */}
+            <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                Start with a template to save time
+              </p>
+              <TemplateSelector
+                type="task"
+                onSelect={handleTemplateSelect}
+                onOpenManager={() => setIsTemplateManagerOpen(true)}
+                className=""
+              />
+            </div>
+
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -167,6 +197,13 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
           </div>
         </form>
       </div>
+
+      {/* Template Manager Modal */}
+      <TemplateManager
+        isOpen={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        type="task"
+      />
     </div>
   )
 }
