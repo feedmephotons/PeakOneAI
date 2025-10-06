@@ -9,6 +9,8 @@ import { notifications } from '@/lib/notifications'
 import TagFilter from '@/components/tags/TagFilter'
 import TagManager from '@/components/tags/TagManager'
 import { tagManager } from '@/lib/tags'
+import BulkActionBar from '@/components/bulk/BulkActionBar'
+import { bulkOperationUtils } from '@/lib/bulk-operations'
 
 export interface Task {
   id: string
@@ -44,6 +46,7 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState<string>('all')
   const [filterTagIds, setFilterTagIds] = useState<string[]>([])
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
   // Load tasks from localStorage
@@ -176,6 +179,33 @@ export default function TasksPage() {
     }
   }
 
+  // Bulk operations
+  const handleToggleSelectTask = (taskId: string) => {
+    const newSelection = new Set(selectedTasks)
+    if (newSelection.has(taskId)) {
+      newSelection.delete(taskId)
+    } else {
+      newSelection.add(taskId)
+    }
+    setSelectedTasks(newSelection)
+  }
+
+  const handleBulkDelete = () => {
+    if (!bulkOperationUtils.confirmDelete(selectedTasks.size)) return
+
+    setTasks(tasks.filter(t => !selectedTasks.has(t.id)))
+    showNotification({
+      type: 'success',
+      title: 'Tasks deleted',
+      message: `${selectedTasks.size} task(s) removed`
+    })
+    setSelectedTasks(new Set())
+  }
+
+  const handleBulkTag = () => {
+    setIsTagManagerOpen(true)
+  }
+
   // Filter tasks based on search and priority
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -281,9 +311,20 @@ export default function TasksPage() {
               tasks={filteredTasks.filter(task => task.status === column.id)}
               onUpdateStatus={handleUpdateTaskStatus}
               onDeleteTask={handleDeleteTask}
+              selectedTasks={selectedTasks}
+              onToggleSelect={handleToggleSelectTask}
             />
           ))}
         </div>
+
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedTasks.size}
+          onClearSelection={() => setSelectedTasks(new Set())}
+          onDelete={handleBulkDelete}
+          onTag={handleBulkTag}
+          itemType="task"
+        />
 
         {/* Create Task Modal */}
         {isCreateModalOpen && (

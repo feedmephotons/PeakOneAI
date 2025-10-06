@@ -13,9 +13,11 @@ interface TaskColumnProps {
   tasks: Task[]
   onUpdateStatus: (taskId: string, newStatus: Task['status']) => void
   onDeleteTask: (taskId: string) => void
+  selectedTasks?: Set<string>
+  onToggleSelect?: (taskId: string) => void
 }
 
-export default function TaskColumn({ column, tasks, onUpdateStatus, onDeleteTask }: TaskColumnProps) {
+export default function TaskColumn({ column, tasks, onUpdateStatus, onDeleteTask, selectedTasks, onToggleSelect }: TaskColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -65,6 +67,8 @@ export default function TaskColumn({ column, tasks, onUpdateStatus, onDeleteTask
             task={task}
             onUpdateStatus={onUpdateStatus}
             onDelete={onDeleteTask}
+            isSelected={selectedTasks?.has(task.id)}
+            onToggleSelect={onToggleSelect}
           />
         ))}
       </div>
