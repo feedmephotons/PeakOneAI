@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, File, CheckSquare, MessageSquare, Calendar, User, Clock, ArrowRight } from 'lucide-react'
+import { Search, File, CheckSquare, MessageSquare, Calendar, User, Clock, ArrowRight, Calculator as CalcIcon, Repeat, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { calculate, parseConversionQuery, convert, snippetManager, commandHistory } from '@/lib/commands'
+import { useTheme } from 'next-themes'
 
 interface SearchResult {
   id: string
-  type: 'file' | 'task' | 'message' | 'event' | 'contact' | 'action'
+  type: 'file' | 'task' | 'message' | 'event' | 'contact' | 'action' | 'calculator' | 'conversion' | 'snippet'
   title: string
   subtitle?: string
   icon: React.ReactNode
@@ -124,6 +126,57 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
     const lowerQuery = searchQuery.toLowerCase()
     const matchingResults: SearchResult[] = []
+
+    // Calculator: detect mathematical expressions
+    const calcResult = calculate(searchQuery)
+    if (calcResult) {
+      matchingResults.push({
+        id: 'calc-result',
+        type: 'calculator',
+        title: `= ${calcResult}`,
+        subtitle: `Calculate ${searchQuery}`,
+        icon: <CalcIcon className="w-4 h-4" />,
+        action: () => {
+          navigator.clipboard.writeText(calcResult)
+          onClose()
+        }
+      })
+    }
+
+    // Unit Conversion: detect conversion patterns
+    const convQuery = parseConversionQuery(searchQuery)
+    if (convQuery) {
+      const convResult = convert(convQuery.value, convQuery.from, convQuery.to)
+      if (convResult !== null) {
+        matchingResults.push({
+          id: 'conv-result',
+          type: 'conversion',
+          title: `${convResult.toFixed(2)} ${convQuery.to}`,
+          subtitle: `Convert ${convQuery.value} ${convQuery.from} to ${convQuery.to}`,
+          icon: <Repeat className="w-4 h-4" />,
+          action: () => {
+            navigator.clipboard.writeText(convResult.toString())
+            onClose()
+          }
+        })
+      }
+    }
+
+    // Snippets: detect snippet triggers
+    const snippet = snippetManager.getSnippet(lowerQuery)
+    if (snippet) {
+      matchingResults.push({
+        id: 'snippet-result',
+        type: 'snippet',
+        title: snippet.content.substring(0, 50) + (snippet.content.length > 50 ? '...' : ''),
+        subtitle: snippet.description || `Snippet: ${snippet.trigger}`,
+        icon: <FileText className="w-4 h-4" />,
+        action: () => {
+          navigator.clipboard.writeText(snippet.content)
+          onClose()
+        }
+      })
+    }
 
     // Search files
     const files = JSON.parse(localStorage.getItem('files') || '[]')
@@ -244,6 +297,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       } else if (e.key === 'Enter') {
         e.preventDefault()
         if (results[selectedIndex]) {
+          commandHistory.addCommand(query)
           results[selectedIndex].action()
         }
       } else if (e.key === 'Escape') {
