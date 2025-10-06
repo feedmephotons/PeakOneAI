@@ -8,6 +8,7 @@ import WidgetPicker from './WidgetPicker'
 import TasksOverviewWidget from './widgets/TasksOverviewWidget'
 import QuickStatsWidget from './widgets/QuickStatsWidget'
 import ActivityFeedWidget from './widgets/ActivityFeedWidget'
+import AnalyticsWidget from './widgets/AnalyticsWidget'
 
 export default function CustomizableDashboard() {
   const [layout, setLayout] = useState(dashboardManager.getActiveLayout())
@@ -41,6 +42,8 @@ export default function CustomizableDashboard() {
         return <QuickStatsWidget />
       case 'activity_feed':
         return <ActivityFeedWidget />
+      case 'analytics':
+        return <AnalyticsWidget />
       default:
         return (
           <div className="flex items-center justify-center h-full text-gray-500">
