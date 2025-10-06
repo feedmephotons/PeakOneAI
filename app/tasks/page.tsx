@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Settings } from 'lucide-react'
+import { Plus, Search, Filter, Settings, Star } from 'lucide-react'
 import TaskColumn from '@/components/tasks/TaskColumn'
 import CreateTaskModal from '@/components/tasks/CreateTaskModal'
 import { useNotifications } from '@/components/notifications/NotificationProvider'
@@ -12,6 +12,9 @@ import { tagManager } from '@/lib/tags'
 import BulkActionBar from '@/components/bulk/BulkActionBar'
 import { bulkOperationUtils } from '@/lib/bulk-operations'
 import TemplateManager from '@/components/templates/TemplateManager'
+import AdvancedSearch from '@/components/search/AdvancedSearch'
+import SavedSearches from '@/components/search/SavedSearches'
+import { SearchQuery, advancedSearch, SearchableItem } from '@/lib/search'
 
 export interface Task {
   id: string
@@ -48,6 +51,9 @@ export default function TasksPage() {
   const [filterTagIds, setFilterTagIds] = useState<string[]>([])
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false)
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)
+  const [isSavedSearchesOpen, setIsSavedSearchesOpen] = useState(false)
+  const [activeSearchQuery, setActiveSearchQuery] = useState<SearchQuery | null>(null)
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
@@ -208,18 +214,34 @@ export default function TasksPage() {
     setIsTagManagerOpen(true)
   }
 
+  const handleAdvancedSearch = (query: SearchQuery) => {
+    setActiveSearchQuery(query)
+    setIsAdvancedSearchOpen(false)
+  }
+
+  const handleSavedSearchSelect = (query: SearchQuery) => {
+    setActiveSearchQuery(query)
+  }
+
+  const clearAdvancedSearch = () => {
+    setActiveSearchQuery(null)
+    setSearchQuery('')
+  }
+
   // Filter tasks based on search and priority
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesPriority = filterPriority === 'all' || task.priority === filterPriority
+  const filteredTasks = activeSearchQuery
+    ? advancedSearch.search(tasks as SearchableItem[], activeSearchQuery) as Task[]
+    : tasks.filter(task => {
+        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesPriority = filterPriority === 'all' || task.priority === filterPriority
 
-    // Tag filtering
-    const matchesTags = filterTagIds.length === 0 ||
-      (task.tags && task.tags.some(tagId => filterTagIds.includes(tagId)))
+        // Tag filtering
+        const matchesTags = filterTagIds.length === 0 ||
+          (task.tags && task.tags.some(tagId => filterTagIds.includes(tagId)))
 
-    return matchesSearch && matchesPriority && matchesTags
-  })
+        return matchesSearch && matchesPriority && matchesTags
+      })
 
   if (loading) {
     return (
@@ -293,6 +315,24 @@ export default function TasksPage() {
               <Settings className="w-4 h-4" />
             </button>
 
+            {/* Advanced Search */}
+            <button
+              onClick={() => setIsAdvancedSearchOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              title="Advanced Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            {/* Saved Searches */}
+            <button
+              onClick={() => setIsSavedSearchesOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              title="Saved Searches"
+            >
+              <Star className="w-4 h-4" />
+            </button>
+
             {/* Create button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -347,6 +387,22 @@ export default function TasksPage() {
           isOpen={isTemplateManagerOpen}
           onClose={() => setIsTemplateManagerOpen(false)}
           type="task"
+        />
+
+        {/* Advanced Search Modal */}
+        <AdvancedSearch
+          isOpen={isAdvancedSearchOpen}
+          onClose={() => setIsAdvancedSearchOpen(false)}
+          onSearch={handleAdvancedSearch}
+          entityType="task"
+        />
+
+        {/* Saved Searches Modal */}
+        <SavedSearches
+          isOpen={isSavedSearchesOpen}
+          onClose={() => setIsSavedSearchesOpen(false)}
+          onSelectSearch={handleSavedSearchSelect}
+          entityType="task"
         />
       </div>
     </div>
