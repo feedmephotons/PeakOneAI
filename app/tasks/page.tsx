@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, Search, Filter, Settings } from 'lucide-react'
 import TaskColumn from '@/components/tasks/TaskColumn'
 import CreateTaskModal from '@/components/tasks/CreateTaskModal'
 import { useNotifications } from '@/components/notifications/NotificationProvider'
 import { notifications } from '@/lib/notifications'
+import TagFilter from '@/components/tags/TagFilter'
+import TagManager from '@/components/tags/TagManager'
+import { tagManager } from '@/lib/tags'
 
 export interface Task {
   id: string
@@ -39,6 +42,8 @@ export default function TasksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPriority, setFilterPriority] = useState<string>('all')
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([])
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Load tasks from localStorage
@@ -128,14 +133,21 @@ export default function TasksPage() {
   }, [tasks, loading])
 
   const handleCreateTask = (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments' | 'comments'>) => {
+    const taskId = Date.now().toString()
     const task: Task = {
       ...newTask,
-      id: Date.now().toString(),
+      id: taskId,
       attachments: 0,
       comments: 0,
       createdAt: new Date(),
       updatedAt: new Date()
     }
+
+    // Save task tags to tag manager
+    if (newTask.tags && newTask.tags.length > 0) {
+      tagManager.setItemTags(taskId, 'task', newTask.tags)
+    }
+
     setTasks([...tasks, task])
     notifications.task.created(newTask.title)
   }
@@ -169,7 +181,12 @@ export default function TasksPage() {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority
-    return matchesSearch && matchesPriority
+
+    // Tag filtering
+    const matchesTags = filterTagIds.length === 0 ||
+      (task.tags && task.tags.some(tagId => filterTagIds.includes(tagId)))
+
+    return matchesSearch && matchesPriority && matchesTags
   })
 
   if (loading) {
@@ -229,6 +246,21 @@ export default function TasksPage() {
               </select>
             </div>
 
+            {/* Tag Filter */}
+            <TagFilter
+              selectedTagIds={filterTagIds}
+              onChange={setFilterTagIds}
+            />
+
+            {/* Tag Manager */}
+            <button
+              onClick={() => setIsTagManagerOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              title="Manage Tags"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+
             {/* Create button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -260,6 +292,12 @@ export default function TasksPage() {
             onCreate={handleCreateTask}
           />
         )}
+
+        {/* Tag Manager Modal */}
+        <TagManager
+          isOpen={isTagManagerOpen}
+          onClose={() => setIsTagManagerOpen(false)}
+        />
       </div>
     </div>
   )

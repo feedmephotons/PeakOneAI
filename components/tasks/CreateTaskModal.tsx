@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Calendar, Flag, Tag } from 'lucide-react'
+import { X, Calendar, Flag } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
+import TagSelector from '@/components/tags/TagSelector'
 
 interface CreateTaskModalProps {
   onClose: () => void
@@ -16,8 +17,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
     status: 'TODO' as Task['status'],
     priority: 'MEDIUM' as Task['priority'],
     dueDate: '',
-    tags: [] as string[],
-    tagInput: '',
+    tagIds: [] as string[],
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,24 +30,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
       status: formData.status,
       priority: formData.priority,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-      tags: formData.tags,
-    })
-  }
-
-  const handleAddTag = () => {
-    if (formData.tagInput.trim() && !formData.tags.includes(formData.tagInput.trim())) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, formData.tagInput.trim()],
-        tagInput: '',
-      })
-    }
-  }
-
-  const handleRemoveTag = (tag: string) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter(t => t !== tag),
+      tags: formData.tagIds || [], // Pass tag IDs
     })
   }
 
@@ -156,45 +139,13 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
             {/* Tags */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <span className="flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  Tags
-                </span>
+                Tags
               </label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={formData.tagInput}
-                  onChange={(e) => setFormData({ ...formData, tagInput: e.target.value })}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Add a tag..."
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTag}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded text-sm"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-purple-800 dark:hover:text-purple-300"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+              <TagSelector
+                selectedTagIds={formData.tagIds}
+                onChange={(tagIds) => setFormData({ ...formData, tagIds })}
+                placeholder="Add tags to organize this task..."
+              />
             </div>
           </div>
 
