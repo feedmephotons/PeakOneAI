@@ -6,6 +6,7 @@ import {
   Mic, MicOff, Video, VideoOff, Phone, Settings, Users, ScreenShare,
   Grid, Maximize2, Brain, Sparkles, CheckSquare, FileText, Download, Copy
 } from 'lucide-react'
+import MeetingToTaskConverter from '@/components/meetings/MeetingToTaskConverter'
 
 interface Participant {
   id: string
@@ -48,6 +49,7 @@ export default function MeetingRoomPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
   const [showAIPanel, setShowAIPanel] = useState(true)
   const [aiPanelTab, setAiPanelTab] = useState<'transcript' | 'actions' | 'notes'>('transcript')
+  const [showTaskConverter, setShowTaskConverter] = useState(false)
 
   // Mock participants
   const [participants] = useState<Participant[]>([
@@ -403,9 +405,18 @@ export default function MeetingRoomPage() {
 
               {aiPanelTab === 'actions' && (
                 <>
-                  <div className="flex items-center gap-2 mb-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-500/20">
-                    <Sparkles className="w-4 h-4 text-blue-400" />
-                    <p className="text-xs text-gray-300">AI detected {actionItems.filter(a => !a.completed).length} pending actions</p>
+                  <div className="flex items-center justify-between gap-2 mb-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-500/20">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-blue-400" />
+                      <p className="text-xs text-gray-300">AI detected {actionItems.filter(a => !a.completed).length} pending actions</p>
+                    </div>
+                    <button
+                      onClick={() => setShowTaskConverter(true)}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition flex items-center gap-1"
+                    >
+                      <CheckSquare className="w-3 h-3" />
+                      Convert to Tasks
+                    </button>
                   </div>
                   {actionItems.map((item) => (
                     <div key={item.id} className="bg-gray-700 rounded-lg p-3">
@@ -520,6 +531,24 @@ export default function MeetingRoomPage() {
           </button>
         </div>
       </div>
+
+      {/* Meeting to Task Converter */}
+      {showTaskConverter && (
+        <MeetingToTaskConverter
+          meetingId={meetingId}
+          meetingTitle={`Meeting ${meetingId}`}
+          actionItems={actionItems.map(item => ({
+            id: item.id,
+            text: item.text,
+            assignee: item.assignee,
+            priority: 'MEDIUM'
+          }))}
+          onClose={() => setShowTaskConverter(false)}
+          onTasksCreated={(count) => {
+            alert(`${count} task(s) created successfully!`)
+          }}
+        />
+      )}
     </div>
   )
 }
