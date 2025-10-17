@@ -167,7 +167,8 @@ class GeminiRAGService {
       // In production: Call Vertex AI RAG Retrieval API
       // POST /v1/projects/{project}/locations/{location}/ragCorpora/{corpus}:retrieveContexts
 
-      const result = await this.simulateVertexAICall('retrieveContexts', {
+      // Simulate API call (result unused in mock, but will be used in production)
+      void await this.simulateVertexAICall('retrieveContexts', {
         corpusId: corpus.corpusId,
         query,
         ...options

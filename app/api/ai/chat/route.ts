@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     // Parse request with RAG options
-    const { message, useRAG = true, conversationId } = await request.json()
+    const { message, useRAG = true } = await request.json()
 
     // Check if message mentions attached files (for image analysis)
     const isImageAnalysisRequest = message.includes('[Attached files:') && message.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)/i)

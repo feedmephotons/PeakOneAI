@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
 import {
-  Home, FileText, MessageSquare, CheckCircle, Video, Calendar,
+  Home, MessageSquare, CheckCircle, Video, Calendar,
   Search, Brain, Phone, FolderOpen, Settings, Sparkles
 } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'

@@ -293,7 +293,7 @@ export default function MeetingToTaskConverter({
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-400">
               <p>Tasks will be created with links back to this meeting</p>
-              <p className="text-xs mt-1">You can find them in the Tasks page with the "from-meeting" tag</p>
+              <p className="text-xs mt-1">You can find them in the Tasks page with the &ldquo;from-meeting&rdquo; tag</p>
             </div>
 
             <div className="flex items-center gap-3">
