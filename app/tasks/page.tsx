@@ -17,6 +17,7 @@ import SavedSearches from '@/components/search/SavedSearches'
 import { SearchQuery, advancedSearch, SearchableItem } from '@/lib/search'
 import AutomationManager from '@/components/automation/AutomationManager'
 import { automationEngine } from '@/lib/automation'
+import AISuggestionsPanel from '@/components/tasks/AISuggestionsPanel'
 
 export interface Task {
   id: string
@@ -387,19 +388,31 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {COLUMNS.map(column => (
-            <TaskColumn
-              key={column.id}
-              column={column}
-              tasks={filteredTasks.filter(task => task.status === column.id)}
-              onUpdateStatus={handleUpdateTaskStatus}
-              onDeleteTask={handleDeleteTask}
-              selectedTasks={selectedTasks}
-              onToggleSelect={handleToggleSelectTask}
-            />
-          ))}
+        {/* Main Content with Sidebar Layout */}
+        <div className="flex gap-6">
+          {/* Kanban Board */}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {COLUMNS.map(column => (
+                <TaskColumn
+                  key={column.id}
+                  column={column}
+                  tasks={filteredTasks.filter(task => task.status === column.id)}
+                  onUpdateStatus={handleUpdateTaskStatus}
+                  onDeleteTask={handleDeleteTask}
+                  selectedTasks={selectedTasks}
+                  onToggleSelect={handleToggleSelectTask}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* AI Suggestions Sidebar */}
+          <div className="hidden xl:block w-80 flex-shrink-0">
+            <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+              <AISuggestionsPanel />
+            </div>
+          </div>
         </div>
 
         {/* Bulk Action Bar */}
