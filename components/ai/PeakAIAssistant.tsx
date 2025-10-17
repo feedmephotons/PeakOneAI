@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Brain, X, Send, Mic, Sparkles, Minimize2, Maximize2 } from 'lucide-react'
+import { X, Send, Mic, Sparkles, Minimize2, Maximize2 } from 'lucide-react'
 import { PeakIcon } from '@/components/icons/PeakIcon'
 
 interface Message {

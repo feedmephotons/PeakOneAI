@@ -241,7 +241,7 @@ export default function PeakDashboard() {
               Peak AI is Listening
             </h3>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-4 max-w-xl mx-auto">
-              AI that doesn't just listen — it understands your business.
+              AI that doesn&apos;t just listen — it understands your business.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mb-8 max-w-lg mx-auto">
               Ask about your meetings, summarize your notes, or let me build your next action plan automatically.
