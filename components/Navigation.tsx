@@ -38,16 +38,16 @@ export default function Navigation() {
   const hasClerkKey = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+    <nav className="sticky top-0 z-40 glass border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow p-1.5">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 p-2">
               <PeakIcon name="logo" size={32} className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Peak AI</span>
+              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight">Peak AI</span>
             </div>
           </Link>
 
@@ -77,11 +77,11 @@ export default function Navigation() {
             {/* Search */}
             <button
               onClick={openSearch}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl transition-all hover:shadow-md border border-gray-200/50 dark:border-gray-700/50"
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white glass hover:shadow-lg transition-all duration-200 rounded-xl"
             >
               <Search className="w-4 h-4" />
-              <span className="hidden lg:inline">Search</span>
-              <kbd className="hidden xl:inline px-2 py-0.5 text-xs bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded">⌘K</kbd>
+              <span className="hidden lg:inline font-medium">Search</span>
+              <kbd className="hidden xl:inline px-2 py-0.5 text-xs bg-white/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50 rounded font-medium">⌘K</kbd>
             </button>
 
             {/* AI Assistant Quick Access */}
@@ -91,11 +91,11 @@ export default function Navigation() {
                 const event = new CustomEvent('openPeakAI')
                 window.dispatchEvent(event)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold"
               title="Ask Peak AI (Cmd/Ctrl + J)"
             >
               <PeakIcon name="ai" size={16} className="w-4 h-4" />
-              <span className="hidden lg:inline text-sm font-medium">Peak AI</span>
+              <span className="hidden lg:inline text-sm">Ask AI</span>
             </button>
 
             <NotificationCenter />

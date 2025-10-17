@@ -110,20 +110,24 @@ export default function PeakDashboard() {
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header Section */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 bg-white dark:bg-gray-800/50 backdrop-blur-xl rounded-full shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 bg-white/80 dark:bg-gray-800/50 backdrop-blur-2xl rounded-full shadow-xl border border-gray-200/50 dark:border-gray-700/50">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Peak AI Command Hub
+              Work at Your Peak
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
             Welcome Back
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Your intelligent workspace — one touch away from infinite possibilities
+          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4 font-light">
+            The brain of ChatGPT. The power of Zoom.<br className="hidden md:block" />
+            The precision of Asana. All in one.
+          </p>
+          <p className="text-base text-gray-500 dark:text-gray-500 max-w-2xl mx-auto">
+            Your conversations, projects, and files — unified by AI that listens, learns, and leads.
           </p>
         </div>
 
@@ -228,19 +232,29 @@ export default function PeakDashboard() {
         </div>
 
         {/* AI Assistant CTA */}
-        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl p-1 shadow-2xl">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-              <Brain className="w-8 h-8 text-white" />
+        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl p-1 shadow-2xl hover:shadow-3xl transition-all duration-500">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl animate-pulse-slow">
+              <Brain className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Peak AI is Ready
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+              Peak AI is Listening
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Ask me anything about your work, or let me help organize your day
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4 max-w-xl mx-auto">
+              AI that doesn't just listen — it understands your business.
             </p>
-            <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300">
-              Start Conversation
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-8 max-w-lg mx-auto">
+              Ask about your meetings, summarize your notes, or let me build your next action plan automatically.
+            </p>
+            <button
+              onClick={() => {
+                const event = new CustomEvent('openPeakAI')
+                window.dispatchEvent(event)
+              }}
+              className="px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
+            >
+              <Brain className="w-5 h-5" />
+              Ask Peak AI Anything
             </button>
           </div>
         </div>
