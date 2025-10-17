@@ -1,36 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
 import {
   Home, FileText, MessageSquare, CheckCircle, Video, Calendar,
-  Search, Brain, Phone, FolderOpen, ChevronDown, User, Settings, LogOut, Sparkles
+  Search, Brain, Phone, FolderOpen, Settings, Sparkles
 } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-
-// Conditionally import Clerk components only if available
-let OrganizationSwitcher: React.ComponentType<{
-  appearance?: Record<string, unknown>
-  hidePersonal?: boolean
-}> | null = null
-
-let UserButton: React.ComponentType<{
-  appearance?: Record<string, unknown>
-  afterSignOutUrl?: string
-}> | null = null
-
-// Dynamic import to avoid build-time issues
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-  import('@clerk/nextjs').then((ClerkComponents) => {
-    OrganizationSwitcher = ClerkComponents.OrganizationSwitcher as typeof OrganizationSwitcher
-    UserButton = ClerkComponents.UserButton as typeof UserButton
-  }).catch(() => {
-    // Clerk not available, components remain null
-  })
-}
+import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -46,7 +25,6 @@ const navItems = [
 export default function Navigation() {
   const pathname = usePathname()
   const { openSearch } = useKeyboardShortcuts()
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   return (
     <nav className="sticky top-0 z-40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
@@ -113,53 +91,29 @@ export default function Navigation() {
             <NotificationCenter />
             <DarkModeToggle />
 
-            {/* Profile Dropdown */}
-            {UserButton ? (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-10 h-10 rounded-xl",
-                  }
-                }}
-                afterSignOutUrl="/"
-              />
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                </button>
+            {/* Organization Switcher - Multi-tenant support */}
+            <OrganizationSwitcher
+              hidePersonal={false}
+              appearance={{
+                elements: {
+                  rootBox: "flex items-center",
+                  organizationSwitcherTrigger: "px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all",
+                  organizationSwitcherTriggerIcon: "w-5 h-5",
+                  organizationPreviewAvatarBox: "w-8 h-8 rounded-lg",
+                },
+              }}
+            />
 
-                {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 backdrop-blur-xl">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Guest User</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">guest@peakai.com</p>
-                    </div>
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => setShowProfileMenu(false)}
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Settings</span>
-                    </Link>
-                    <button
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => setShowProfileMenu(false)}
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* User Button */}
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "w-10 h-10 rounded-xl",
+                  userButtonPopoverCard: "shadow-2xl",
+                }
+              }}
+              afterSignOutUrl="/"
+            />
           </div>
         </div>
       </div>

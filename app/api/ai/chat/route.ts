@@ -1,20 +1,12 @@
 import { openai, LISA_SYSTEM_PROMPT } from '@/lib/openai'
 import { NextResponse } from 'next/server'
-// import { auth } from '@clerk/nextjs' // TODO: Uncomment when Clerk is installed
+import { auth } from '@clerk/nextjs/server'
 import { geminiRAG } from '@/lib/rag/gemini-rag-service'
-
-// Mock auth for now - TODO: Replace with Clerk
-function auth() {
-  return {
-    userId: 'user_demo',
-    orgId: 'org_demo'
-  }
-}
 
 export async function POST(request: Request) {
   try {
     // Multi-tenant authentication with Clerk
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
 
     if (!userId) {
       return NextResponse.json(
