@@ -4,22 +4,20 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import {
-  Home, MessageSquare, CheckCircle, Video, Calendar,
-  Search, Brain, Phone, FolderOpen, Settings, Sparkles
-} from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
+import { PeakIcon, type IconName } from './icons/PeakIcon'
 
-const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/video', label: 'Calls', icon: Phone },
-  { href: '/calendar', label: 'Meetings', icon: Video },
-  { href: '/tasks', label: 'Projects', icon: CheckCircle },
-  { href: '/files', label: 'Files', icon: FolderOpen },
-  { href: '/lisa', label: 'AI Notes', icon: MessageSquare },
-  { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/settings', label: 'Settings', icon: Settings },
+const navItems: Array<{ href: string; label: string; icon: IconName }> = [
+  { href: '/', label: 'Home', icon: 'home' },
+  { href: '/video', label: 'Calls', icon: 'calls' },
+  { href: '/calendar', label: 'Meetings', icon: 'meetings' },
+  { href: '/tasks', label: 'Projects', icon: 'tasks' },
+  { href: '/files', label: 'Files', icon: 'files' },
+  { href: '/lisa', label: 'AI Notes', icon: 'messages' },
+  { href: '/calendar', label: 'Calendar', icon: 'calendar' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
 export default function Navigation() {
@@ -32,8 +30,8 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow p-1.5">
+              <PeakIcon name="logo" size={32} className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Peak AI</span>
@@ -43,7 +41,6 @@ export default function Navigation() {
           {/* Desktop navigation */}
           <div className="hidden lg:flex items-center gap-1">
             {navItems.slice(0, 8).map((item) => {
-              const Icon = item.icon
               const isActive = pathname === item.href
               return (
                 <Link
@@ -55,7 +52,7 @@ export default function Navigation() {
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <PeakIcon name={item.icon} size={16} className="w-4 h-4" />
                   <span className="text-sm">{item.label}</span>
                 </Link>
               )
@@ -84,7 +81,7 @@ export default function Navigation() {
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all"
               title="Ask Peak AI (Cmd/Ctrl + J)"
             >
-              <Brain className="w-4 h-4" />
+              <PeakIcon name="ai" size={16} className="w-4 h-4" />
               <span className="hidden lg:inline text-sm font-medium">Peak AI</span>
             </button>
 
