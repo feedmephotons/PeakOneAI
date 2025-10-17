@@ -11,6 +11,7 @@ import {
   ChevronRight, Home, Star, Clock, HardDrive, Link2, Users,
   Eye, Edit3, Copy, Move, X, FolderOpen, ChevronDown
 } from 'lucide-react'
+import FileContextPanel from '@/components/files/FileContextPanel'
 
 interface FileItem {
   id: string
@@ -54,6 +55,8 @@ export default function FilesPage() {
   const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent' | 'shared' | 'trash'>('all')
   const [sortBy] = useState<'name' | 'modified' | 'size'>('modified')
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null)
+  const [selectedFileForContext, setSelectedFileForContext] = useState<FileItem | null>(null)
+  const [showContextPanel, setShowContextPanel] = useState(true)
 
   // Load files from localStorage
   useEffect(() => {
@@ -252,8 +255,10 @@ export default function FilesPage() {
       if (file.type === 'folder') {
         setCurrentFolderId(file.id)
         setSelectedFiles(new Set())
+        setSelectedFileForContext(null)
       } else {
         setPreviewFile(file)
+        setSelectedFileForContext(file)
       }
     }
   }
@@ -594,8 +599,10 @@ export default function FilesPage() {
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col">
+        {/* Main content with context panel */}
+        <div className="flex-1 flex">
+          {/* Main content */}
+          <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div className="flex items-center justify-between mb-4">
@@ -881,6 +888,16 @@ export default function FilesPage() {
               </div>
             )}
           </div>
+          </div>
+
+          {/* File Context Panel Sidebar */}
+          {showContextPanel && (
+            <div className="hidden xl:block w-96 flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
+              <div className="sticky top-0 h-screen overflow-y-auto bg-white dark:bg-gray-900 p-6">
+                <FileContextPanel file={selectedFileForContext || undefined} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
