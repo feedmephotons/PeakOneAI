@@ -1,10 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import { Home, FileText, MessageSquare, CheckCircle, Video, Calendar, Activity, Search } from 'lucide-react'
+import {
+  Home, FileText, MessageSquare, CheckCircle, Video, Calendar,
+  Search, Brain, Phone, FolderOpen, ChevronDown, User, Settings, LogOut, Sparkles
+} from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 
 // Conditionally import Clerk components only if available
@@ -30,86 +34,131 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_K
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/files', label: 'Files', icon: FileText },
-  { href: '/lisa', label: 'Lisa AI', icon: MessageSquare },
-  { href: '/tasks', label: 'Tasks', icon: CheckCircle },
-  { href: '/video', label: 'Video', icon: Video },
+  { href: '/video', label: 'Calls', icon: Phone },
+  { href: '/calendar', label: 'Meetings', icon: Video },
+  { href: '/tasks', label: 'Projects', icon: CheckCircle },
+  { href: '/files', label: 'Files', icon: FolderOpen },
+  { href: '/lisa', label: 'AI Notes', icon: MessageSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/activity', label: 'Activity', icon: Activity },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function Navigation() {
   const pathname = usePathname()
   const { openSearch } = useKeyboardShortcuts()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo and main nav */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg" />
-              <span className="font-bold text-xl text-gray-900 dark:text-white">SaasX</span>
-            </Link>
-
-            {/* Desktop navigation */}
-            <div className="hidden md:flex items-center gap-6">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Link>
-                )
-              })}
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
+            <div className="hidden sm:block">
+              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Peak AI</span>
+            </div>
+          </Link>
+
+          {/* Desktop navigation */}
+          <div className="hidden lg:flex items-center gap-1">
+            {navItems.slice(0, 8).map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-gray-900 dark:text-white font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm">{item.label}</span>
+                </Link>
+              )
+            })}
           </div>
 
-          {/* Right side - Search, Org Switcher, Notifications, Dark mode and User */}
-          <div className="flex items-center gap-4">
+          {/* Right side actions */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
             <button
               onClick={openSearch}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl transition-all hover:shadow-md border border-gray-200/50 dark:border-gray-700/50"
             >
               <Search className="w-4 h-4" />
-              <span className="hidden md:inline">Search</span>
-              <kbd className="hidden md:inline px-1.5 py-0.5 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">⌘K</kbd>
+              <span className="hidden lg:inline">Search</span>
+              <kbd className="hidden xl:inline px-2 py-0.5 text-xs bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded">⌘K</kbd>
             </button>
-            {OrganizationSwitcher && (
-              <OrganizationSwitcher
-                appearance={{
-                  elements: {
-                    rootBox: "flex items-center",
-                    organizationSwitcherTrigger: "px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800",
-                  }
-                }}
-                hidePersonal
-              />
-            )}
+
+            {/* AI Assistant Quick Access */}
+            <button
+              onClick={() => {
+                // This will open the global AI assistant
+                const event = new CustomEvent('openPeakAI')
+                window.dispatchEvent(event)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all"
+              title="Ask Peak AI (Cmd/Ctrl + J)"
+            >
+              <Brain className="w-4 h-4" />
+              <span className="hidden lg:inline text-sm font-medium">Peak AI</span>
+            </button>
+
             <NotificationCenter />
             <DarkModeToggle />
+
+            {/* Profile Dropdown */}
             {UserButton ? (
               <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "w-9 h-9",
+                    avatarBox: "w-10 h-10 rounded-xl",
                   }
                 }}
                 afterSignOutUrl="/"
               />
             ) : (
-              <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full" />
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </button>
+
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 backdrop-blur-xl">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Guest User</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">guest@peakai.com</p>
+                    </div>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

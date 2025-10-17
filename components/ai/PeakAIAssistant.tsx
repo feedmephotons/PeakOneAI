@@ -25,6 +25,16 @@ export default function PeakAIAssistant() {
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Listen for navigation button clicks
+  useEffect(() => {
+    const handleOpenPeakAI = () => {
+      setIsOpen(true)
+    }
+
+    window.addEventListener('openPeakAI', handleOpenPeakAI)
+    return () => window.removeEventListener('openPeakAI', handleOpenPeakAI)
+  }, [])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
