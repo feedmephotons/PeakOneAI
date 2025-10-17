@@ -1,7 +1,9 @@
 'use client'
 
+/* eslint-disable react/no-unescaped-entities */
+
 import { useState } from 'react'
-import { Sparkles, Palette, Home, Phone, Video, Layout, Cloud, Brain, Calendar, Rocket, MessageSquare, Shield } from 'lucide-react'
+import { Sparkles, Palette, Home, Phone, Video, Layout, Cloud, Brain, Calendar, Rocket, MessageSquare } from 'lucide-react'
 
 export default function PeakAIDesignDoc() {
   const [activeSection, setActiveSection] = useState('overview')
