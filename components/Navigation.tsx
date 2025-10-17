@@ -7,7 +7,8 @@ import { NotificationCenter } from '@/components/notifications/NotificationProvi
 import { Search } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import dynamic from 'next/dynamic'
-import { PeakIcon, type IconName } from './icons/PeakIcon'
+import { PeakIcon } from './icons/PeakIcon'
+import MegaMenu from './navigation/MegaMenu'
 
 // Dynamically import Clerk components to avoid SSR issues
 const OrganizationSwitcher = dynamic(
@@ -18,17 +19,6 @@ const UserButton = dynamic(
   () => import('@clerk/nextjs').then(mod => mod.UserButton),
   { ssr: false }
 )
-
-const navItems: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: '/', label: 'Home', icon: 'home' },
-  { href: '/video', label: 'Calls', icon: 'calls' },
-  { href: '/calendar', label: 'Meetings', icon: 'meetings' },
-  { href: '/tasks', label: 'Projects', icon: 'tasks' },
-  { href: '/files', label: 'Files', icon: 'files' },
-  { href: '/lisa', label: 'AI Notes', icon: 'messages' },
-  { href: '/calendar', label: 'Calendar', icon: 'calendar' },
-  { href: '/settings', label: 'Settings', icon: 'settings' },
-]
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -51,25 +41,9 @@ export default function Navigation() {
             </div>
           </Link>
 
-          {/* Desktop navigation */}
+          {/* Desktop navigation - MegaMenu */}
           <div className="hidden lg:flex items-center gap-1">
-            {navItems.slice(0, 8).map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-gray-900 dark:text-white font-medium'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
-                  }`}
-                >
-                  <PeakIcon name={item.icon} size={16} className="w-4 h-4" />
-                  <span className="text-sm">{item.label}</span>
-                </Link>
-              )
-            })}
+            <MegaMenu />
           </div>
 
           {/* Right side actions */}
