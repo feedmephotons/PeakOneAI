@@ -7,6 +7,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { KeyboardShortcutsProvider } from '@/components/KeyboardShortcuts'
 import KeyboardShortcutsHint from './KeyboardShortcutsHint'
 import MobileNav from '@/components/mobile/MobileNav'
+import PeakAIAssistant from '@/components/ai/PeakAIAssistant'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </main>
             <KeyboardShortcutsHint />
             <MobileNav />
+            <PeakAIAssistant />
           </div>
         </KeyboardShortcutsProvider>
       </NotificationProvider>
