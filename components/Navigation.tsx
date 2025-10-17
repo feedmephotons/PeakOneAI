@@ -6,8 +6,18 @@ import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
 import { Search } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
+import dynamic from 'next/dynamic'
 import { PeakIcon, type IconName } from './icons/PeakIcon'
+
+// Dynamically import Clerk components to avoid SSR issues
+const OrganizationSwitcher = dynamic(
+  () => import('@clerk/nextjs').then(mod => mod.OrganizationSwitcher),
+  { ssr: false }
+)
+const UserButton = dynamic(
+  () => import('@clerk/nextjs').then(mod => mod.UserButton),
+  { ssr: false }
+)
 
 const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: '/', label: 'Home', icon: 'home' },
@@ -23,6 +33,9 @@ const navItems: Array<{ href: string; label: string; icon: IconName }> = [
 export default function Navigation() {
   const pathname = usePathname()
   const { openSearch } = useKeyboardShortcuts()
+
+  // Check if Clerk is available
+  const hasClerkKey = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 
   return (
     <nav className="sticky top-0 z-40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
@@ -88,29 +101,33 @@ export default function Navigation() {
             <NotificationCenter />
             <DarkModeToggle />
 
-            {/* Organization Switcher - Multi-tenant support */}
-            <OrganizationSwitcher
-              hidePersonal={false}
-              appearance={{
-                elements: {
-                  rootBox: "flex items-center",
-                  organizationSwitcherTrigger: "px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all",
-                  organizationSwitcherTriggerIcon: "w-5 h-5",
-                  organizationPreviewAvatarBox: "w-8 h-8 rounded-lg",
-                },
-              }}
-            />
+            {/* Organization Switcher - Multi-tenant support (only show when Clerk is available) */}
+            {hasClerkKey && (
+              <OrganizationSwitcher
+                hidePersonal={false}
+                appearance={{
+                  elements: {
+                    rootBox: "flex items-center",
+                    organizationSwitcherTrigger: "px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all",
+                    organizationSwitcherTriggerIcon: "w-5 h-5",
+                    organizationPreviewAvatarBox: "w-8 h-8 rounded-lg",
+                  },
+                }}
+              />
+            )}
 
-            {/* User Button */}
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-10 h-10 rounded-xl",
-                  userButtonPopoverCard: "shadow-2xl",
-                }
-              }}
-              afterSignOutUrl="/"
-            />
+            {/* User Button (only show when Clerk is available) */}
+            {hasClerkKey && (
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-10 h-10 rounded-xl",
+                    userButtonPopoverCard: "shadow-2xl",
+                  }
+                }}
+                afterSignOutUrl="/"
+              />
+            )}
           </div>
         </div>
       </div>
