@@ -456,7 +456,7 @@ function MegaMenuPanel({
                 role="menuitem"
               >
                 {item.graphic && (
-                  <div className="absolute right-0 bottom-0 w-24 h-24 opacity-20 group-hover:opacity-30 transition-opacity">
+                  <div className="absolute right-0 bottom-0 w-24 h-24 opacity-100 transition-opacity">
                     <Image
                       src={item.graphic}
                       alt=""
