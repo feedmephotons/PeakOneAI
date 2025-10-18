@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate Megamenu Feature Graphics using OpenAI GPT Image 1
+Generate Megamenu Feature Graphics using OpenAI DALL-E 3
 Creates transparent background illustrations for megamenu featured sections
 """
 
@@ -18,14 +18,14 @@ class GPTImageGenerator:
             raise ValueError("OpenAI API key required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
         self.endpoint = "https://api.openai.com/v1/images/generations"
 
-    def generate(self, prompt, size="1024x1024", quality="high", output_path=None):
+    def generate(self, prompt, size="1024x1024", quality="hd", output_path=None):
         """
-        Generate image with GPT Image 1
+        Generate image with DALL-E 3
 
         Args:
             prompt: Text description of image to generate
-            size: Image dimensions (1024x1024, 1536x1024, 1024x1536)
-            quality: "high" or "standard"
+            size: Image dimensions (1024x1024, 1024x1792, 1792x1024)
+            quality: "hd" or "standard"
             output_path: Where to save the image
 
         Returns:
@@ -38,7 +38,7 @@ class GPTImageGenerator:
             }
 
             payload = {
-                "model": "gpt-image-1",
+                "model": "dall-e-3",
                 "prompt": prompt,
                 "n": 1,
                 "size": size,
@@ -155,7 +155,7 @@ Transparent background. No text. Vector-style clean edges.
         result = generator.generate(
             config["prompt"],
             size="1024x1024",
-            quality="high",
+            quality="hd",
             output_path=str(config["path"])
         )
         if result:
@@ -201,7 +201,7 @@ Transparent background. No text. Professional tech illustration.
         result = generator.generate(
             config["prompt"],
             size="1024x1024",
-            quality="high",
+            quality="hd",
             output_path=str(config["path"])
         )
         if result:
@@ -258,7 +258,7 @@ Transparent background. No text. Professional clean design.
         result = generator.generate(
             config["prompt"],
             size="1024x1024",
-            quality="high",
+            quality="hd",
             output_path=str(config["path"])
         )
         if result:
@@ -294,7 +294,7 @@ Transparent background. No text. Apple-inspired aesthetic.
         result = generator.generate(
             config["prompt"],
             size="1024x1024",
-            quality="high",
+            quality="hd",
             output_path=str(config["path"])
         )
         if result:

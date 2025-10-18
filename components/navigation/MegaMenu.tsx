@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   LayoutGrid, CheckSquare, Sparkles, Settings,
   Home, Video, MessageSquare, Calendar, FolderOpen,
@@ -30,6 +31,7 @@ interface FeaturedItem {
   description: string
   href: string
   gradient?: boolean
+  graphic?: string
 }
 
 interface MenuCategory {
@@ -148,7 +150,8 @@ export default function MegaMenu() {
           title: 'Take a Tour',
           description: 'Discover all Peak AI features',
           href: '/tour',
-          gradient: false
+          gradient: false,
+          graphic: '/graphics/megamenu/workspace-hero.png'
         }
       ]
     },
@@ -225,13 +228,15 @@ export default function MegaMenu() {
           title: 'AI Workspace Tour',
           description: 'See what Lisa AI can do for you',
           href: '/lisa/tour',
-          gradient: true
+          gradient: true,
+          graphic: '/graphics/megamenu/ai-assistant.png'
         },
         {
           title: 'View AI Analytics',
           description: 'Track your efficiency with AI',
           href: '/ai/analytics',
-          gradient: true
+          gradient: true,
+          graphic: '/graphics/megamenu/ai-analytics.png'
         }
       ]
     },
@@ -443,15 +448,26 @@ function MegaMenuPanel({
                 key={idx}
                 href={item.href}
                 onClick={onClose}
-                className={`p-4 rounded-xl transition-all duration-300 hover:scale-105 ${
+                className={`group relative p-4 rounded-xl transition-all duration-300 hover:scale-105 overflow-hidden ${
                   item.gradient
                     ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl'
                     : 'bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
                 role="menuitem"
               >
-                <h5 className="font-semibold mb-1">{item.title}</h5>
-                <p className={`text-sm ${
+                {item.graphic && (
+                  <div className="absolute right-0 bottom-0 w-24 h-24 opacity-20 group-hover:opacity-30 transition-opacity">
+                    <Image
+                      src={item.graphic}
+                      alt=""
+                      width={96}
+                      height={96}
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <h5 className="font-semibold mb-1 relative z-10">{item.title}</h5>
+                <p className={`text-sm relative z-10 ${
                   item.gradient ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'
                 }`}>
                   {item.description}
