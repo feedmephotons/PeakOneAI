@@ -21,11 +21,11 @@ export default function KeyboardShortcutsHint() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-sm animate-fade-in-up">
+    <div className="fixed bottom-6 right-6 z-[100] max-w-sm animate-fade-in-up">
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-2xl p-5">
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 text-white/80 hover:text-white"
+          className="absolute top-3 right-3 text-white/80 hover:text-white z-10"
         >
           <X className="w-4 h-4" />
         </button>
