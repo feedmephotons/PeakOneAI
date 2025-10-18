@@ -91,12 +91,16 @@ export default function MegaMenu() {
     // If menu is already open, switch immediately
     if (isOpen) {
       setActiveMenu(categoryId)
+      setIsOpen(true)
     } else {
       // Otherwise, delay before opening
-      setTimeout(() => {
+      const openTimeout = setTimeout(() => {
         setActiveMenu(categoryId)
         setIsOpen(true)
       }, 150)
+
+      // Store timeout so we can cancel if needed
+      closeTimeoutRef.current = openTimeout
     }
   }
 
