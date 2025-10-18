@@ -87,10 +87,17 @@ export default function MegaMenu() {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current)
     }
-    setTimeout(() => {
+
+    // If menu is already open, switch immediately
+    if (isOpen) {
       setActiveMenu(categoryId)
-      setIsOpen(true)
-    }, 150)
+    } else {
+      // Otherwise, delay before opening
+      setTimeout(() => {
+        setActiveMenu(categoryId)
+        setIsOpen(true)
+      }, 150)
+    }
   }
 
   const handleMouseLeave = () => {
@@ -297,9 +304,9 @@ export default function MegaMenu() {
       {/* Megamenu Panel */}
       {isOpen && activeCategory && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - no blur, just darkening */}
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/10 z-40 animate-in fade-in duration-200"
             onClick={() => {
               setIsOpen(false)
               setActiveMenu(null)
@@ -307,7 +314,7 @@ export default function MegaMenu() {
             aria-hidden="true"
           />
 
-          {/* Panel */}
+          {/* Panel - blur only this card */}
           <div
             onMouseEnter={() => {
               if (closeTimeoutRef.current) {
