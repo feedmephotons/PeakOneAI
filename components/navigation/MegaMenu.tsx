@@ -280,7 +280,7 @@ export default function MegaMenu() {
   return (
     <div ref={menuRef} className="relative">
       {/* Trigger Items */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 relative z-50">
         {categories.map((category) => {
           const Icon = category.icon
           const isActive = activeMenu === category.id
@@ -403,7 +403,7 @@ function MegaMenuPanel({
                     key={itemIdx}
                     href={item.href}
                     onClick={onClose}
-                    className="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:translate-x-1 duration-200"
+                    className="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all hover:translate-x-1 duration-200"
                     role="menuitem"
                   >
                     {ItemIcon && (
