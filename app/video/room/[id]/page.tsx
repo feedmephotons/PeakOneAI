@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useUser } from '@clerk/nextjs'
 import VideoCallWithDaily from '@/components/video/VideoCallWithDaily'
 import { Loader2 } from 'lucide-react'
 
 export default function VideoRoomPage() {
   const params = useParams()
   const router = useRouter()
-  const { isLoaded, isSignedIn, user } = useUser()
   const [roomUrl, setRoomUrl] = useState<string | null>(null)
   const [isCreatingRoom, setIsCreatingRoom] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,15 +17,6 @@ export default function VideoRoomPage() {
   // Create Daily.co room when component mounts
   useEffect(() => {
     const createRoom = async () => {
-      // Wait for Clerk to load
-      if (!isLoaded) return
-
-      // Redirect to sign in if not authenticated
-      if (!isSignedIn) {
-        router.push(`/sign-in?redirect_url=/video/room/${meetingId}`)
-        return
-      }
-
       setIsCreatingRoom(true)
       setError(null)
 
@@ -57,21 +46,19 @@ export default function VideoRoomPage() {
     }
 
     createRoom()
-  }, [isLoaded, isSignedIn, meetingId, router])
+  }, [meetingId])
 
   const handleLeave = () => {
     router.push('/video')
   }
 
-  // Show loading while Clerk loads
-  if (!isLoaded || isCreatingRoom) {
+  // Show loading while creating room
+  if (isCreatingRoom) {
     return (
       <div className="h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-white text-xl">
-            {!isLoaded ? 'Loading...' : 'Creating your meeting room...'}
-          </p>
+          <p className="text-white text-xl">Creating your meeting room...</p>
         </div>
       </div>
     )

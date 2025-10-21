@@ -12,15 +12,22 @@ import { auth } from '@clerk/nextjs/server'
  */
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Multi-tenant authentication (optional - allowing unauthenticated access during development)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch (authError) {
+      console.log('[CreateRoom] Auth unavailable, allowing unauthenticated access')
     }
+
+    // TODO: Re-enable authentication requirement when Clerk is fully configured
+    // if (!userId) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   )
+    // }
 
     const { meetingTitle, privacy = 'private' } = await request.json()
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useUser } from '@clerk/nextjs'
 import {
   Mic, MicOff, Video, VideoOff, Phone, Settings,
   Users, MessageSquare, ScreenShare, MoreVertical,
@@ -17,7 +16,6 @@ interface VideoCallWithDailyProps {
 }
 
 export default function VideoCallWithDaily({ meetingId, roomUrl, onLeave }: VideoCallWithDailyProps) {
-  const { user } = useUser()
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({})
   const [showChat, setShowChat] = useState(false)
   const [showParticipants, setShowParticipants] = useState(false)
@@ -25,9 +23,9 @@ export default function VideoCallWithDaily({ meetingId, roomUrl, onLeave }: Vide
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
   const [isScreenSharing, setIsScreenSharing] = useState(false)
 
-  // Get user name from Clerk or fallback
-  const userName = user?.fullName || user?.firstName || user?.username || 'Guest'
-  const userId = user?.id || 'guest'
+  // Generate temporary user info (TODO: Use Clerk when configured)
+  const userName = 'Guest-' + Math.random().toString(36).substr(2, 5)
+  const userId = 'user-' + Math.random().toString(36).substr(2, 9)
 
   // Daily.co hook
   const {
