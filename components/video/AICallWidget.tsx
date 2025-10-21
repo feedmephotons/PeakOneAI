@@ -203,7 +203,8 @@ export default function AICallWidget({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   transcript: newTranscript.text,
-                  context: transcripts.slice(-3).map(t => t.text).join(' ')
+                  context: transcripts.slice(-3).map(t => t.text).join(' '),
+                  meetingId // Pass meetingId for demo mode detection
                 })
               })
 

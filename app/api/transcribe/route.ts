@@ -8,19 +8,22 @@ import { auth } from '@clerk/nextjs/server'
  */
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication
+    // Multi-tenant authentication (optional for demo mode)
     const { userId } = await auth()
 
-    if (!userId) {
+    const formData = await request.formData()
+    const meetingId = formData.get('meetingId') as string
+
+    // Allow demo meetings without authentication
+    const isDemoMode = meetingId === 'client-demo' || meetingId?.startsWith('demo-')
+
+    if (!userId && !isDemoMode) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    const formData = await request.formData()
     const audioFile = formData.get('audio') as File
-    const meetingId = formData.get('meetingId') as string
     const speakerName = formData.get('speakerName') as string
 
     if (!audioFile) {
