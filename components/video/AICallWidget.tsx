@@ -85,7 +85,27 @@ export default function AICallWidget({
     // Listen for new transcripts from other participants
     socket.on('new-transcript', async (transcript: Transcript) => {
       console.log('[AICallWidget] New transcript:', transcript)
-      setTranscripts(prev => [...prev, transcript])
+
+      // Group consecutive messages from same speaker into one bubble
+      setTranscripts(prev => {
+        const lastTranscript = prev[prev.length - 1]
+
+        // If last transcript is from same speaker, append to it
+        if (lastTranscript && lastTranscript.userId === transcript.userId) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastTranscript,
+              text: lastTranscript.text + ' ' + transcript.text,
+              timestamp: transcript.timestamp // Update to latest timestamp
+            }
+          ]
+        }
+
+        // Different speaker or first message, create new bubble
+        return [...prev, transcript]
+      })
+
       setIsProcessing(false)
 
       // Analyze transcript for action items
@@ -194,7 +214,26 @@ export default function AICallWidget({
           } else {
             // Local-only mode: add transcript directly
             console.log('[AICallWidget] Working in local mode - adding transcript directly')
-            setTranscripts(prev => [...prev, newTranscript])
+
+            // Group consecutive messages from same speaker into one bubble
+            setTranscripts(prev => {
+              const lastTranscript = prev[prev.length - 1]
+
+              // If last transcript is from same speaker, append to it
+              if (lastTranscript && lastTranscript.userId === userId) {
+                return [
+                  ...prev.slice(0, -1),
+                  {
+                    ...lastTranscript,
+                    text: lastTranscript.text + ' ' + newTranscript.text,
+                    timestamp: newTranscript.timestamp // Update to latest timestamp
+                  }
+                ]
+              }
+
+              // Different speaker or first message, create new bubble
+              return [...prev, newTranscript]
+            })
 
             // Analyze for action items locally
             try {
