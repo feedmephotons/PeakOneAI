@@ -106,13 +106,13 @@ export default function DemoVideoPage() {
               Demo Instructions
             </h3>
             <ol className="text-blue-200 text-sm space-y-2 ml-6">
-              <li className="list-decimal">Click "Start Demo" below</li>
+              <li className="list-decimal">Click &ldquo;Start Demo&rdquo; below</li>
               <li className="list-decimal">Allow camera and microphone access</li>
               <li className="list-decimal">Click the purple AI button (bottom right)</li>
-              <li className="list-decimal">Say: <span className="text-white font-mono">"John needs to send the proposal by Friday"</span></li>
+              <li className="list-decimal">Say: <span className="text-white font-mono">&ldquo;John needs to send the proposal by Friday&rdquo;</span></li>
               <li className="list-decimal">Watch transcripts appear in real-time</li>
               <li className="list-decimal">See AI detect the action item automatically</li>
-              <li className="list-decimal">Click "Add to Task Board" to create the task</li>
+              <li className="list-decimal">Click &ldquo;Add to Task Board&rdquo; to create the task</li>
             </ol>
           </div>
 
