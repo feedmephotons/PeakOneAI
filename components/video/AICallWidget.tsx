@@ -51,7 +51,19 @@ export default function AICallWidget({
 
   // Initialize Socket.io connection
   useEffect(() => {
-    const socket = io('http://localhost:3001')
+    // Use environment variable or default to current origin
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ||
+                     (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001')
+
+    console.log('[AICallWidget] Connecting to Socket.io:', socketUrl)
+
+    const socket = io(socketUrl, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+      timeout: 5000
+    })
     socketRef.current = socket
 
     socket.on('connect', () => {
@@ -63,6 +75,11 @@ export default function AICallWidget({
         userId,
         userName
       })
+    })
+
+    socket.on('connect_error', (error) => {
+      console.warn('[AICallWidget] Socket connection failed, working in local-only mode:', error.message)
+      // Continue working in local mode - transcripts will still work
     })
 
     // Listen for new transcripts from other participants
@@ -157,14 +174,55 @@ export default function AICallWidget({
         const result = await transcribeAudio(audioBlob, meetingId, userName)
 
         if (result && result.transcript && result.transcript.length > 0) {
-          // Broadcast transcript via WebSocket
-          socketRef.current?.emit('transcription-result', {
-            meetingId,
-            transcript: result.transcript,
-            userId,
-            userName,
-            timestamp: result.timestamp
-          })
+          const newTranscript: Transcript = {
+            id: `${Date.now()}-${userId}`,
+            speaker: userName,
+            text: result.transcript,
+            timestamp: result.timestamp || new Date().toISOString(),
+            userId
+          }
+
+          // Try to broadcast via WebSocket if connected
+          if (socketRef.current?.connected) {
+            socketRef.current.emit('transcription-result', {
+              meetingId,
+              transcript: result.transcript,
+              userId,
+              userName,
+              timestamp: result.timestamp
+            })
+          } else {
+            // Local-only mode: add transcript directly
+            console.log('[AICallWidget] Working in local mode - adding transcript directly')
+            setTranscripts(prev => [...prev, newTranscript])
+
+            // Analyze for action items locally
+            try {
+              const response = await fetch('/api/meetings/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  transcript: newTranscript.text,
+                  context: transcripts.slice(-3).map(t => t.text).join(' ')
+                })
+              })
+
+              if (response.ok) {
+                const { actionItems: detectedItems } = await response.json()
+                if (detectedItems && detectedItems.length > 0) {
+                  console.log('[AICallWidget] Detected action items (local mode):', detectedItems)
+                  setActionItems(prev => {
+                    const newItems = detectedItems.filter((item: ActionItem) =>
+                      !prev.some(existing => existing.id === item.id)
+                    )
+                    return [...prev, ...newItems]
+                  })
+                }
+              }
+            } catch (error) {
+              console.error('[AICallWidget] Error analyzing transcript (local mode):', error)
+            }
+          }
         }
       } catch (error) {
         console.error('[AICallWidget] Transcription error:', error)
