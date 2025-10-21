@@ -30,17 +30,14 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
   const [showParticipants, setShowParticipants] = useState(false)
   const [showAIWidget, setShowAIWidget] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // TODO: Get these from auth (Clerk) once implemented
   const userId = 'demo-user-' + Math.random().toString(36).substr(2, 9)
   const userName = 'You'
 
-  // Mock participants for demo
-  const [participants] = useState<Participant[]>([
-    { id: '1', name: 'John Doe', isMuted: false, isVideoOff: false },
-    { id: '2', name: 'Jane Smith', isMuted: true, isVideoOff: false },
-    { id: '3', name: 'Bob Johnson', isMuted: false, isVideoOff: true },
-  ])
+  // Real participants will be managed via WebRTC/Socket.io
+  const [participants] = useState<Participant[]>([])
 
   useEffect(() => {
     // Get user media (camera and microphone)
@@ -166,6 +163,17 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
     onLeave()
   }
 
+  const copyRoomLink = async () => {
+    const roomUrl = `${window.location.origin}/video/demo?room=${meetingId}`
+    try {
+      await navigator.clipboard.writeText(roomUrl)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy link:', err)
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
       {/* Header */}
@@ -175,6 +183,31 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
           <p className="text-gray-400 text-sm">{participants.length + 1} participants</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={copyRoomLink}
+            className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
+              linkCopied
+                ? 'bg-green-500 text-white'
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
+            title="Copy meeting link to share"
+          >
+            {linkCopied ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-medium">Share Link</span>
+              </>
+            )}
+          </button>
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'speaker' : 'grid')}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"
@@ -212,7 +245,7 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
             </div>
           </div>
 
-          {/* Remote Participants (Mock) */}
+          {/* Remote Participants */}
           {participants.map((participant) => (
             <div key={participant.id} className="relative bg-gray-800 rounded-lg overflow-hidden group">
               {participant.isVideoOff ? (
@@ -351,6 +384,12 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
                 <span className="text-white flex-1">You</span>
                 {isMuted && <MicOff className="w-4 h-4 text-red-400" />}
               </div>
+              {participants.length === 0 && (
+                <div className="mt-4 text-center py-8">
+                  <p className="text-gray-400 text-sm">No one else has joined yet</p>
+                  <p className="text-gray-500 text-xs mt-2">Share the meeting link to invite others</p>
+                </div>
+              )}
               {participants.map(participant => (
                 <div key={participant.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-700">
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full" />
