@@ -11,24 +11,22 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const meetingId = formData.get('meetingId') as string
 
-    // Allow demo meetings without authentication
-    const isDemoMode = meetingId === 'client-demo' || meetingId?.startsWith('demo-')
-
-    // Multi-tenant authentication (optional for demo mode)
+    // Multi-tenant authentication (optional - allowing unauthenticated access during development)
     let userId: string | null = null
     try {
       const authResult = await auth()
       userId = authResult.userId
     } catch (authError) {
-      console.log('[Transcribe] Auth unavailable, checking demo mode')
+      console.log('[Transcribe] Auth unavailable, allowing unauthenticated access')
     }
 
-    if (!userId && !isDemoMode) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // TODO: Re-enable authentication requirement when Clerk is fully configured
+    // if (!userId) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   )
+    // }
     const audioFile = formData.get('audio') as File
     const speakerName = formData.get('speakerName') as string
 

@@ -15,24 +15,22 @@ export async function POST(request: Request) {
   try {
     const { transcript, context, meetingId } = await request.json()
 
-    // Allow demo meetings without authentication
-    const isDemoMode = meetingId === 'client-demo' || meetingId?.startsWith('demo-')
-
-    // Multi-tenant authentication (optional for demo mode)
+    // Multi-tenant authentication (optional - allowing unauthenticated access during development)
     let userId: string | null = null
     try {
       const authResult = await auth()
       userId = authResult.userId
     } catch (authError) {
-      console.log('[Analyze] Auth unavailable, checking demo mode')
+      console.log('[Analyze] Auth unavailable, allowing unauthenticated access')
     }
 
-    if (!userId && !isDemoMode) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // TODO: Re-enable authentication requirement when Clerk is fully configured
+    // if (!userId) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   )
+    // }
 
     if (!transcript || transcript.trim().length === 0) {
       return NextResponse.json(
