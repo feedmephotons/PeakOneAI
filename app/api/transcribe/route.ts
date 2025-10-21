@@ -8,14 +8,20 @@ import { auth } from '@clerk/nextjs/server'
  */
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication (optional for demo mode)
-    const { userId } = await auth()
-
     const formData = await request.formData()
     const meetingId = formData.get('meetingId') as string
 
     // Allow demo meetings without authentication
     const isDemoMode = meetingId === 'client-demo' || meetingId?.startsWith('demo-')
+
+    // Multi-tenant authentication (optional for demo mode)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch (authError) {
+      console.log('[Transcribe] Auth unavailable, checking demo mode')
+    }
 
     if (!userId && !isDemoMode) {
       return NextResponse.json(

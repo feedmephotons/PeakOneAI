@@ -13,13 +13,19 @@ import { analyzeTranscriptChunk, mightContainActionItem } from '@/lib/meeting-an
  */
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication (optional for demo mode)
-    const { userId } = await auth()
-
     const { transcript, context, meetingId } = await request.json()
 
     // Allow demo meetings without authentication
     const isDemoMode = meetingId === 'client-demo' || meetingId?.startsWith('demo-')
+
+    // Multi-tenant authentication (optional for demo mode)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch (authError) {
+      console.log('[Analyze] Auth unavailable, checking demo mode')
+    }
 
     if (!userId && !isDemoMode) {
       return NextResponse.json(
