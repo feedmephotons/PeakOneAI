@@ -31,6 +31,10 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
   const [showAIWidget, setShowAIWidget] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
 
+  // TODO: Get these from auth (Clerk) once implemented
+  const userId = 'demo-user-' + Math.random().toString(36).substr(2, 9)
+  const userName = 'You'
+
   // Mock participants for demo
   const [participants] = useState<Participant[]>([
     { id: '1', name: 'John Doe', isMuted: false, isVideoOff: false },
@@ -334,7 +338,15 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
       )}
 
       {/* AI Call Widget */}
-      {showAIWidget && <AICallWidget onClose={() => setShowAIWidget(false)} />}
+      {showAIWidget && (
+        <AICallWidget
+          meetingId={meetingId}
+          userId={userId}
+          userName={userName}
+          audioStream={localStream}
+          onClose={() => setShowAIWidget(false)}
+        />
+      )}
     </div>
   )
 }

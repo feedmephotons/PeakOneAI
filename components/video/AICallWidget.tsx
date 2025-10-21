@@ -1,80 +1,201 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Brain, Minimize2, Maximize2, X, Mic, Sparkles } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Brain, Minimize2, Maximize2, X, Mic, Sparkles, MicOff } from 'lucide-react'
+import { io, Socket } from 'socket.io-client'
+import { AudioRecorder, transcribeAudio } from '@/lib/audio-recorder'
 
 interface Transcript {
   id: string
   speaker: string
   text: string
-  timestamp: Date
+  timestamp: string
+  userId?: string
 }
 
 interface ActionItem {
   id: string
   text: string
   assignee?: string
+  deadline?: string
+  confidence?: number
 }
 
 interface AICallWidgetProps {
+  meetingId: string
+  userId: string
+  userName: string
+  audioStream: MediaStream | null
   isMinimized?: boolean
   onClose?: () => void
 }
 
-export default function AICallWidget({ isMinimized: initialMinimized = false, onClose }: AICallWidgetProps) {
+export default function AICallWidget({
+  meetingId,
+  userId,
+  userName,
+  audioStream,
+  isMinimized: initialMinimized = false,
+  onClose
+}: AICallWidgetProps) {
   const [isMinimized, setIsMinimized] = useState(initialMinimized)
   const [isListening, setIsListening] = useState(true)
-  const [transcripts, setTranscripts] = useState<Transcript[]>([
-    {
-      id: '1',
-      speaker: 'John Doe',
-      text: 'Let\'s review the Q4 targets and make sure we\'re aligned on priorities.',
-      timestamp: new Date(Date.now() - 120000)
-    },
-    {
-      id: '2',
-      speaker: 'You',
-      text: 'Absolutely. I think we should focus on the three main KPIs we discussed.',
-      timestamp: new Date(Date.now() - 60000)
-    },
-    {
-      id: '3',
-      speaker: 'Jane Smith',
-      text: 'I agree. Can we also add the marketing campaign timeline to our action items?',
-      timestamp: new Date(Date.now() - 30000)
-    }
-  ])
-  const [actionItems, setActionItems] = useState<ActionItem[]>([
-    { id: '1', text: 'Review Q4 KPIs', assignee: 'John' },
-    { id: '2', text: 'Create marketing campaign timeline', assignee: 'Jane' }
-  ])
+  const [transcripts, setTranscripts] = useState<Transcript[]>([])
+  const [actionItems, setActionItems] = useState<ActionItem[]>([])
+  const [activeTab, setActiveTab] = useState<'transcript' | 'actions' | 'summary'>('transcript')
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  // Simulate live transcription
+  const socketRef = useRef<Socket | null>(null)
+  const audioRecorderRef = useRef<AudioRecorder | null>(null)
+  const transcriptsEndRef = useRef<HTMLDivElement>(null)
+
+  // Initialize Socket.io connection
   useEffect(() => {
-    if (!isListening) return
+    const socket = io('http://localhost:3001')
+    socketRef.current = socket
 
-    const interval = setInterval(() => {
-      // Simulate new transcript every 10 seconds
-      const speakers = ['John Doe', 'Jane Smith', 'You']
-      const sampleTexts = [
-        'I think we should prioritize the client deliverables first.',
-        'Can we schedule a follow-up meeting for next week?',
-        'Let me share my screen to show the latest updates.',
-        'Great point. Let\'s make sure to document this decision.'
-      ]
+    socket.on('connect', () => {
+      console.log('[AICallWidget] Socket connected')
 
-      const newTranscript: Transcript = {
-        id: Date.now().toString(),
-        speaker: speakers[Math.floor(Math.random() * speakers.length)],
-        text: sampleTexts[Math.floor(Math.random() * sampleTexts.length)],
-        timestamp: new Date()
+      // Join meeting room
+      socket.emit('join-meeting', {
+        meetingId,
+        userId,
+        userName
+      })
+    })
+
+    // Listen for new transcripts from other participants
+    socket.on('new-transcript', async (transcript: Transcript) => {
+      console.log('[AICallWidget] New transcript:', transcript)
+      setTranscripts(prev => [...prev, transcript])
+      setIsProcessing(false)
+
+      // Analyze transcript for action items
+      try {
+        const response = await fetch('/api/meetings/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transcript: transcript.text,
+            context: transcripts.slice(-3).map(t => t.text).join(' ') // Last 3 messages for context
+          })
+        })
+
+        if (response.ok) {
+          const { actionItems: detectedItems } = await response.json()
+
+          if (detectedItems && detectedItems.length > 0) {
+            console.log('[AICallWidget] Detected action items:', detectedItems)
+
+            // Broadcast action items to all participants
+            detectedItems.forEach((item: ActionItem) => {
+              socket.emit('action-item-detected', {
+                meetingId,
+                actionItem: item
+              })
+            })
+          }
+        }
+      } catch (error) {
+        console.error('[AICallWidget] Error analyzing transcript:', error)
       }
+    })
 
-      setTranscripts(prev => [...prev, newTranscript])
-    }, 15000)
+    // Listen for processing status
+    socket.on('transcription-processing', ({ userName: processingUser }) => {
+      if (processingUser !== userName) {
+        setIsProcessing(true)
+      }
+    })
 
-    return () => clearInterval(interval)
-  }, [isListening])
+    // Listen for AI-detected action items
+    socket.on('new-action-item', (actionItem: ActionItem) => {
+      console.log('[AICallWidget] New action item:', actionItem)
+      setActionItems(prev => {
+        // Avoid duplicates
+        if (prev.some(item => item.id === actionItem.id)) {
+          return prev
+        }
+        return [...prev, actionItem]
+      })
+    })
+
+    socket.on('disconnect', () => {
+      console.log('[AICallWidget] Socket disconnected')
+    })
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave-meeting', {
+          meetingId,
+          userId,
+          userName
+        })
+        socketRef.current.disconnect()
+      }
+    }
+  }, [meetingId, userId, userName])
+
+  // Initialize audio recording when listening is enabled
+  useEffect(() => {
+    if (!audioStream || !isListening) {
+      if (audioRecorderRef.current?.isRecording()) {
+        audioRecorderRef.current.stop()
+      }
+      return
+    }
+
+    const recorder = new AudioRecorder()
+    audioRecorderRef.current = recorder
+
+    const handleAudioChunk = async (audioBlob: Blob) => {
+      console.log('[AICallWidget] Audio chunk ready, sending for transcription')
+
+      try {
+        // Send to transcription API
+        const result = await transcribeAudio(audioBlob, meetingId, userName)
+
+        if (result && result.transcript && result.transcript.length > 0) {
+          // Broadcast transcript via WebSocket
+          socketRef.current?.emit('transcription-result', {
+            meetingId,
+            transcript: result.transcript,
+            userId,
+            userName,
+            timestamp: result.timestamp
+          })
+        }
+      } catch (error) {
+        console.error('[AICallWidget] Transcription error:', error)
+      }
+    }
+
+    // Start recording with 5-second chunks
+    recorder.start(audioStream, handleAudioChunk, 5000)
+      .catch(error => {
+        console.error('[AICallWidget] Failed to start recording:', error)
+      })
+
+    return () => {
+      recorder.stop()
+    }
+  }, [audioStream, isListening, meetingId, userId, userName])
+
+  // Auto-scroll to latest transcript
+  useEffect(() => {
+    transcriptsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [transcripts])
+
+  const toggleListening = () => {
+    setIsListening(!isListening)
+
+    if (!isListening && audioRecorderRef.current) {
+      audioRecorderRef.current.resume()
+    } else if (audioRecorderRef.current) {
+      audioRecorderRef.current.pause()
+    }
+  }
 
   // Waveform animation bars
   const WaveformBars = () => {
@@ -149,13 +270,17 @@ export default function AICallWidget({ isMinimized: initialMinimized = false, on
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsListening(!isListening)}
+            onClick={toggleListening}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${
               isListening ? 'bg-white/20 hover:bg-white/30' : 'bg-red-500/20 hover:bg-red-500/30'
             }`}
             title={isListening ? 'Pause transcription' : 'Resume transcription'}
           >
-            <Mic className={`w-4 h-4 ${isListening ? 'text-white' : 'text-red-300'}`} />
+            {isListening ? (
+              <Mic className="w-4 h-4 text-white" />
+            ) : (
+              <MicOff className="w-4 h-4 text-red-300" />
+            )}
           </button>
           <button
             onClick={() => setIsMinimized(true)}
@@ -178,58 +303,191 @@ export default function AICallWidget({ isMinimized: initialMinimized = false, on
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <button className="flex-1 px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
+        <button
+          onClick={() => setActiveTab('transcript')}
+          className={`flex-1 px-4 py-3 text-sm font-medium ${
+            activeTab === 'transcript'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
           Transcript
         </button>
-        <button className="flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-          Action Items ({actionItems.length})
+        <button
+          onClick={() => setActiveTab('actions')}
+          className={`flex-1 px-4 py-3 text-sm font-medium ${
+            activeTab === 'actions'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Action Items {actionItems.length > 0 && `(${actionItems.length})`}
         </button>
-        <button className="flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <button
+          onClick={() => setActiveTab('summary')}
+          className={`flex-1 px-4 py-3 text-sm font-medium ${
+            activeTab === 'summary'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
           Summary
         </button>
       </div>
 
-      {/* Transcript Content */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
-        {transcripts.map((transcript) => (
-          <div key={transcript.id} className="bg-white dark:bg-gray-700 rounded-xl p-3 border border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                {transcript.speaker}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {transcript.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              {transcript.text}
-            </p>
-          </div>
-        ))}
+        {activeTab === 'transcript' && (
+          <>
+            {transcripts.length === 0 && (
+              <div className="text-center py-8">
+                <Brain className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Waiting for conversation to start...
+                </p>
+              </div>
+            )}
 
-        {/* Live indicator */}
-        {isListening && (
-          <div className="flex items-center justify-center gap-2 py-4">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">Listening for speech...</span>
+            {transcripts.map((transcript) => (
+              <div key={transcript.id} className="bg-white dark:bg-gray-700 rounded-xl p-3 border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`font-semibold text-sm ${
+                    transcript.userId === userId
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-gray-900 dark:text-white'
+                  }`}>
+                    {transcript.speaker}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(transcript.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {transcript.text}
+                </p>
+              </div>
+            ))}
+
+            {/* Live indicator */}
+            {isListening && (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {isProcessing ? 'Processing...' : 'Listening for speech...'}
+                </span>
+              </div>
+            )}
+
+            <div ref={transcriptsEndRef} />
+          </>
+        )}
+
+        {activeTab === 'actions' && (
+          <>
+            {actionItems.length === 0 ? (
+              <div className="text-center py-8">
+                <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No action items detected yet
+                </p>
+              </div>
+            ) : (
+              actionItems.map((item) => (
+                <div key={item.id} className="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 w-4 h-4 rounded border-gray-300"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {item.text}
+                      </p>
+                      {(item.assignee || item.deadline) && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {item.assignee && (
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                              👤 {item.assignee}
+                            </span>
+                          )}
+                          {item.deadline && (
+                            <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
+                              📅 {item.deadline}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/tasks/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                title: item.text,
+                                assignee: item.assignee,
+                                deadline: item.deadline,
+                                meetingId
+                              })
+                            })
+
+                            if (response.ok) {
+                              alert('✅ Task added to board!')
+                              // Remove from action items or mark as added
+                              setActionItems(prev => prev.filter(a => a.id !== item.id))
+                            } else {
+                              const error = await response.json()
+                              alert(`Failed to create task: ${error.error}`)
+                            }
+                          } catch (error) {
+                            console.error('Error creating task:', error)
+                            alert('Failed to create task')
+                          }
+                        }}
+                        className="mt-3 w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-lg hover:opacity-90 transition"
+                      >
+                        Add to Task Board
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === 'summary' && (
+          <div className="text-center py-8">
+            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Summary will be generated when the meeting ends
+            </p>
           </div>
         )}
       </div>
 
       {/* AI Insights Bar */}
-      <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-t border-purple-200 dark:border-purple-800 p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-900 dark:text-white mb-1">AI Insight</p>
-            <p className="text-xs text-gray-700 dark:text-gray-300">
-              Detected 2 action items. Would you like me to add them to your task board?
-            </p>
+      {actionItems.length > 0 && activeTab === 'transcript' && (
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-t border-purple-200 dark:border-purple-800 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-900 dark:text-white mb-1">AI Insight</p>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                Detected {actionItems.length} action {actionItems.length === 1 ? 'item' : 'items'}.{' '}
+                <button
+                  onClick={() => setActiveTab('actions')}
+                  className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  View all →
+                </button>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
