@@ -164,7 +164,8 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
   }
 
   const copyRoomLink = async () => {
-    const roomUrl = `${window.location.origin}/video/demo?room=${meetingId}`
+    // Share the current URL so people join the exact same room
+    const roomUrl = window.location.href
     try {
       await navigator.clipboard.writeText(roomUrl)
       setLinkCopied(true)
