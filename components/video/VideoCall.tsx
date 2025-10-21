@@ -46,10 +46,20 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
     // Get user media (camera and microphone)
     const startLocalStream = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720 },
-          audio: true
-        })
+        // Try with ideal constraints first
+        const constraints = {
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user'
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
 
         setLocalStream(stream)
         if (localVideoRef.current) {
@@ -57,6 +67,22 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
         }
       } catch (error) {
         console.error('Error accessing media devices:', error)
+
+        // Try fallback with minimal constraints
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+          })
+
+          setLocalStream(fallbackStream)
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = fallbackStream
+          }
+        } catch (fallbackError) {
+          console.error('Fallback media access failed:', fallbackError)
+          // Continue without video - AI features will still work
+        }
       }
     }
 
