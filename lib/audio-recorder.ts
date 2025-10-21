@@ -88,6 +88,7 @@ export class AudioRecorder {
 
     // Store interval ID for cleanup
     if (this.mediaRecorder) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.mediaRecorder as any).chunkIntervalId = intervalId
     }
   }
@@ -98,6 +99,7 @@ export class AudioRecorder {
   stop(): void {
     if (this.mediaRecorder) {
       // Clear interval
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const intervalId = (this.mediaRecorder as any).chunkIntervalId
       if (intervalId) {
         clearInterval(intervalId)

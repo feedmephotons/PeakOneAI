@@ -76,6 +76,7 @@ Only extract clear, actionable items. If no action items, return [].`
     const actionItems = Array.isArray(parsed) ? parsed : (parsed.actionItems || [])
 
     // Add IDs and validate
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return actionItems.map((item: any) => ({
       id: `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: item.text || '',
@@ -152,6 +153,7 @@ Return JSON:
     const parsed = JSON.parse(content)
 
     // Add IDs to action items
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const actionItems = (parsed.actionItems || []).map((item: any) => ({
       id: `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: item.text || '',
