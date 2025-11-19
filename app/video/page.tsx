@@ -279,8 +279,9 @@ export default function VideoPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="font-semibold mb-1">Start Now</h3>
-              <p className="text-sm text-violet-100">Begin instant meeting with link sharing</p>
+              <h3 className="font-semibold mb-1">Start Multi-Party Room</h3>
+              <p className="text-sm text-violet-100">Real-time video with multiple participants</p>
+              <p className="text-xs text-violet-200 mt-2">Requires Daily.co API key</p>
             </button>
 
             <button

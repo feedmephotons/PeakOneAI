@@ -180,8 +180,15 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
       {/* Header */}
       <div className="bg-gray-800 px-6 py-3 flex items-center justify-between">
         <div>
-          <h2 className="text-white font-semibold">Meeting ID: {meetingId}</h2>
-          <p className="text-gray-400 text-sm">{participants.length + 1} participants</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-white font-semibold">Meeting ID: {meetingId}</h2>
+            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded-full">
+              Demo Mode (Local Only)
+            </span>
+          </div>
+          <p className="text-gray-400 text-sm">
+            For multi-party video, use /video/room/[id] with Daily.co configured
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
