@@ -27,6 +27,12 @@ export function useDaily(roomUrl: string | null, userName: string) {
   useEffect(() => {
     if (!roomUrl) return
 
+    // Prevent creating multiple instances
+    if (callRef.current) {
+      console.log('[Daily] Call object already exists, skipping creation')
+      return
+    }
+
     const joinCall = async () => {
       try {
         setIsJoining(true)
@@ -68,11 +74,22 @@ export function useDaily(roomUrl: string | null, userName: string) {
 
     return () => {
       if (callRef.current) {
+        console.log('[Daily] Cleaning up call object')
+        // Remove all event listeners before destroying
+        callRef.current
+          .off('joined-meeting', handleJoinedMeeting)
+          .off('participant-joined', handleParticipantUpdate)
+          .off('participant-updated', handleParticipantUpdate)
+          .off('participant-left', handleParticipantUpdate)
+          .off('error', handleError)
+
+        // Leave and destroy
+        callRef.current.leave().catch(console.error)
         callRef.current.destroy()
         callRef.current = null
       }
     }
-  }, [roomUrl, userName])
+  }, [roomUrl])
 
   const handleJoinedMeeting = () => {
     console.log('[Daily] Joined meeting')

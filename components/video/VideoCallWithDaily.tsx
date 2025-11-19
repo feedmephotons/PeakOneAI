@@ -23,9 +23,11 @@ export default function VideoCallWithDaily({ meetingId, roomUrl, onLeave }: Vide
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
   const [isScreenSharing, setIsScreenSharing] = useState(false)
 
-  // Generate temporary user info (TODO: Use Clerk when configured)
-  const userName = 'Guest-' + Math.random().toString(36).substr(2, 5)
-  const userId = 'user-' + Math.random().toString(36).substr(2, 9)
+  // Generate temporary user info ONCE (TODO: Use Clerk when configured)
+  const userNameRef = useRef('Guest-' + Math.random().toString(36).substr(2, 5))
+  const userIdRef = useRef('user-' + Math.random().toString(36).substr(2, 9))
+  const userName = userNameRef.current
+  const userId = userIdRef.current
 
   // Daily.co hook
   const {
