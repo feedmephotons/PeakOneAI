@@ -43,10 +43,23 @@ export async function POST(request: Request) {
       )
     }
 
+    // Sanitize room name - Daily.co requires lowercase alphanumeric with hyphens/underscores only
+    const sanitizeRoomName = (name: string) => {
+      return name
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]/g, '-') // Replace invalid chars with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    }
+
     // Use provided roomName or generate one from meetingTitle
-    const dailyRoomName = roomName || (meetingTitle ?
-      `${meetingTitle.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}` :
-      `meeting-${Date.now()}`)
+    const dailyRoomName = roomName
+      ? sanitizeRoomName(roomName)
+      : (meetingTitle
+        ? `${sanitizeRoomName(meetingTitle)}-${Date.now()}`
+        : `meeting-${Date.now()}`)
+
+    console.log('[CreateRoom] Requesting room name:', dailyRoomName)
 
     // Try to get existing room first (in case it already exists)
     const existingRoomResponse = await fetch(`https://api.daily.co/v1/rooms/${dailyRoomName}`, {
@@ -59,7 +72,7 @@ export async function POST(request: Request) {
     // If room exists, return it
     if (existingRoomResponse.ok) {
       const existingRoom = await existingRoomResponse.json()
-      console.log('[CreateRoom] Room already exists, joining existing:', existingRoom.name)
+      console.log('[CreateRoom] Room already exists, joining existing:', existingRoom.name, existingRoom.url)
       return NextResponse.json({
         success: true,
         roomUrl: existingRoom.url,
@@ -68,6 +81,8 @@ export async function POST(request: Request) {
         isExisting: true
       })
     }
+
+    console.log('[CreateRoom] Room does not exist, creating new room:', dailyRoomName)
 
     // Create a new Daily.co room with the specific name
     const response = await fetch('https://api.daily.co/v1/rooms', {
@@ -106,13 +121,14 @@ export async function POST(request: Request) {
 
     const room = await response.json()
 
-    console.log('[CreateRoom] Room created:', room.name)
+    console.log('[CreateRoom] Room created successfully:', room.name, room.url)
 
     return NextResponse.json({
       success: true,
       roomUrl: room.url,
       roomName: room.name,
-      expiresAt: new Date(room.config.exp * 1000).toISOString()
+      expiresAt: new Date(room.config.exp * 1000).toISOString(),
+      isExisting: false
     })
 
   } catch (error) {

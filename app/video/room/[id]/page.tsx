@@ -37,6 +37,9 @@ export default function VideoRoomPage() {
         }
 
         const data = await response.json()
+        console.log('[VideoRoomPage] Meeting ID:', meetingId)
+        console.log('[VideoRoomPage] Daily.co Room URL:', data.roomUrl)
+        console.log('[VideoRoomPage] Is existing room?', data.isExisting)
         setRoomUrl(data.roomUrl)
       } catch (err) {
         console.error('Failed to create room:', err)

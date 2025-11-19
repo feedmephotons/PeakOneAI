@@ -105,7 +105,8 @@ export function useDaily(roomUrl: string | null, userName: string) {
     }
   }
 
-  const handleParticipantUpdate = () => {
+  const handleParticipantUpdate = (event?: any) => {
+    console.log('[Daily] Participant update:', event)
     updateParticipants()
   }
 
@@ -120,8 +121,18 @@ export function useDaily(roomUrl: string | null, userName: string) {
     const dailyParticipants = callRef.current.participants()
     const participantList: DailyParticipant[] = []
 
+    console.log('[Daily] Updating participants. Total count:', Object.keys(dailyParticipants).length)
+
     Object.entries(dailyParticipants).forEach(([id, participant]) => {
       if (!participant) return
+
+      console.log('[Daily] Participant:', {
+        id: participant.session_id,
+        name: participant.user_name,
+        isLocal: participant.local,
+        hasVideo: !!participant.video,
+        hasAudio: !!participant.audio
+      })
 
       participantList.push({
         id: participant.session_id,
@@ -135,6 +146,7 @@ export function useDaily(roomUrl: string | null, userName: string) {
       })
     })
 
+    console.log('[Daily] Participant list updated. Count:', participantList.length)
     setParticipants(participantList)
   }
 

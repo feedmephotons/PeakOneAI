@@ -130,7 +130,7 @@ export default function VideoCallWithDaily({ meetingId, roomUrl, onLeave }: Vide
 
       {/* Video Grid */}
       <div className="flex-1 p-4 overflow-auto">
-        <div className={`h-full ${viewMode === 'grid' ? 'grid grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-4'}`}>
+        <div className={`h-full ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-4'}`}>
           {/* Local Video */}
           {localParticipant && (
             <div className="relative bg-gray-800 rounded-lg overflow-hidden group">
