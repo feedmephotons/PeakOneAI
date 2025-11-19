@@ -138,6 +138,15 @@ export default function TasksPage() {
     }
 
     loadTasks()
+
+    // Listen for storage events to reload when tasks are added from other components (like video calls)
+    const handleStorageChange = () => {
+      console.log('[TasksPage] Storage changed, reloading tasks...')
+      loadTasks()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   // Save tasks to localStorage whenever they change

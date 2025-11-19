@@ -516,30 +516,42 @@ export default function AICallWidget({
                         </div>
                       )}
                       <button
-                        onClick={async () => {
+                        onClick={() => {
                           try {
-                            const response = await fetch('/api/tasks/create', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                title: item.text,
-                                assignee: item.assignee,
-                                deadline: item.deadline,
-                                meetingId
-                              })
-                            })
+                            // Load existing tasks from localStorage
+                            const savedTasks = localStorage.getItem('tasks')
+                            const tasks = savedTasks ? JSON.parse(savedTasks) : []
 
-                            if (response.ok) {
-                              alert('✅ Task added to board!')
-                              // Remove from action items or mark as added
-                              setActionItems(prev => prev.filter(a => a.id !== item.id))
-                            } else {
-                              const error = await response.json()
-                              alert(`Failed to create task: ${error.error}`)
+                            // Create new task from action item
+                            const newTask = {
+                              id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                              title: item.text,
+                              description: `From meeting: ${meetingId}`,
+                              status: 'TODO',
+                              priority: item.deadline ? 'HIGH' : 'MEDIUM',
+                              assignee: item.assignee ? { id: 'ai-assigned', name: item.assignee } : undefined,
+                              dueDate: item.deadline ? new Date(item.deadline) : undefined,
+                              tags: ['ai-generated', 'meeting'],
+                              attachments: 0,
+                              comments: 0,
+                              createdAt: new Date(),
+                              updatedAt: new Date()
                             }
+
+                            // Add to tasks
+                            tasks.push(newTask)
+                            localStorage.setItem('tasks', JSON.stringify(tasks))
+
+                            // Show success notification
+                            console.log('[AICallWidget] Task added to board:', newTask.title)
+
+                            // Remove from action items
+                            setActionItems(prev => prev.filter(a => a.id !== item.id))
+
+                            // Dispatch event so task board updates if it's open
+                            window.dispatchEvent(new Event('storage'))
                           } catch (error) {
-                            console.error('Error creating task:', error)
-                            alert('Failed to create task')
+                            console.error('[AICallWidget] Error adding task to board:', error)
                           }
                         }}
                         className="mt-3 w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-lg hover:opacity-90 transition"
