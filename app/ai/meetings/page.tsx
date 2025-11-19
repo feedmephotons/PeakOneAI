@@ -243,7 +243,42 @@ export default function MeetingIntelligencePage() {
                 {/* Action Items */}
                 {selectedMeeting.actionItems && selectedMeeting.actionItems.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Action Items</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">Action Items</h3>
+                      <button
+                        onClick={() => {
+                          // Load existing tasks
+                          const savedTasks = localStorage.getItem('tasks')
+                          const tasks = savedTasks ? JSON.parse(savedTasks) : []
+
+                          // Create tasks from all action items
+                          selectedMeeting.actionItems.forEach((item: { text: string, assignee?: string }) => {
+                            const newTask = {
+                              id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                              title: item.text,
+                              description: `From meeting: ${selectedMeeting.title}`,
+                              status: 'TODO',
+                              priority: 'MEDIUM',
+                              assignee: item.assignee ? { id: 'ai-assigned', name: item.assignee } : undefined,
+                              tags: ['ai-generated', 'meeting'],
+                              attachments: 0,
+                              comments: 0,
+                              createdAt: new Date(),
+                              updatedAt: new Date()
+                            }
+                            tasks.push(newTask)
+                          })
+
+                          localStorage.setItem('tasks', JSON.stringify(tasks))
+                          window.dispatchEvent(new Event('storage'))
+
+                          alert(`✅ Added ${selectedMeeting.actionItems.length} tasks to board!`)
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition"
+                      >
+                        Add All to Task Board
+                      </button>
+                    </div>
                     <div className="space-y-2">
                       {selectedMeeting.actionItems.map((item, idx) => (
                         <div key={idx} className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
