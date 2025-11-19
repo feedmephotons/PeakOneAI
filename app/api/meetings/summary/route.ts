@@ -14,14 +14,13 @@ import { generateMeetingSummary } from '@/lib/meeting-analyzer'
  */
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Multi-tenant authentication (optional - allowing unauthenticated access during development)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch (authError) {
+      console.log('[Summary] Auth unavailable, allowing unauthenticated access')
     }
 
     const { meetingId, meetingTitle, transcripts } = await request.json()

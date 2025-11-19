@@ -44,6 +44,8 @@ export default function AICallWidget({
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
   const [activeTab, setActiveTab] = useState<'transcript' | 'actions' | 'summary'>('transcript')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [meetingSummary, setMeetingSummary] = useState<string | null>(null)
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
 
   const socketRef = useRef<Socket | null>(null)
   const audioRecorderRef = useRef<AudioRecorder | null>(null)
@@ -292,6 +294,57 @@ export default function AICallWidget({
       audioRecorderRef.current.resume()
     } else if (audioRecorderRef.current) {
       audioRecorderRef.current.pause()
+    }
+  }
+
+  const generateSummary = async () => {
+    if (transcripts.length === 0) {
+      console.log('[AICallWidget] No transcripts to summarize')
+      return
+    }
+
+    setIsGeneratingSummary(true)
+    try {
+      const response = await fetch('/api/meetings/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meetingId,
+          transcripts: transcripts.map(t => ({
+            speaker: t.speaker,
+            text: t.text,
+            timestamp: t.timestamp
+          }))
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMeetingSummary(data.summary)
+
+        // Save meeting to localStorage
+        const savedMeetings = localStorage.getItem('meetings') || '[]'
+        const meetings = JSON.parse(savedMeetings)
+        meetings.push({
+          id: meetingId,
+          title: `Meeting ${meetingId}`,
+          date: new Date().toISOString(),
+          duration: Math.floor((Date.now() - (transcripts[0] ? new Date(transcripts[0].timestamp).getTime() : Date.now())) / 1000),
+          transcripts,
+          summary: data.summary,
+          actionItems,
+          participants: [...new Set(transcripts.map(t => t.speaker))].length
+        })
+        localStorage.setItem('meetings', JSON.stringify(meetings))
+
+        console.log('[AICallWidget] Meeting summary generated and saved')
+      } else {
+        console.error('[AICallWidget] Failed to generate summary:', await response.text())
+      }
+    } catch (error) {
+      console.error('[AICallWidget] Error generating summary:', error)
+    } finally {
+      setIsGeneratingSummary(false)
     }
   }
 
@@ -567,11 +620,43 @@ export default function AICallWidget({
         )}
 
         {activeTab === 'summary' && (
-          <div className="text-center py-8">
-            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Summary will be generated when the meeting ends
-            </p>
+          <div className="p-4">
+            {meetingSummary ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+                  {meetingSummary}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Brain className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {transcripts.length === 0
+                    ? 'No transcripts yet to summarize'
+                    : 'Generate an AI summary of this meeting'
+                  }
+                </p>
+                {transcripts.length > 0 && (
+                  <button
+                    onClick={generateSummary}
+                    disabled={isGeneratingSummary}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {isGeneratingSummary ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        Generate Summary
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
