@@ -56,6 +56,36 @@ export async function POST(request: Request) {
 
     const transcriptText = transcription.toString().trim()
 
+    // Filter out common Whisper hallucinations (phrases it says during silence)
+    const hallucinations = [
+      'thank you for watching',
+      'thanks for watching',
+      'pissedconsumer.com',
+      'subscribe',
+      'like and subscribe',
+      'hit the bell',
+      'check out',
+      'visit our website',
+      'www.',
+      'http'
+    ]
+
+    const isHallucination = hallucinations.some(phrase =>
+      transcriptText.toLowerCase().includes(phrase.toLowerCase())
+    )
+
+    // If it's too short or a hallucination, return empty
+    if (transcriptText.length < 3 || isHallucination) {
+      console.log(`[Transcribe] Filtered out hallucination/noise: "${transcriptText}"`)
+      return NextResponse.json({
+        success: true,
+        transcript: '', // Return empty to skip
+        speaker: speakerName,
+        meetingId,
+        timestamp: new Date().toISOString()
+      })
+    }
+
     console.log(`[Transcribe] Result: "${transcriptText}"`)
 
     return NextResponse.json({

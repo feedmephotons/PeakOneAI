@@ -42,7 +42,7 @@ export default function AICallWidget({
   const [isListening, setIsListening] = useState(true)
   const [transcripts, setTranscripts] = useState<Transcript[]>([])
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
-  const [activeTab, setActiveTab] = useState<'transcript' | 'actions' | 'summary'>('transcript')
+  const [activeTab, setActiveTab] = useState<'actions' | 'summary'>('actions')
   const [isProcessing, setIsProcessing] = useState(false)
   const [meetingSummary, setMeetingSummary] = useState<string | null>(null)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
@@ -455,16 +455,6 @@ export default function AICallWidget({
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <button
-          onClick={() => setActiveTab('transcript')}
-          className={`flex-1 px-4 py-3 text-sm font-medium ${
-            activeTab === 'transcript'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          Transcript
-        </button>
-        <button
           onClick={() => setActiveTab('actions')}
           className={`flex-1 px-4 py-3 text-sm font-medium ${
             activeTab === 'actions'
@@ -488,51 +478,6 @@ export default function AICallWidget({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
-        {activeTab === 'transcript' && (
-          <>
-            {transcripts.length === 0 && (
-              <div className="text-center py-8">
-                <Brain className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Waiting for conversation to start...
-                </p>
-              </div>
-            )}
-
-            {transcripts.map((transcript) => (
-              <div key={transcript.id} className="bg-white dark:bg-gray-700 rounded-xl p-3 border border-gray-200 dark:border-gray-600">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`font-semibold text-sm ${
-                    transcript.userId === userId
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-900 dark:text-white'
-                  }`}>
-                    {transcript.speaker}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(transcript.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {transcript.text}
-                </p>
-              </div>
-            ))}
-
-            {/* Live indicator */}
-            {isListening && (
-              <div className="flex items-center justify-center gap-2 py-4">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {isProcessing ? 'Processing...' : 'Listening for speech...'}
-                </span>
-              </div>
-            )}
-
-            <div ref={transcriptsEndRef} />
-          </>
-        )}
-
         {activeTab === 'actions' && (
           <>
             {actionItems.length === 0 ? (
@@ -660,29 +605,6 @@ export default function AICallWidget({
           </div>
         )}
       </div>
-
-      {/* AI Insights Bar */}
-      {actionItems.length > 0 && activeTab === 'transcript' && (
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-t border-purple-200 dark:border-purple-800 p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-900 dark:text-white mb-1">AI Insight</p>
-              <p className="text-xs text-gray-700 dark:text-gray-300">
-                Detected {actionItems.length} action {actionItems.length === 1 ? 'item' : 'items'}.{' '}
-                <button
-                  onClick={() => setActiveTab('actions')}
-                  className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  View all →
-                </button>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
