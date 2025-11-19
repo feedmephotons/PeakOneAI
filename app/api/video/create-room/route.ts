@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     //   )
     // }
 
-    const { meetingTitle, privacy = 'private' } = await request.json()
+    const { meetingTitle, privacy = 'private', roomName } = await request.json()
 
     const apiKey = process.env.DAILY_API_KEY
 
@@ -43,7 +43,33 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create a Daily.co room
+    // Use provided roomName or generate one from meetingTitle
+    const dailyRoomName = roomName || (meetingTitle ?
+      `${meetingTitle.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}` :
+      `meeting-${Date.now()}`)
+
+    // Try to get existing room first (in case it already exists)
+    const existingRoomResponse = await fetch(`https://api.daily.co/v1/rooms/${dailyRoomName}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    })
+
+    // If room exists, return it
+    if (existingRoomResponse.ok) {
+      const existingRoom = await existingRoomResponse.json()
+      console.log('[CreateRoom] Room already exists, joining existing:', existingRoom.name)
+      return NextResponse.json({
+        success: true,
+        roomUrl: existingRoom.url,
+        roomName: existingRoom.name,
+        expiresAt: existingRoom.config.exp ? new Date(existingRoom.config.exp * 1000).toISOString() : null,
+        isExisting: true
+      })
+    }
+
+    // Create a new Daily.co room with the specific name
     const response = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
       headers: {
@@ -51,9 +77,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        name: meetingTitle ?
-          `${meetingTitle.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}` :
-          `meeting-${Date.now()}`,
+        name: dailyRoomName,
         privacy,
         properties: {
           enable_screenshare: true,
@@ -62,7 +86,7 @@ export async function POST(request: Request) {
           enable_prejoin_ui: false,
           start_audio_off: false,
           start_video_off: false,
-          // Auto-delete room after 10 minutes of inactivity
+          // Auto-delete room after 1 hour of inactivity
           exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
         }
       })

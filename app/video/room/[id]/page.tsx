@@ -14,9 +14,9 @@ export default function VideoRoomPage() {
 
   const meetingId = Array.isArray(params.id) ? params.id[0] : params.id
 
-  // Create Daily.co room when component mounts
+  // Create or join Daily.co room when component mounts
   useEffect(() => {
-    const createRoom = async () => {
+    const createOrJoinRoom = async () => {
       setIsCreatingRoom(true)
       setError(null)
 
@@ -26,7 +26,8 @@ export default function VideoRoomPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             meetingTitle: `Meeting ${meetingId}`,
-            privacy: 'private'
+            privacy: 'private',
+            roomName: meetingId // Use meetingId as the room name so everyone joins the same room
           })
         })
 
@@ -45,20 +46,20 @@ export default function VideoRoomPage() {
       }
     }
 
-    createRoom()
+    createOrJoinRoom()
   }, [meetingId])
 
   const handleLeave = () => {
     router.push('/video')
   }
 
-  // Show loading while creating room
+  // Show loading while creating/joining room
   if (isCreatingRoom) {
     return (
       <div className="h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-white text-xl">Creating your meeting room...</p>
+          <p className="text-white text-xl">Joining meeting room...</p>
         </div>
       </div>
     )
