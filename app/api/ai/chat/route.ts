@@ -1,4 +1,4 @@
-import { openai, LISA_SYSTEM_PROMPT } from '@/lib/openai'
+import { gemini, GEMINI_MODEL, GEMINI_VISION_MODEL, LISA_SYSTEM_PROMPT } from '@/lib/gemini'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { geminiRAG } from '@/lib/rag/gemini-rag-service'
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
     // Check if message mentions attached files (for image analysis)
     const isImageAnalysisRequest = message.includes('[Attached files:') && message.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)/i)
 
-    // Use GPT-4o for vision if images are mentioned, otherwise use regular GPT-4
-    const model = isImageAnalysisRequest ? 'gpt-4o' : 'gpt-4'
+    // Use vision model for images
+    const model = isImageAnalysisRequest ? GEMINI_VISION_MODEL : GEMINI_MODEL
 
     let ragContext = ''
     let ragSources: Array<{ title: string; type: string; id: string }> = []
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Build messages with appropriate context
+    // Build system message with appropriate context
     let systemMessage = isImageAnalysisRequest
       ? LISA_SYSTEM_PROMPT + '\nThe user has attached an image file. Please acknowledge that you can see it and provide helpful analysis based on the context of their request.'
       : LISA_SYSTEM_PROMPT
@@ -78,20 +78,23 @@ You have access to the organization's knowledge base. When answering questions:
 4. Be specific and reference actual details from the context`
     }
 
-    const messages = [
-      { role: 'system' as const, content: systemMessage },
-      {
-        role: 'user' as const,
-        content: ragContext ? message + ragContext : message
-      },
-    ]
+    const fullPrompt = ragContext ? message + ragContext : message
 
-    // Get AI response
-    const completion = await openai.chat.completions.create({
+    // Get AI response using streaming
+    const response = await gemini.models.generateContentStream({
       model,
-      messages,
-      temperature: 0.7,
-      stream: true,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: `${systemMessage}\n\nUser: ${fullPrompt}` }
+          ]
+        }
+      ],
+      config: {
+        temperature: 0.7,
+        maxOutputTokens: 2000,
+      }
     })
 
     // Create a readable stream
@@ -112,8 +115,8 @@ You have access to the organization's knowledge base. When answering questions:
         }
 
         // Stream AI response
-        for await (const chunk of completion) {
-          const content = chunk.choices[0]?.delta?.content || ''
+        for await (const chunk of response) {
+          const content = chunk.text || ''
 
           if (content) {
             controller.enqueue(

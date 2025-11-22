@@ -1,10 +1,10 @@
-import { openai } from '@/lib/openai'
+import { transcribeAudioWithGemini } from '@/lib/gemini'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 
 /**
  * Real-time Audio Transcription Endpoint
- * Uses OpenAI Whisper API to convert speech to text
+ * Uses Google Gemini 2.5 API to convert speech to text
  */
 export async function POST(request: Request) {
   try {
@@ -38,25 +38,34 @@ export async function POST(request: Request) {
     }
 
     console.log(`[Transcribe] Processing audio for meeting ${meetingId}`)
+    console.log(`[Transcribe] File type: ${audioFile.type}, size: ${audioFile.size}`)
 
-    // Convert File to format Whisper API expects
+    // Convert File to base64 for Gemini API
     const audioBuffer = await audioFile.arrayBuffer()
-    const audioBlob = new Blob([audioBuffer], { type: audioFile.type })
+    const base64Audio = Buffer.from(audioBuffer).toString('base64')
 
-    // Create a File object that Whisper expects
-    const whisperFile = new File([audioBlob], 'audio.webm', { type: audioFile.type })
+    // Determine MIME type - Gemini supports various audio formats
+    let mimeType = audioFile.type
+    if (!mimeType || mimeType === 'audio/webm') {
+      // Default to webm with opus codec (common for browser recordings)
+      mimeType = 'audio/webm'
+    }
 
-    // Call OpenAI Whisper API
-    const transcription = await openai.audio.transcriptions.create({
-      file: whisperFile,
-      model: 'whisper-1',
-      language: 'en', // Can be auto-detected or specified
-      response_format: 'text'
-    })
+    // Call Gemini API for transcription
+    const transcriptText = await transcribeAudioWithGemini(base64Audio, mimeType)
 
-    const transcriptText = transcription.toString().trim()
+    if (!transcriptText) {
+      console.log('[Transcribe] No transcription result')
+      return NextResponse.json({
+        success: true,
+        transcript: '',
+        speaker: speakerName,
+        meetingId,
+        timestamp: new Date().toISOString()
+      })
+    }
 
-    // Filter out common Whisper hallucinations (phrases it says during silence)
+    // Filter out common hallucinations (phrases AI might generate during silence)
     const hallucinations = [
       'thank you for watching',
       'thanks for watching',
@@ -67,7 +76,11 @@ export async function POST(request: Request) {
       'check out',
       'visit our website',
       'www.',
-      'http'
+      'http',
+      '[music]',
+      '[applause]',
+      '[silence]',
+      '[inaudible]'
     ]
 
     const isHallucination = hallucinations.some(phrase =>

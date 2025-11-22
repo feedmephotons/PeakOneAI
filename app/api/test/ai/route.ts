@@ -1,33 +1,33 @@
-import { openai } from '@/lib/openai'
+import { gemini, GEMINI_MODEL } from '@/lib/gemini'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const { message } = await request.json()
 
-    // Test OpenAI API with a simple request
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Using 3.5 for testing to save costs
-      messages: [
-        {
-          role: 'system',
-          content: 'You are Lisa, a helpful AI assistant for SaasX. Keep responses brief for testing.'
-        },
+    // Test Gemini API with a simple request
+    const response = await gemini.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [
         {
           role: 'user',
-          content: message
+          parts: [
+            { text: `You are Lisa, a helpful AI assistant for PeakOne AI. Keep responses brief for testing.\n\nUser: ${message}` }
+          ]
         }
       ],
-      max_tokens: 50,
-      temperature: 0.7
+      config: {
+        maxOutputTokens: 50,
+        temperature: 0.7
+      }
     })
 
-    const response = completion.choices[0]?.message?.content
+    const responseText = response.text
 
     return NextResponse.json({
       success: true,
-      message: 'AI integration working',
-      response
+      message: 'Gemini AI integration working',
+      response: responseText
     })
   } catch (error) {
     console.error('AI test error:', error)

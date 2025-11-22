@@ -1,4 +1,4 @@
-import { openai } from '@/lib/openai'
+import { analyzeFileWithAI, analyzeImageWithAI } from '@/lib/gemini'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -25,25 +25,10 @@ export async function POST(request: Request) {
     if (file.type.includes('text') || file.type.includes('pdf') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
       try {
         const fileContent = await file.text()
-        const response = await openai.chat.completions.create({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are Lisa, an AI assistant. Analyze this document and provide a brief summary and 3-5 relevant tags for organization.'
-            },
-            {
-              role: 'user',
-              content: `Analyze this document:\n\n${fileContent.substring(0, 4000)}`
-            }
-          ],
-          max_tokens: 300,
-          temperature: 0.7
-        })
+        const analysis = await analyzeFileWithAI(fileContent, file.type)
 
-        const analysis = response.choices[0].message.content
         if (analysis) {
-          // Simple parsing
+          // Parse the response
           const lines = analysis.split('\n')
           aiSummary = lines[0] || 'Document analyzed successfully'
 
@@ -64,32 +49,15 @@ export async function POST(request: Request) {
         aiTags = ['document', 'text']
       }
     } else if (file.type.includes('image') || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      // For images, use vision API
+      // For images, use Gemini vision
       try {
         const base64 = await fileToBase64(file)
-        const response = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Describe this image briefly and suggest 3-5 relevant tags for organization.',
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${file.type};base64,${base64}`,
-                  },
-                },
-              ],
-            },
-          ],
-          max_tokens: 300,
-        })
+        const imageAnalysis = await analyzeImageWithAI(
+          base64,
+          file.type,
+          'Describe this image briefly and suggest 3-5 relevant tags for organization.'
+        )
 
-        const imageAnalysis = response.choices[0].message.content
         if (imageAnalysis) {
           // Parse the response
           const lines = imageAnalysis.split('\n')
@@ -133,7 +101,7 @@ export async function POST(request: Request) {
         summary: aiSummary || 'File processed successfully',
         tags: aiTags.length > 0 ? aiTags : ['uploaded', 'file'],
       },
-      message: 'File analyzed successfully with Lisa AI!',
+      message: 'File analyzed successfully with Lisa AI (powered by Gemini 2.5)!',
     })
   } catch (error) {
     console.error('Upload with AI error:', error)

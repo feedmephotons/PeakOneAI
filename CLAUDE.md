@@ -1,13 +1,12 @@
-# SaaSX Platform - Claude Development Notes
+# PeakOne AI Platform - Claude Development Notes
 
 ## Project Overview
-AI-integrated communication and productivity platform combining messaging, video conferencing, AI assistant, project management, and cloud storage. Features an Apple-inspired design with "Lisa" AI assistant as the core differentiator.
+AI-integrated communication and productivity platform combining messaging, video conferencing, AI assistant, project management, and cloud storage. Powered by Google Gemini 2.5 with "Lisa" AI assistant as the core differentiator.
 
 ## GitHub Configuration
 - Repository: https://github.com/feedmephotons/PeakOneAI
 - Username: feedmephotons
 - Email: folx2.0@gmail.com
-- PAT: ghp_uwZ1pTkHlux
 
 ## Supabase Configuration
 - Project ID: yqegnqhxnpfgvpsgvhrj
@@ -17,28 +16,40 @@ AI-integrated communication and productivity platform combining messaging, video
 - Database Name: postgres
 - Database User: postgres.yqegnqhxnpfgvpsgvhrj
 
-## Environment Variables (Already in Vercel)
+## Environment Variables (For Vercel)
 - NEXT_PUBLIC_SUPABASE_URL: https://yqegnqhxnpfgvpsgvhrj.supabase.co
 - NEXT_PUBLIC_SUPABASE_ANON_KEY: (set in Vercel)
 - SUPABASE_SERVICE_ROLE_KEY: (needs to be added to Vercel)
 - DATABASE_URL: (needs password added)
-- OPENAI_API_KEY: (needs to be added)
+- GEMINI_API_KEY: (needs to be added) - Get from https://aistudio.google.com/app/apikey
+- DAILY_API_KEY: (for video conferencing)
 
 ## Key Features Implemented
-1. **Authentication System** - Supabase Auth with login/register pages
+1. **Authentication System** - Clerk multi-tenant auth with login/register pages
 2. **Database Schema** - Complete Prisma schema with 20+ models
-3. **AI Integration** - Lisa AI assistant with OpenAI GPT-4
-4. **File Storage** - Supabase Storage with AI analysis
-5. **API Routes** - Complete REST API structure
+3. **AI Integration** - Lisa AI assistant with Google Gemini 2.5
+4. **Voice Transcription** - Gemini 2.5 native audio understanding
+5. **File Storage** - Supabase Storage with AI analysis
+6. **Video Calling** - Daily.co WebRTC with AI transcription
+7. **Task Management** - Kanban boards with automation
+8. **API Routes** - Complete REST API structure
 
 ## Tech Stack
 - **Frontend**: Next.js 15.5.3, React 19, Tailwind CSS
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Database**: PostgreSQL (Supabase)
-- **Auth**: Supabase Auth
+- **Auth**: Clerk (multi-tenant)
 - **Storage**: Supabase Storage
-- **AI**: OpenAI GPT-4
-- **Real-time**: Socket.io (ready to implement)
+- **AI**: Google Gemini 2.5 (Chat, Vision, Audio)
+- **Video**: Daily.co WebRTC
+- **Real-time**: Socket.io
+
+## AI Features (Gemini 2.5)
+- **lib/gemini.ts** - Core Gemini client and utilities
+- **api/ai/chat** - Streaming chat with RAG support
+- **api/transcribe** - Audio transcription with native Gemini audio
+- **api/files/upload-with-ai** - File and image analysis
+- **lib/meeting-analyzer.ts** - Action item extraction
 
 ## Development Commands
 ```bash
@@ -59,9 +70,9 @@ npx prisma studio
 ```
 
 ## Important Notes
-- Service role key for Vercel env: Use SUPABASE_SERVICE_ROLE_KEY as the key name
-- Database password needs to be added to DATABASE_URL in .env.local and Vercel
-- OpenAI API key needs to be obtained and added
+- Gemini API key needs to be added to .env.local and Vercel
+- Database password needs to be added to DATABASE_URL
+- Daily.co API key required for multi-party video
 - .env.local is gitignored for security
 
 ## DevOps Dashboard
@@ -69,4 +80,9 @@ npx prisma studio
 - Purpose: Internal development tracking and client feedback
 - Features: Kanban board for feature requests, bugs, revisions
 - Data: Stored in localStorage (no database needed)
-- **IMPORTANT**: Update the completed features list in `/app/devops/page.tsx` as new features are added
+
+## Demo Pages for Investors
+- `/video/room/[id]` - Multi-party video with AI transcription
+- `/tasks` - Kanban task management
+- `/lisa` - AI chat assistant
+- `/files` - File management with AI analysis

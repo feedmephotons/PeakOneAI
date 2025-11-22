@@ -1,4 +1,4 @@
-# SaaSX Platform Setup Guide
+# PeakOne AI Platform Setup Guide
 
 Complete setup instructions for all services and integrations.
 
@@ -45,28 +45,29 @@ Server will be running at **http://localhost:3001**
 
 ---
 
-### 2. OpenAI API (REQUIRED for AI features)
+### 2. Google Gemini API (REQUIRED for AI features)
 
-**Sign up**: https://platform.openai.com
+**Sign up**: https://aistudio.google.com
 
 **Steps:**
-1. Go to https://platform.openai.com/api-keys
-2. Click "Create new secret key"
+1. Go to https://aistudio.google.com/app/apikey
+2. Click "Create API key"
 3. Copy the key to `.env.local`:
    ```
-   OPENAI_API_KEY=sk-xxxxx
+   GEMINI_API_KEY=your-gemini-api-key
    ```
 
 **What it's used for:**
-- 🎙️ Meeting transcription (Whisper API)
-- 🤖 Action item detection (GPT-4)
-- 📝 Meeting summaries (GPT-4)
-- 💬 Lisa AI assistant (GPT-4)
+- Real-time meeting transcription (Gemini 2.5 native audio)
+- Action item detection (Gemini 2.5)
+- Meeting summaries (Gemini 2.5)
+- Lisa AI assistant (Gemini 2.5 Flash)
+- Document and image analysis (Gemini Vision)
 
 **Cost estimate:**
-- Whisper: $0.006 per minute of audio
-- GPT-4: ~$0.03 per 1K tokens
-- Typical hour-long meeting: ~$1-2
+- Gemini 2.5 Flash: Very cost-effective
+- Typical hour-long meeting: ~$0.10-0.50
+- Much cheaper than OpenAI alternatives
 
 **Test it:**
 1. Start a video call at http://localhost:3001/video/room/test
@@ -82,7 +83,7 @@ Server will be running at **http://localhost:3001**
 
 **Steps:**
 1. Create a new account
-2. Go to **Developers** → **API Keys**
+2. Go to **Developers** -> **API Keys**
 3. Copy your API key to `.env.local`:
    ```
    DAILY_API_KEY=xxxxx
@@ -145,8 +146,8 @@ NEXT_PUBLIC_SUPABASE_URL=https://yqegnqhxnpfgvpsgvhrj.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# OpenAI (REQUIRED for AI)
-OPENAI_API_KEY=sk-xxxxx
+# Google Gemini (REQUIRED for AI)
+GEMINI_API_KEY=your-gemini-api-key
 
 # Daily.co (REQUIRED for multi-party video)
 DAILY_API_KEY=xxxxx
@@ -174,9 +175,9 @@ SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1
    - "I'll review the budget tomorrow"
 
 5. **Watch the magic**:
-   - ✨ Real-time transcripts appear
-   - 🎯 Action items auto-detected
-   - ✅ Click "Add to Task Board" to create tasks
+   - Real-time transcripts appear (powered by Gemini 2.5)
+   - Action items auto-detected
+   - Click "Add to Task Board" to create tasks
 
 ### Multi-Party Demo (Daily.co required)
 
@@ -201,9 +202,9 @@ SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1
 
 ### Transcription not working
 **Check**:
-1. OpenAI API key is correct
-2. You have credits in your OpenAI account
-3. Microphone permissions granted
+1. Gemini API key is correct
+2. Microphone permissions granted
+3. Check browser console for errors
 
 ### Video not working
 **Check**:
@@ -222,37 +223,44 @@ npm run dev
 
 ---
 
-## Demo Script for Client
+## Demo Script for Investors
 
 **"Let me show you our AI Meeting Assistant..."**
 
 1. **Start meeting**: "This is our video call interface"
-2. **Enable AI**: "Click this purple button to activate the AI"
+2. **Enable AI**: "Click this purple button to activate Lisa AI"
 3. **Talk naturally**: *Say action items aloud*
-4. **Show transcripts**: "Watch - it transcribes in real-time"
+4. **Show transcripts**: "Watch - it transcribes in real-time using Gemini 2.5"
 5. **Show action items**: "The AI automatically detects tasks"
 6. **Create task**: "One click to add to your project board"
 7. **Show search**: "After the meeting, searchable transcripts"
 
-**This will blow their mind! 🤯**
+**Key talking points:**
+- Powered by Google Gemini 2.5 - latest AI technology
+- Native audio understanding - no separate transcription service needed
+- Real-time action item detection
+- Integrated task management
+- Multi-tenant architecture ready for enterprise
 
 ---
 
 ## What You Get
 
-### ✅ Working Features
+### Working Features
 
 - **Authentication**: Full Clerk integration with sign-in/sign-up
 - **Local Video**: Camera, mic, screen sharing works immediately
 - **Multi-Party Video**: Real WebRTC calls with Daily.co
-- **Real-Time AI Transcription**: Whisper API every 5 seconds
-- **Action Item Detection**: GPT-4 finds tasks automatically
+- **AI Transcription**: Gemini 2.5 native audio every 5 seconds
+- **Action Item Detection**: Automatic task extraction
 - **One-Click Task Creation**: Directly to your Kanban board
 - **Searchable Transcripts**: Full-text search with highlighting
 - **Meeting Summaries**: AI-generated after each call
-- **WebSocket Sync**: All participants see same data
+- **Lisa AI Chat**: Context-aware assistant
+- **File Analysis**: AI-powered document understanding
+- **Task Management**: Full Kanban with automation
 
-### 🔜 Coming Soon (if needed)
+### Coming Soon (if needed)
 
 - Meeting recording
 - Calendar integration
@@ -270,7 +278,7 @@ npm run dev
 npm run dev
 
 # Browser console
-F12 → Console tab
+F12 -> Console tab
 ```
 
 **Still stuck?** Create an issue at:
@@ -293,9 +301,12 @@ When ready to deploy:
 4. **Daily.co**:
    - Production rooms auto-delete after use
    - Monitor usage in Dashboard
+5. **Gemini API**:
+   - Consider Vertex AI for enterprise features
+   - Set up billing alerts
 
 ---
 
-**You're all set! 🚀**
+**You're all set!**
 
-Start with local testing, add Daily.co when ready for multi-party, and you'll have a production-ready AI meeting platform!
+Start with local testing, add Daily.co when ready for multi-party, and you'll have a production-ready AI meeting platform powered by Google Gemini 2.5!
