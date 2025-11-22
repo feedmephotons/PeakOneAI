@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     //   )
     // }
 
-    const { meetingTitle, privacy = 'private', roomName } = await request.json()
+    const { meetingTitle, privacy = 'public', roomName } = await request.json()
 
     const apiKey = process.env.DAILY_API_KEY
 
@@ -93,16 +93,16 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         name: dailyRoomName,
-        privacy,
+        privacy: 'public', // Always public for easier joining
         properties: {
           enable_screenshare: true,
           enable_chat: true,
-          enable_knocking: privacy === 'private',
+          enable_knocking: false, // No knocking required - anyone can join
           enable_prejoin_ui: false,
           start_audio_off: false,
           start_video_off: false,
-          // Auto-delete room after 1 hour of inactivity
-          exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+          // Auto-delete room after 24 hours
+          exp: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
         }
       })
     })

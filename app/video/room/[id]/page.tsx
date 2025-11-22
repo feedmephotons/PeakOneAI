@@ -26,7 +26,7 @@ export default function VideoRoomPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             meetingTitle: `Meeting ${meetingId}`,
-            privacy: 'private',
+            privacy: 'public', // Public rooms are easier to join without knocking
             roomName: meetingId // Use meetingId as the room name so everyone joins the same room
           })
         })
