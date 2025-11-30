@@ -21,8 +21,14 @@ import {
   Cpu,
   BarChart3,
   Check,
+  Mountain,
+  Bell,
+  Search,
+  MoreHorizontal,
+  Phone,
+  FileText,
+  Bot,
 } from 'lucide-react'
-import { PeakIcon } from '../icons/PeakIcon'
 
 const features = [
   {
@@ -161,8 +167,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg p-2">
-                <PeakIcon name="logo" size={32} className="w-full h-full" />
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Mountain className="w-6 h-6 text-white" />
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 PeakOne AI
@@ -259,18 +265,133 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Hero Image/Preview */}
+          {/* Hero Image/Preview - Dashboard Mockup */}
           <div className="relative mt-16 max-w-5xl mx-auto">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/10 border border-gray-200 dark:border-gray-800">
-              <div className="aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
-                <div className="text-center p-8">
-                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <PeakIcon name="logo" size={64} className="w-16 h-16" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/20 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              {/* Dashboard Mockup */}
+              <div className="aspect-[16/10]">
+                {/* Top Bar */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <Mountain className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">PeakOne AI</span>
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 text-lg">Platform Preview</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-64 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center px-3 gap-2">
+                      <Search className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-400">Search anything...</span>
+                    </div>
+                    <button className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Bell className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex h-[calc(100%-52px)]">
+                  {/* Sidebar */}
+                  <div className="w-16 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 py-4 flex flex-col items-center gap-3">
+                    {[
+                      { icon: MessageSquare, active: true },
+                      { icon: Video, active: false },
+                      { icon: Phone, active: false },
+                      { icon: Calendar, active: false },
+                      { icon: CheckSquare, active: false },
+                      { icon: FolderOpen, active: false },
+                    ].map((item, i) => (
+                      <div key={i} className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.active ? 'bg-gradient-to-br from-blue-500 to-purple-600' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                        <item.icon className={`w-5 h-5 ${item.active ? 'text-white' : 'text-gray-500'}`} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Chat List */}
+                  <div className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold text-gray-900 dark:text-white text-sm">Messages</span>
+                      <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                    </div>
+                    {[
+                      { name: 'Product Team', msg: 'Lisa: Sprint review ready', time: '2m', unread: true },
+                      { name: 'Sarah Chen', msg: 'Sent you the designs', time: '15m', unread: true },
+                      { name: 'Engineering', msg: 'Build passed', time: '1h', unread: false },
+                      { name: 'Marketing', msg: 'Campaign launched!', time: '3h', unread: false },
+                    ].map((chat, i) => (
+                      <div key={i} className={`p-2 rounded-xl mb-1 ${i === 0 ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{chat.name}</span>
+                          <span className="text-xs text-gray-400">{chat.time}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 truncate pr-2">{chat.msg}</span>
+                          {chat.unread && <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Main Chat Area */}
+                  <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-800/50">
+                    <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">PT</div>
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">Product Team</p>
+                          <p className="text-xs text-green-500">Online</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <Video className="w-4 h-4 text-gray-500" />
+                        </button>
+                        <button className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <Phone className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 p-4 space-y-3 overflow-hidden">
+                      <div className="flex gap-2">
+                        <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">SC</div>
+                        <div className="bg-white dark:bg-gray-700 rounded-2xl rounded-tl-sm px-3 py-2 max-w-xs">
+                          <p className="text-sm text-gray-900 dark:text-white">Hey team, designs are ready for review!</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl rounded-tr-sm px-3 py-2 max-w-xs">
+                          <p className="text-sm text-white">Looks great! Lisa, can you summarize?</p>
+                        </div>
+                      </div>
+                      {/* AI Response */}
+                      <div className="flex gap-2">
+                        <div className="w-7 h-7 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-100 dark:border-purple-800 rounded-2xl rounded-tl-sm px-3 py-2 max-w-sm">
+                          <p className="text-sm text-gray-900 dark:text-white">Here&apos;s a summary of the designs:</p>
+                          <ul className="text-xs text-gray-600 dark:text-gray-300 mt-1 space-y-0.5">
+                            <li>• New dashboard layout</li>
+                            <li>• Updated color scheme</li>
+                            <li>• 3 action items identified</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Input */}
+                    <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                        <span className="text-sm text-gray-400">Type a message...</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
             {/* Floating Elements */}
             <div className="absolute -left-8 top-1/4 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 hidden lg:block animate-float">
               <div className="flex items-center gap-3">
@@ -392,12 +513,54 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="relative">
-              <div className="aspect-square bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-3xl flex items-center justify-center border border-white/10">
-                <div className="text-center">
-                  <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <Sparkles className="w-16 h-16 text-white" />
+              <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-3xl border border-white/10 p-6 overflow-hidden">
+                {/* AI Chat Preview */}
+                <div className="bg-gray-900/80 backdrop-blur rounded-2xl p-4 space-y-4">
+                  {/* AI Header */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">Lisa AI</p>
+                      <p className="text-xs text-green-400">Active</p>
+                    </div>
                   </div>
-                  <p className="text-white/60 text-lg">Lisa AI Preview</p>
+                  {/* Chat Messages */}
+                  <div className="space-y-3">
+                    <div className="flex gap-2 justify-end">
+                      <div className="bg-white/10 rounded-2xl rounded-tr-sm px-4 py-2 max-w-xs">
+                        <p className="text-sm text-white">Summarize today&apos;s meeting notes</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-7 h-7 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-600/50 to-pink-600/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-sm">
+                        <p className="text-sm text-white mb-2">Here&apos;s your meeting summary:</p>
+                        <ul className="text-xs text-white/80 space-y-1">
+                          <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> Q4 targets approved</li>
+                          <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> New hire starting Monday</li>
+                          <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> Product launch moved to Dec 15</li>
+                        </ul>
+                        <p className="text-xs text-purple-300 mt-3">3 action items created automatically</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <div className="bg-white/10 rounded-2xl rounded-tr-sm px-4 py-2 max-w-xs">
+                        <p className="text-sm text-white">Create tasks for the action items</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-7 h-7 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-600/50 to-pink-600/50 rounded-2xl rounded-tl-sm px-4 py-2">
+                        <p className="text-sm text-white">Done! I&apos;ve created 3 tasks and assigned them to the relevant team members.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -583,8 +746,8 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center p-2">
-                  <PeakIcon name="logo" size={32} className="w-full h-full" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Mountain className="w-6 h-6 text-white" />
                 </div>
                 <span className="font-bold text-xl text-white">PeakOne AI</span>
               </Link>
