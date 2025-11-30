@@ -4,9 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import { Search, User, LogOut, Settings, ChevronDown } from 'lucide-react'
+import { Search, User, LogOut, Settings, ChevronDown, Mountain, Sparkles } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-import { PeakIcon } from './icons/PeakIcon'
 import MegaMenu from './navigation/MegaMenu'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef } from 'react'
@@ -90,8 +89,8 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 p-2">
-              <PeakIcon name="logo" size={32} className="w-full h-full object-contain" />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+              <Mountain className="w-6 h-6 text-white" />
             </div>
             <div className="hidden sm:block">
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight">Peak AI</span>
@@ -125,7 +124,7 @@ export default function Navigation() {
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold"
               title="Ask Peak AI (Cmd/Ctrl + J)"
             >
-              <PeakIcon name="ai" size={16} className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" />
               <span className="hidden lg:inline text-sm">Ask AI</span>
             </button>
 

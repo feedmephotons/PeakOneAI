@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Mic, Minimize2, Maximize2 } from 'lucide-react'
-import { PeakIcon } from '@/components/icons/PeakIcon'
+import { X, Send, Mic, Minimize2, Maximize2, Sparkles } from 'lucide-react'
 
 interface Message {
   id: string
@@ -95,7 +94,7 @@ export default function PeakAIAssistant() {
           {/* Tab handle */}
           <div className="flex flex-col items-center py-3 px-2 gap-2">
             <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
-              <PeakIcon name="ai" size={24} className="w-5 h-5" />
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="text-white text-xs font-medium writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               AI
@@ -124,8 +123,8 @@ export default function PeakAIAssistant() {
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center p-1.5">
-              <PeakIcon name="ai" size={32} className="w-full h-full" />
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="font-bold text-white">Peak AI</h3>
