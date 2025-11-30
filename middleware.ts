@@ -1,66 +1,79 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-// Check if Clerk is configured
-const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
-// Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
+// Public routes that don't require authentication
+const publicRoutes = [
   '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
+  '/sign-in',
+  '/sign-up',
+  '/auth/callback',
   '/about',
   '/pricing',
-  '/api/webhooks(.*)',
-])
+  '/api/webhooks',
+  '/demo',
+  '/test',
+  '/devops',
+  '/video/demo',
+]
 
-// Define routes that require organization membership
-const isOrgRoute = createRouteMatcher([
-  '/files(.*)',
-  '/meetings(.*)',
-  '/tasks(.*)',
-  '/chat(.*)',
-  '/api/ai(.*)',
-  '/api/files(.*)',
-  '/api/meetings(.*)',
-  '/api/tasks(.*)',
-])
+// Check if path matches any public route
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some(route =>
+    pathname === route || pathname.startsWith(route + '/')
+  )
+}
 
-// Export middleware that conditionally uses Clerk
-export default function middleware(req: NextRequest) {
-  // If Clerk is not configured, allow all requests through
-  if (!isClerkConfigured) {
-    return NextResponse.next()
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // Refresh session if expired
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const pathname = request.nextUrl.pathname
+
+  // Allow public routes
+  if (isPublicRoute(pathname)) {
+    return supabaseResponse
   }
 
-  // Use Clerk middleware when configured
-  return clerkMiddleware(async (auth, req) => {
-    // Allow public routes
-    if (isPublicRoute(req)) {
-      return NextResponse.next()
-    }
+  // Allow API routes that handle their own auth
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse
+  }
 
-    // Get auth info
-    const { userId, orgId } = await auth()
+  // Redirect to sign-in if not authenticated
+  if (!user) {
+    const signInUrl = new URL('/sign-in', request.url)
+    signInUrl.searchParams.set('redirect_url', pathname)
+    return NextResponse.redirect(signInUrl)
+  }
 
-    // Protect all other routes - require authentication
-    if (!userId) {
-      const signInUrl = new URL('/sign-in', req.url)
-      signInUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(signInUrl)
-    }
-
-    // For organization-specific routes, ensure user has selected an organization
-    if (isOrgRoute(req) && !orgId) {
-      // Redirect to organization selection page
-      const orgSelectUrl = new URL('/select-organization', req.url)
-      orgSelectUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(orgSelectUrl)
-    }
-
-    return NextResponse.next()
-  })(req)
+  return supabaseResponse
 }
 
 export const config = {

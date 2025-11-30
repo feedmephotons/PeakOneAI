@@ -1,15 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import AppleDashboard from '@/components/dashboard/AppleDashboard'
 import CustomizableDashboard from '@/components/dashboard/CustomizableDashboard'
 import PeakDashboard from '@/components/dashboard/PeakDashboard'
+import LandingPage from '@/components/landing/LandingPage'
 import { Layout, Home as HomeIcon, Sparkles } from 'lucide-react'
 
 type DashboardView = 'peak' | 'apple' | 'custom'
 
 export default function Home() {
   const [dashboardView, setDashboardView] = useState<DashboardView>('peak')
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Check current auth state
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const cycleView = () => {
     if (dashboardView === 'peak') setDashboardView('apple')
@@ -17,6 +36,21 @@ export default function Home() {
     else setDashboardView('peak')
   }
 
+  // Show loading state while checking auth
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Show landing page for unauthenticated users
+  if (!isAuthenticated) {
+    return <LandingPage />
+  }
+
+  // Show dashboard for authenticated users
   return (
     <div className="relative">
       {/* Dashboard Toggle */}

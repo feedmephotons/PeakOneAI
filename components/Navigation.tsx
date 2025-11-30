@@ -1,31 +1,88 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import { Search } from 'lucide-react'
+import { Search, User, LogOut, Settings, ChevronDown } from 'lucide-react'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-import dynamic from 'next/dynamic'
 import { PeakIcon } from './icons/PeakIcon'
 import MegaMenu from './navigation/MegaMenu'
-
-// Dynamically import Clerk components to avoid SSR issues
-const OrganizationSwitcher = dynamic(
-  () => import('@clerk/nextjs').then(mod => mod.OrganizationSwitcher),
-  { ssr: false }
-)
-const UserButton = dynamic(
-  () => import('@clerk/nextjs').then(mod => mod.UserButton),
-  { ssr: false }
-)
+import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useRef } from 'react'
 
 export default function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const { openSearch } = useKeyboardShortcuts()
+  const [user, setUser] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // Check if Clerk is available
-  const hasClerkKey = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Get current user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser({
+          email: user.email!,
+          firstName: user.user_metadata?.first_name,
+          lastName: user.user_metadata?.last_name,
+        })
+      }
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser({
+          email: session.user.email!,
+          firstName: session.user.user_metadata?.first_name,
+          lastName: session.user.user_metadata?.last_name,
+        })
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/sign-in')
+    router.refresh()
+  }
+
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase()
+    }
+    return 'U'
+  }
+
+  const getUserDisplayName = () => {
+    if (user?.firstName) {
+      return `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`
+    }
+    return user?.email || 'User'
+  }
 
   return (
     <nav className="sticky top-0 z-40 glass border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg">
@@ -75,32 +132,54 @@ export default function Navigation() {
             <NotificationCenter />
             <DarkModeToggle />
 
-            {/* Organization Switcher - Multi-tenant support (only show when Clerk is available) */}
-            {hasClerkKey && (
-              <OrganizationSwitcher
-                hidePersonal={false}
-                appearance={{
-                  elements: {
-                    rootBox: "flex items-center",
-                    organizationSwitcherTrigger: "px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all",
-                    organizationSwitcherTriggerIcon: "w-5 h-5",
-                    organizationPreviewAvatarBox: "w-8 h-8 rounded-lg",
-                  },
-                }}
-              />
-            )}
+            {/* User Menu */}
+            {user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm">
+                    {getUserInitials()}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
+                    {getUserDisplayName()}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </button>
 
-            {/* User Button (only show when Clerk is available) */}
-            {hasClerkKey && (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-10 h-10 rounded-xl",
-                    userButtonPopoverCard: "shadow-2xl",
-                  }
-                }}
-                afterSignOutUrl="/"
-              />
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{getUserDisplayName()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/sign-in"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl hover:shadow-lg transition-all"
+              >
+                <User className="w-4 h-4" />
+                Sign in
+              </Link>
             )}
           </div>
         </div>
