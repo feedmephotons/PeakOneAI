@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Mic, Sparkles, Minimize2, Maximize2 } from 'lucide-react'
+import { X, Send, Mic, Minimize2, Maximize2 } from 'lucide-react'
 import { PeakIcon } from '@/components/icons/PeakIcon'
 
 interface Message {
@@ -87,31 +87,26 @@ export default function PeakAIAssistant() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 group"
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-50 group"
         aria-label="Open Peak AI Assistant"
       >
-        <div className="relative">
-          {/* Pulsing ring animation */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-ping opacity-75" />
-
-          {/* Glow effect */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 blur-xl opacity-60 animate-glow" />
-
-          {/* Main button */}
-          <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform duration-300 p-3">
-            <PeakIcon name="ai" size={64} className="w-full h-full" />
-          </div>
-
-          {/* Sparkle effect */}
-          <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-bounce shadow-lg">
-            <Sparkles className="w-3 h-3 text-white" />
+        {/* Side tab design */}
+        <div className="flex items-center bg-gradient-to-b from-blue-500 to-purple-600 rounded-l-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-x-[-4px]">
+          {/* Tab handle */}
+          <div className="flex flex-col items-center py-3 px-2 gap-2">
+            <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+              <PeakIcon name="ai" size={24} className="w-5 h-5" />
+            </div>
+            <span className="text-white text-xs font-medium writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              AI
+            </span>
           </div>
         </div>
 
-        {/* Tooltip */}
-        <div className="absolute bottom-full right-0 mb-3 px-4 py-2 bg-gray-900/90 backdrop-blur-xl text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">
-          <span className="font-medium">Ask Peak AI</span>
-          <p className="text-xs text-gray-400 mt-0.5">Cmd/Ctrl + J</p>
+        {/* Tooltip on hover */}
+        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-3 py-2 bg-gray-900/90 backdrop-blur-xl text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">
+          <span className="font-medium">Peak AI</span>
+          <p className="text-xs text-gray-400">⌘J</p>
         </div>
       </button>
     )
@@ -122,7 +117,7 @@ export default function PeakAIAssistant() {
       className={`fixed z-50 transition-all duration-300 ${
         isExpanded
           ? 'inset-4'
-          : 'bottom-6 right-6 w-96 h-[600px]'
+          : 'top-20 bottom-20 right-4 w-96'
       }`}
     >
       <div className="h-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
