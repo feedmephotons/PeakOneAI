@@ -62,7 +62,7 @@ export default function TemplatesPage() {
     ))
   }
 
-  const useTemplate = (template: Template) => {
+  const applyTemplate = (template: Template) => {
     setTemplates(templates.map(t =>
       t.id === template.id
         ? { ...t, usageCount: t.usageCount + 1, lastUsed: new Date() }
@@ -232,7 +232,7 @@ export default function TemplatesPage() {
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => useTemplate(template)}
+                          onClick={() => applyTemplate(template)}
                           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm font-medium"
                         >
                           <Copy className="w-4 h-4" />
