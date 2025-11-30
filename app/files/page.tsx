@@ -705,28 +705,23 @@ export default function FilesPage() {
                 </p>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredFiles.map(file => (
                   <div
                     key={file.id}
                     onClick={(e) => handleFileClick(file, e)}
                     onContextMenu={(e) => handleContextMenu(e, file)}
                     className={`group cursor-pointer ${
-                      selectedFiles.has(file.id) ? 'ring-2 ring-blue-500' : ''
+                      selectedFiles.has(file.id) ? 'ring-2 ring-blue-500 rounded-lg' : ''
                     }`}
                   >
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-lg transition border border-gray-200 dark:border-gray-700 relative">
-                      {file.starred && (
-                        <Star className="absolute top-2 right-2 w-4 h-4 text-yellow-500 fill-current" />
-                      )}
-                      {file.isPublic && (
-                        <Link2 className="absolute top-2 left-2 w-4 h-4 text-blue-500" />
-                      )}
-                      <div className={`w-full h-32 mb-3 rounded flex items-center justify-center ${
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 hover:shadow-md transition border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                      {/* Icon/Thumbnail */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         file.type === 'folder' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700'
                       }`}>
                         {file.thumbnailUrl ? (
-                          <Image src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded" width={300} height={200} />
+                          <Image src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded-lg" width={40} height={40} />
                         ) : (
                           <div className={`${
                             file.type === 'folder' ? 'text-blue-500' : 'text-gray-400'
@@ -735,18 +730,32 @@ export default function FilesPage() {
                           </div>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={file.name}>
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {file.type === 'folder' ? 'Folder' : formatFileSize(file.size)}
-                      </p>
-                      {file.sharedWith && file.sharedWith.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2">
-                          <Users className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">{file.sharedWith.length}</span>
-                        </div>
-                      )}
+
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {file.type === 'folder' ? 'Folder' : formatFileSize(file.size)}
+                          {file.sharedWith && file.sharedWith.length > 0 && (
+                            <span className="ml-2 inline-flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {file.sharedWith.length}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Status Icons */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {file.starred && (
+                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        )}
+                        {file.isPublic && (
+                          <Link2 className="w-4 h-4 text-blue-500" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
