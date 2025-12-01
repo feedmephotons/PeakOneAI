@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">Loading analytics...</p>
           </div>
@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
