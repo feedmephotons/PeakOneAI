@@ -132,6 +132,7 @@ export default function MegaMenu() {
           title: 'Communication',
           items: [
             { label: 'Messages', href: '/messages', icon: MessageSquare, description: 'Team chat' },
+            { label: 'Email', href: '/email', icon: Mail, description: 'Email inbox', isNew: true },
             { label: 'Video Calls', href: '/video', icon: Video, description: 'Start a call' },
             { label: 'Phone', href: '/calls', icon: Phone, description: 'Voice calls' },
           ]
@@ -207,6 +208,7 @@ export default function MegaMenu() {
         {
           title: 'AI Features',
           items: [
+            { label: 'Email Outreach', href: '/email/outreach', icon: Mail, description: 'AI email sequences', isNew: true },
             { label: 'Meeting Transcription', href: '/ai/meetings', icon: Video, description: 'Auto transcribe' },
             { label: 'Document Analysis', href: '/ai/documents', icon: FileSearch, description: 'Extract insights' },
             { label: 'Task Automation', href: '/ai/automation', icon: Zap, description: 'Smart workflows' },
