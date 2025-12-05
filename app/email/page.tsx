@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   Mail, Inbox, Send, Archive, Trash2, Star, Reply, Forward,
-  MoreVertical, Search, RefreshCw, Paperclip, X, Edit
+  MoreVertical, Search, RefreshCw, Paperclip, X, Edit, Sparkles
 } from 'lucide-react'
 
 interface Email {
@@ -142,11 +143,19 @@ export default function EmailPage() {
       <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
         <button
           onClick={() => setIsComposing(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition mb-6"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition mb-3"
         >
           <Edit className="w-4 h-4" />
           Compose
         </button>
+
+        <Link
+          href="/email/outreach"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition mb-6"
+        >
+          <Sparkles className="w-4 h-4" />
+          AI Outreach
+        </Link>
 
         <nav className="space-y-1">
           <button
