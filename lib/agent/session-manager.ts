@@ -6,9 +6,6 @@ import type {
   AgentSession,
   AgentTask,
   AgentStatus,
-  TaskStatus,
-  BrowserAction,
-  ActionResult,
   LiveViewState,
   AgentMessage,
   AgentConfig
@@ -281,8 +278,8 @@ class SessionManager {
         where: { sessionId, order: task.order },
         data: {
           status: 'COMPLETED',
-          actions: task.actions as any,
-          results: task.results as any
+          actions: task.actions as unknown as Parameters<typeof prisma.agentTask.update>[0]['data']['actions'],
+          results: task.results as unknown as Parameters<typeof prisma.agentTask.update>[0]['data']['results']
         }
       })
 
@@ -436,7 +433,7 @@ class SessionManager {
     }
 
     // Convert to Prisma enum format (uppercase)
-    const prismaStatus = status.toUpperCase() as any
+    const prismaStatus = status.toUpperCase() as 'IDLE' | 'INITIALIZING' | 'PLANNING' | 'RUNNING' | 'EXECUTING' | 'PAUSED' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
 
     await prisma.agentSession.update({
       where: { id: sessionId },

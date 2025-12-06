@@ -194,7 +194,7 @@ class BrowserManager {
   async pressKey(sessionId: string, key: string): Promise<void> {
     const page = this.pages.get(sessionId)
     if (!page) throw new Error(`No page found for session ${sessionId}`)
-    await page.keyboard.press(key as any)
+    await page.keyboard.press(key as Parameters<typeof page.keyboard.press>[0])
   }
 
   async hover(sessionId: string, selector: ElementSelector): Promise<void> {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Sparkles, Check, X, RefreshCw, Wand2, AlertCircle, Info } from 'lucide-react'
+import { useState, useCallback, useRef } from 'react'
+import { Sparkles, Check, X, RefreshCw, Wand2, AlertCircle } from 'lucide-react'
 import type { AnalysisResult, BrandSuggestion, EnforcementLevel, FieldType } from '@/lib/brand-voice/types'
 
 interface BrandVoiceTextareaProps {
