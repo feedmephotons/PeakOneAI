@@ -6,7 +6,6 @@ import {
   ArrowLeft, Upload, FileText, Sparkles, Plus, Trash2, Check, Edit3,
   AlertCircle, BookOpen, Settings, ToggleLeft, ToggleRight, Shield
 } from 'lucide-react'
-import { useOrganization } from '@clerk/nextjs'
 
 interface BrandGuideline {
   id: string
@@ -40,7 +39,6 @@ const ENFORCEMENT_LEVELS = [
 ]
 
 export default function BrandVoiceSettingsPage() {
-  const { organization } = useOrganization()
   const [guidelines, setGuidelines] = useState<BrandGuideline[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
@@ -54,8 +52,8 @@ export default function BrandVoiceSettingsPage() {
   const [defaultLevel, setDefaultLevel] = useState(2)
   const [brandVoiceEnabled, setBrandVoiceEnabled] = useState(true)
 
-  // Mock workspace ID for now - in production, get from context
-  const workspaceId = organization?.id || 'default-workspace'
+  // TODO: Get workspace ID from context/API when organization support is added
+  const workspaceId = 'default-workspace'
 
   const fetchGuidelines = useCallback(async () => {
     try {

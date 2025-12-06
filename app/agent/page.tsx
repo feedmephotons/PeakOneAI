@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useUser } from '@clerk/nextjs'
 import {
   Bot,
   Play,
@@ -62,8 +61,6 @@ interface Message {
 }
 
 export default function AgentPage() {
-  const { user } = useUser()
-  const [sessions, setSessions] = useState<AgentSession[]>([])
   const [activeSession, setActiveSession] = useState<AgentSession | null>(null)
   const [tasks, setTasks] = useState<AgentTask[]>([])
   const [liveState, setLiveState] = useState<LiveState | null>(null)
