@@ -53,6 +53,19 @@ export default function EmailOutreachPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [campaignName, setCampaignName] = useState('')
 
+  // Send email state
+  const [showSendModal, setShowSendModal] = useState(false)
+  const [sendTo, setSendTo] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [personalizationVars, setPersonalizationVars] = useState({
+    firstName: '',
+    lastName: '',
+    company: '',
+    senderName: '',
+    calendar_link: ''
+  })
+
   const generateEmailSequence = async () => {
     if (!targetAudience.trim()) return
 
@@ -156,6 +169,52 @@ export default function EmailOutreachPage() {
 
     setShowSaveModal(false)
     setCampaignName('')
+  }
+
+  const handleSendEmail = async () => {
+    if (!sendTo.trim()) return
+
+    setIsSending(true)
+    setSendResult(null)
+
+    try {
+      const currentEmail = generatedEmails[selectedEmailIndex]
+
+      // Convert body to HTML (replace newlines with <br>)
+      const htmlBody = currentEmail.body
+        .replace(/\n/g, '<br>')
+
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: sendTo,
+          subject: currentEmail.subject,
+          html: htmlBody,
+          variables: personalizationVars
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSendResult({ success: true, message: 'Email sent successfully!' })
+      } else {
+        setSendResult({ success: false, message: data.error || 'Failed to send email' })
+      }
+    } catch (error) {
+      console.error('Send email error:', error)
+      setSendResult({ success: false, message: 'Failed to send email' })
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const openSendModal = () => {
+    setSendResult(null)
+    setShowSendModal(true)
   }
 
   return (
@@ -449,9 +508,12 @@ export default function EmailOutreachPage() {
                       </button>
                     </div>
 
-                    <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                    <button
+                      onClick={openSendModal}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    >
                       <Send className="w-4 h-4" />
-                      Use Template
+                      Send Test Email
                     </button>
                   </div>
                 </div>
@@ -525,6 +587,128 @@ export default function EmailOutreachPage() {
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition"
               >
                 Save Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Test Email Modal */}
+      {showSendModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Send className="w-5 h-5 text-purple-500" />
+              Send Test Email
+            </h3>
+
+            {sendResult && (
+              <div className={`mb-4 p-3 rounded-lg ${
+                sendResult.success
+                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+              }`}>
+                {sendResult.message}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Send to email address *
+                </label>
+                <input
+                  type="email"
+                  value={sendTo}
+                  onChange={(e) => setSendTo(e.target.value)}
+                  placeholder="test@example.com"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  autoFocus
+                />
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Personalization Variables
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      value={personalizationVars.firstName}
+                      onChange={(e) => setPersonalizationVars(prev => ({ ...prev, firstName: e.target.value }))}
+                      placeholder="John"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={personalizationVars.lastName}
+                      onChange={(e) => setPersonalizationVars(prev => ({ ...prev, lastName: e.target.value }))}
+                      placeholder="Doe"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Company</label>
+                    <input
+                      type="text"
+                      value={personalizationVars.company}
+                      onChange={(e) => setPersonalizationVars(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Acme Inc"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sender Name</label>
+                    <input
+                      type="text"
+                      value={personalizationVars.senderName}
+                      onChange={(e) => setPersonalizationVars(prev => ({ ...prev, senderName: e.target.value }))}
+                      placeholder="Your Name"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Calendar Link</label>
+                    <input
+                      type="text"
+                      value={personalizationVars.calendar_link}
+                      onChange={(e) => setPersonalizationVars(prev => ({ ...prev, calendar_link: e.target.value }))}
+                      placeholder="https://calendly.com/your-link"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendEmail}
+                disabled={!sendTo.trim() || isSending}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition"
+              >
+                {isSending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send Email
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -31,6 +31,10 @@ model User {
   eventAttendees  EventAttendee[]
   aiConversations AIConversation[]
   activities      Activity[]
+
+  // Brand Voice & Agent
+  brandVoiceSettings BrandVoiceUserSetting[]
+  agentSessions      AgentSession[]
 }
 
 // Workspace/Organization
@@ -51,6 +55,11 @@ model Workspace {
   files       File[]
   calls       Call[]
   events      CalendarEvent[]
+
+  // Brand Voice & Agent
+  brandGuidelines BrandGuideline[]
+  agentSessions   AgentSession[]
+  agentWorkflows  AgentWorkflow[]
 }
 
 model UserWorkspace {
@@ -423,4 +432,306 @@ enum ActivityType {
   COMMENTED
   UPLOADED
   SHARED
+}
+
+// ============================================
+// Brand Voice Intelligence System
+// ============================================
+
+model BrandGuideline {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Core brand voice attributes
+  name          String
+  description   String?  @db.Text
+  voiceTone     String   // 'formal', 'casual', 'technical', 'friendly', 'professional'
+  personality   String[] // Array of personality traits
+
+  // Source document
+  sourceFileId  String?
+  sourceFileUrl String?
+
+  // AI-extracted guidelines (JSON storage)
+  extractedRules Json?   // Stores the full extracted guidelines
+
+  // Active status
+  isActive      Boolean  @default(true)
+  isDefault     Boolean  @default(false) // Default guideline for workspace
+  version       Int      @default(1)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+
+  // Relations
+  approvedTerms   BrandApprovedTerm[]
+  forbiddenTerms  BrandForbiddenTerm[]
+  messagingRules  BrandMessagingRule[]
+  userSettings    BrandVoiceUserSetting[]
+  suggestions     BrandVoiceSuggestion[]
+
+  @@index([workspaceId])
+  @@unique([workspaceId, name])
+}
+
+model BrandApprovedTerm {
+  id              String @id @default(cuid())
+  guidelineId     String
+  guideline       BrandGuideline @relation(fields: [guidelineId], references: [id], onDelete: Cascade)
+
+  term            String
+  context         String?  @db.Text  // When to use this term
+  alternatives    String[] // Preferred alternatives
+  category        String?  // 'terminology', 'product-names', 'values', etc.
+
+  createdAt       DateTime @default(now())
+
+  @@index([guidelineId])
+}
+
+model BrandForbiddenTerm {
+  id              String @id @default(cuid())
+  guidelineId     String
+  guideline       BrandGuideline @relation(fields: [guidelineId], references: [id], onDelete: Cascade)
+
+  term            String
+  reason          String?  @db.Text
+  replacement     String?
+  severity        String   @default("warning") // 'info', 'warning', 'error'
+
+  createdAt       DateTime @default(now())
+
+  @@index([guidelineId])
+}
+
+model BrandMessagingRule {
+  id              String @id @default(cuid())
+  guidelineId     String
+  guideline       BrandGuideline @relation(fields: [guidelineId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String   @db.Text
+  pattern         String?  @db.Text  // Regex or pattern to match
+  template        String?  @db.Text  // Suggested template
+  examples        Json?    // Array of good/bad examples
+  category        String   // 'greeting', 'closing', 'product', 'support', etc.
+
+  createdAt       DateTime @default(now())
+
+  @@index([guidelineId])
+}
+
+model BrandVoiceUserSetting {
+  id              String @id @default(cuid())
+  userId          String
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  guidelineId     String?
+  guideline       BrandGuideline? @relation(fields: [guidelineId], references: [id], onDelete: SetNull)
+
+  // Enforcement level: 1=spell/grammar, 2=suggestions, 3=strong, 4=auto-rewrite
+  enforcementLevel Int     @default(2)
+  isEnabled       Boolean @default(true)
+  personalMode    Boolean @default(false)  // Bypass brand enforcement
+
+  // User-specific overrides
+  customRules     Json?
+  mutedSuggestionTypes String[] // Types of suggestions user has muted
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([guidelineId])
+}
+
+model BrandVoiceSuggestion {
+  id              String @id @default(cuid())
+  guidelineId     String
+  guideline       BrandGuideline @relation(fields: [guidelineId], references: [id], onDelete: Cascade)
+
+  // Context
+  userId          String
+  inputContext    String   @db.Text  // The original text context
+  fieldType       String   // 'email', 'message', 'document', 'task', etc.
+
+  // Suggestion details
+  originalText    String   @db.Text
+  suggestedText   String   @db.Text
+  suggestionType  String   // 'tone', 'word', 'grammar', 'structure'
+  reason          String   @db.Text
+  confidence      Float
+
+  // User response
+  status          String   @default("pending") // 'pending', 'accepted', 'rejected'
+  userFeedback    String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  resolvedAt      DateTime?
+
+  @@index([guidelineId, createdAt])
+  @@index([userId])
+}
+
+// ============================================
+// Computer Use Agent System
+// ============================================
+
+model AgentSession {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Session info
+  name            String?
+  objective       String   @db.Text  // Natural language objective for the session
+  status          AgentSessionStatus @default(IDLE)
+  startUrl        String?  // Starting URL
+  startedAt       DateTime?
+  completedAt     DateTime?
+  endedAt         DateTime?
+  errorMessage    String?  @db.Text
+
+  // Browser info
+  browserEndpoint String?  // WebSocket endpoint for browser
+  currentUrl      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tasks           AgentTask[]
+  screenshots     AgentScreenshot[]
+  logs            AgentLog[]
+
+  @@index([userId, status])
+  @@index([workspaceId])
+}
+
+enum AgentSessionStatus {
+  IDLE
+  INITIALIZING
+  PLANNING
+  RUNNING
+  EXECUTING
+  PAUSED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model AgentTask {
+  id              String @id @default(cuid())
+  sessionId       String
+  session         AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Task definition
+  description     String   @db.Text  // Natural language task
+  targetUrl       String?  // Starting URL
+  taskType        String?  // 'navigate', 'fill_form', 'extract_data', 'click', 'custom'
+
+  // Execution
+  status          AgentTaskStatus @default(PENDING)
+  steps           Json?    // Array of planned/executed steps
+  actions         Json?    // Array of browser actions
+  results         Json?    // Array of action results
+  result          Json?    // Task result/extracted data
+
+  // Timing
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  // Order in sequence
+  order           Int      @default(0)
+  orderIndex      Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sessionId, orderIndex])
+  @@index([sessionId, order])
+}
+
+enum AgentTaskStatus {
+  PENDING
+  IN_PROGRESS
+  WAITING_INPUT
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model AgentScreenshot {
+  id              String @id @default(cuid())
+  sessionId       String
+  session         AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Screenshot data
+  imageUrl        String?  // Stored in Supabase Storage
+  imageData       String?  @db.Text  // Base64 encoded inline image
+  thumbnailUrl    String?
+  pageUrl         String?
+  pageTitle       String?
+  description     String?
+
+  // Task/Action reference
+  taskId          String?
+  actionId        String?
+
+  // Metadata
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  width           Int?
+  height          Int?
+  annotations     Json?    // Element highlights, click targets, etc.
+
+  @@index([sessionId, timestamp])
+  @@index([sessionId, createdAt])
+}
+
+model AgentLog {
+  id              String @id @default(cuid())
+  sessionId       String
+  session         AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  level           String   // 'info', 'warning', 'error', 'debug', 'success'
+  message         String   @db.Text
+  metadata        Json?
+
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([sessionId, timestamp])
+  @@index([sessionId, createdAt])
+}
+
+model AgentWorkflow {
+  id              String @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?  @db.Text
+  category        String   // 'data-entry', 'research', 'testing', 'scraping', etc.
+
+  // Workflow definition
+  steps           Json     // Array of step definitions
+  variables       Json?    // User-fillable variables
+
+  // Usage stats
+  timesUsed       Int      @default(0)
+  lastUsedAt      DateTime?
+
+  isPublic        Boolean  @default(false)  // Share with workspace
+  createdById     String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workspaceId, category])
 }
