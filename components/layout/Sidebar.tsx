@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface MenuItem {
   id: string;
@@ -128,18 +129,25 @@ export default function Sidebar() {
     >
       {/* Logo Section */}
       <div className="flex items-center justify-between h-14 px-3 border-b flex-shrink-0" style={{ borderColor: 'rgb(var(--sidebar-border))' }}>
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-               style={{ background: 'linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))' }}>
-            S
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h1 className="text-white font-bold text-base">SaaSX</h1>
-              <p className="text-xs" style={{ color: 'rgb(var(--sidebar-text))' }}>Peak One AI</p>
-            </div>
+        <Link href="/" className="flex items-center">
+          {isCollapsed ? (
+            <Image
+              src="/peakone-logo.png"
+              alt="PeakOne AI"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+          ) : (
+            <Image
+              src="/peakone-logo.svg"
+              alt="PeakOne AI"
+              width={140}
+              height={32}
+              className="h-8 w-auto"
+            />
           )}
-        </div>
+        </Link>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1 rounded-lg hover:bg-gray-700 transition-colors"

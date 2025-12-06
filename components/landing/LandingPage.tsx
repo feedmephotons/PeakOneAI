@@ -21,7 +21,6 @@ import {
   Cpu,
   BarChart3,
   Check,
-  Mountain,
   Bell,
   Search,
   MoreHorizontal,
@@ -29,6 +28,7 @@ import {
   FileText,
   Bot,
 } from 'lucide-react'
+import Image from 'next/image'
 
 const features = [
   {
@@ -166,13 +166,15 @@ export default function LandingPage() {
       }`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Mountain className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                PeakOne AI
-              </span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/peakone-logo.svg"
+                alt="PeakOne AI"
+                width={180}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -273,10 +275,13 @@ export default function LandingPage() {
                 {/* Top Bar */}
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <Mountain className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm">PeakOne AI</span>
+                    <Image
+                      src="/peakone-logo.svg"
+                      alt="PeakOne AI"
+                      width={120}
+                      height={28}
+                      className="h-7 w-auto"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-64 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center px-3 gap-2">
@@ -745,11 +750,14 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Mountain className="w-6 h-6 text-white" />
-                </div>
-                <span className="font-bold text-xl text-white">PeakOne AI</span>
+              <Link href="/" className="flex items-center mb-6">
+                <Image
+                  src="/peakone-logo.svg"
+                  alt="PeakOne AI"
+                  width={160}
+                  height={36}
+                  className="h-9 w-auto brightness-0 invert"
+                />
               </Link>
               <p className="text-gray-500 leading-relaxed">
                 The AI-powered workspace for modern teams. Communicate, collaborate, and create together.
