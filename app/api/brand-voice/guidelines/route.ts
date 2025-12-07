@@ -21,6 +21,35 @@ export async function GET(request: Request) {
       )
     }
 
+    // Security: Verify user has access to this workspace
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check workspace membership (skip for default-workspace in development)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isDefaultWorkspace = workspaceId === 'default-workspace'
+
+    if (!isDevelopment || !isDefaultWorkspace) {
+      const workspaceMembership = await prisma.userWorkspace.findFirst({
+        where: {
+          userId: user.id,
+          workspaceId
+        }
+      })
+
+      if (!workspaceMembership) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have access to this workspace' },
+          { status: 403 }
+        )
+      }
+    }
+
     const guidelines = await prisma.brandGuideline.findMany({
       where: { workspaceId },
       include: {
@@ -89,6 +118,26 @@ export async function POST(request: Request) {
         { error: 'Missing required fields: name, workspaceId' },
         { status: 400 }
       )
+    }
+
+    // Security: Verify user has access to this workspace (skip for default-workspace in development)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isDefaultWorkspace = workspaceId === 'default-workspace'
+
+    if (!isDevelopment || !isDefaultWorkspace) {
+      const workspaceMembership = await prisma.userWorkspace.findFirst({
+        where: {
+          userId: user.id,
+          workspaceId
+        }
+      })
+
+      if (!workspaceMembership) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have access to this workspace' },
+          { status: 403 }
+        )
+      }
     }
 
     // Check if name already exists

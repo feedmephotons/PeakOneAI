@@ -12,6 +12,9 @@ const DEFAULT_CONFIG: Partial<AgentConfig> = {
   maxSessionDuration: 30 * 60 * 1000 // 30 minutes
 }
 
+// Default timeout for individual actions (60 seconds)
+const DEFAULT_ACTION_TIMEOUT = 60 * 1000
+
 export class ActionExecutor {
   private config: AgentConfig
 
@@ -36,10 +39,15 @@ export class ActionExecutor {
     const startTime = Date.now()
     let retries = 0
     const maxRetries = action.retryCount ?? this.config.maxRetries
+    const actionTimeout = action.timeout ?? DEFAULT_ACTION_TIMEOUT
 
     while (retries <= maxRetries) {
       try {
-        const result = await this.performAction(sessionId, action)
+        // Wrap action execution with timeout
+        const result = await Promise.race([
+          this.performAction(sessionId, action),
+          this.actionTimeoutPromise(actionTimeout, action.id)
+        ])
 
         // Take screenshot if configured
         let screenshot: string | undefined
@@ -234,6 +242,16 @@ export class ActionExecutor {
   private timeoutPromise(ms: number): Promise<never> {
     return new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Action timeout')), ms)
+    )
+  }
+
+  // Action-level timeout with better error messages
+  private actionTimeoutPromise(ms: number, actionId: string): Promise<never> {
+    return new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Action ${actionId} timed out after ${ms}ms`)),
+        ms
+      )
     )
   }
 }

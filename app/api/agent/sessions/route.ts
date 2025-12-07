@@ -21,8 +21,41 @@ export async function GET(request: Request) {
       )
     }
 
+    // Get user from database
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check workspace membership (skip for default-workspace in development)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isDefaultWorkspace = workspaceId === 'default-workspace'
+
+    if (!isDevelopment || !isDefaultWorkspace) {
+      const workspaceMembership = await prisma.userWorkspace.findFirst({
+        where: {
+          userId: user.id,
+          workspaceId
+        }
+      })
+
+      if (!workspaceMembership) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have access to this workspace' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Security: Only return sessions owned by this user in the workspace
     const sessions = await prisma.agentSession.findMany({
-      where: { workspaceId },
+      where: {
+        workspaceId,
+        userId: user.id  // Only show user's own sessions
+      },
       include: {
         tasks: {
           select: {
@@ -88,6 +121,26 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check workspace membership (skip for default-workspace in development)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isDefaultWorkspace = workspaceId === 'default-workspace'
+
+    if (!isDevelopment || !isDefaultWorkspace) {
+      const workspaceMembership = await prisma.userWorkspace.findFirst({
+        where: {
+          userId: user.id,
+          workspaceId
+        }
+      })
+
+      if (!workspaceMembership) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have access to this workspace' },
+          { status: 403 }
+        )
+      }
     }
 
     // Create session using session manager

@@ -17,6 +17,15 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params
 
+    // Get user from database to verify ownership
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     // Get session from database
     const session = await prisma.agentSession.findUnique({
       where: { id },
@@ -37,6 +46,11 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    }
+
+    // Security: Verify session ownership
+    if (session.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this session' }, { status: 403 })
     }
 
     // Get live state if session is active
@@ -77,6 +91,15 @@ export async function POST(request: Request, { params }: RouteParams) {
       message?: string
     }
 
+    // Get user from database to verify ownership
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     // Verify session exists
     const session = await prisma.agentSession.findUnique({
       where: { id }
@@ -84,6 +107,11 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    }
+
+    // Security: Verify session ownership
+    if (session.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this session' }, { status: 403 })
     }
 
     switch (action) {
@@ -158,6 +186,29 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params
+
+    // Get user from database to verify ownership
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Verify session exists and check ownership
+    const session = await prisma.agentSession.findUnique({
+      where: { id }
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    }
+
+    // Security: Verify session ownership
+    if (session.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this session' }, { status: 403 })
+    }
 
     // Close session
     await sessionManager.closeSession(id)

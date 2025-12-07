@@ -40,6 +40,8 @@ const menuItems: MenuItem[] = [
     href: '#',
     subItems: [
       { id: 'lisa-chat', label: 'Chat with Lisa', icon: '💬', href: '/lisa', badge: 'NEW' },
+      { id: 'computer-agent', label: 'Computer Use Agent', icon: '🖥️', href: '/agent', badge: 'NEW' },
+      { id: 'brand-voice', label: 'Brand Voice', icon: '✨', href: '/settings/brand-voice', badge: 'NEW' },
       { id: 'meeting-intel', label: 'Meeting Intelligence', icon: '🧠', href: '/ai/meetings' },
       { id: 'transcriptions', label: 'Transcriptions', icon: '📝', href: '/ai/transcriptions', badge: '3' },
       { id: 'summaries', label: 'Summaries', icon: '📄', href: '/ai/summaries' },
@@ -134,17 +136,17 @@ export default function Sidebar() {
             <Image
               src="/peakone-logo.png"
               alt="PeakOne AI"
-              width={32}
-              height={32}
-              className="w-8 h-8"
+              width={24}
+              height={24}
+              className="w-6 h-6 brightness-0 invert"
             />
           ) : (
             <Image
               src="/peakone-logo.svg"
               alt="PeakOne AI"
-              width={140}
-              height={32}
-              className="h-8 w-auto"
+              width={112}
+              height={15}
+              className="h-3.5 w-auto brightness-0 invert"
             />
           )}
         </Link>

@@ -18,13 +18,44 @@ const DEFAULT_CONFIG: BrowserConfig = {
   timeout: 30000
 }
 
+// Security: Default session timeout (30 minutes)
+const DEFAULT_SESSION_TIMEOUT = 30 * 60 * 1000
+
+// Security: Blocked URL patterns for SSRF protection
+const BLOCKED_URL_PATTERNS = [
+  /^file:/i,
+  /^ftp:/i,
+  /^data:/i,
+  /^javascript:/i,
+  /^about:/i,
+  /^chrome:/i,
+  /^chrome-extension:/i,
+]
+
+// Security: Internal/private IP ranges to block
+const INTERNAL_IP_PATTERNS = [
+  /^127\./,                          // Loopback
+  /^10\./,                           // Private Class A
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./,  // Private Class B
+  /^192\.168\./,                     // Private Class C
+  /^169\.254\./,                     // Link-local
+  /^0\./,                            // Current network
+  /^localhost$/i,
+  /^::1$/,                           // IPv6 loopback
+  /^fc00:/i,                         // IPv6 private
+  /^fe80:/i,                         // IPv6 link-local
+]
+
 class BrowserManager {
   private browsers: Map<string, Browser> = new Map()
   private pages: Map<string, Page> = new Map()
+  private cleanupTimers: Map<string, NodeJS.Timeout> = new Map()
+  private sessionUserIds: Map<string, string> = new Map() // Track session ownership
 
   async createSession(
     sessionId: string,
-    config: Partial<BrowserConfig> = {}
+    config: Partial<BrowserConfig> = {},
+    userId?: string
   ): Promise<{ browser: Browser; page: Page }> {
     const mergedConfig = { ...DEFAULT_CONFIG, ...config }
 
@@ -53,7 +84,32 @@ class BrowserManager {
     this.browsers.set(sessionId, browser)
     this.pages.set(sessionId, page)
 
+    // Track session ownership for authorization
+    if (userId) {
+      this.sessionUserIds.set(sessionId, userId)
+    }
+
+    // Set up automatic cleanup timer
+    const sessionTimeout = mergedConfig.timeout || DEFAULT_SESSION_TIMEOUT
+    const cleanupTimer = setTimeout(() => {
+      console.log(`Auto-closing session ${sessionId} due to timeout`)
+      this.closeSession(sessionId).catch(err => {
+        console.error(`Failed to auto-close session ${sessionId}:`, err)
+      })
+    }, sessionTimeout)
+    this.cleanupTimers.set(sessionId, cleanupTimer)
+
     return { browser, page }
+  }
+
+  // Security: Verify session ownership
+  verifySessionOwnership(sessionId: string, userId: string): boolean {
+    const sessionUserId = this.sessionUserIds.get(sessionId)
+    return sessionUserId === userId
+  }
+
+  getSessionUserId(sessionId: string): string | undefined {
+    return this.sessionUserIds.get(sessionId)
   }
 
   getPage(sessionId: string): Page | undefined {
@@ -65,17 +121,72 @@ class BrowserManager {
   }
 
   async closeSession(sessionId: string): Promise<void> {
+    // Clear cleanup timer
+    const timer = this.cleanupTimers.get(sessionId)
+    if (timer) {
+      clearTimeout(timer)
+      this.cleanupTimers.delete(sessionId)
+    }
+
+    // Close browser
     const browser = this.browsers.get(sessionId)
     if (browser) {
       await browser.close()
       this.browsers.delete(sessionId)
       this.pages.delete(sessionId)
     }
+
+    // Remove ownership tracking
+    this.sessionUserIds.delete(sessionId)
+  }
+
+  // Security: Validate URL to prevent SSRF attacks
+  private isUrlAllowed(url: string): { allowed: boolean; reason?: string } {
+    try {
+      const parsed = new URL(url)
+
+      // Check for blocked protocols
+      for (const pattern of BLOCKED_URL_PATTERNS) {
+        if (pattern.test(url)) {
+          return { allowed: false, reason: `Blocked protocol: ${parsed.protocol}` }
+        }
+      }
+
+      // Only allow http and https
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return { allowed: false, reason: `Only HTTP/HTTPS protocols allowed, got: ${parsed.protocol}` }
+      }
+
+      const hostname = parsed.hostname
+
+      // Check for internal/private IP addresses
+      for (const pattern of INTERNAL_IP_PATTERNS) {
+        if (pattern.test(hostname)) {
+          return { allowed: false, reason: `Internal/private addresses are not allowed: ${hostname}` }
+        }
+      }
+
+      // Block numeric IPs that could be internal (basic check)
+      // This catches cases like http://2130706433 (127.0.0.1 in decimal)
+      if (/^\d+$/.test(hostname)) {
+        return { allowed: false, reason: 'Numeric IP addresses are not allowed' }
+      }
+
+      return { allowed: true }
+    } catch {
+      return { allowed: false, reason: 'Invalid URL format' }
+    }
   }
 
   async navigate(sessionId: string, url: string): Promise<void> {
     const page = this.pages.get(sessionId)
     if (!page) throw new Error(`No page found for session ${sessionId}`)
+
+    // Security: Validate URL before navigating
+    const validation = this.isUrlAllowed(url)
+    if (!validation.allowed) {
+      throw new Error(`Navigation blocked: ${validation.reason}`)
+    }
 
     await page.goto(url, { waitUntil: 'networkidle2' })
   }
@@ -476,4 +587,26 @@ class BrowserManager {
 
 // Singleton instance
 export const browserManager = new BrowserManager()
+
+// Graceful shutdown: Close all browser sessions on process exit
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Closing all browser sessions...`)
+  const sessionIds = Array.from(browserManager['browsers'].keys())
+
+  if (sessionIds.length > 0) {
+    console.log(`Closing ${sessionIds.length} browser session(s)...`)
+    await Promise.allSettled(
+      sessionIds.map(id => browserManager.closeSession(id))
+    )
+    console.log('All browser sessions closed.')
+  }
+}
+
+// Register shutdown handlers (only in Node.js environment)
+if (typeof process !== 'undefined') {
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+  process.on('beforeExit', () => gracefulShutdown('beforeExit'))
+}
+
 export default browserManager

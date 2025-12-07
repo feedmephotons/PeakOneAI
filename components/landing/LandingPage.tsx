@@ -171,8 +171,8 @@ export default function LandingPage() {
                 src="/peakone-logo.svg"
                 alt="PeakOne AI"
                 width={180}
-                height={40}
-                className="h-10 w-auto"
+                height={24}
+                className="h-6 w-auto"
                 priority
               />
             </Link>
@@ -279,8 +279,8 @@ export default function LandingPage() {
                       src="/peakone-logo.svg"
                       alt="PeakOne AI"
                       width={120}
-                      height={28}
-                      className="h-7 w-auto"
+                      height={16}
+                      className="h-4 w-auto"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -755,8 +755,8 @@ export default function LandingPage() {
                   src="/peakone-logo.svg"
                   alt="PeakOne AI"
                   width={160}
-                  height={36}
-                  className="h-9 w-auto brightness-0 invert"
+                  height={22}
+                  className="h-5 w-auto brightness-0 invert"
                 />
               </Link>
               <p className="text-gray-500 leading-relaxed">

@@ -17,18 +17,33 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params
 
+    // Get user from database to verify ownership
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     // Verify session exists
     const session = await prisma.agentSession.findUnique({
       where: { id },
       select: {
         id: true,
         status: true,
-        objective: true
+        objective: true,
+        userId: true
       }
     })
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    }
+
+    // Security: Verify session ownership
+    if (session.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: You do not own this session' }, { status: 403 })
     }
 
     // Get live state

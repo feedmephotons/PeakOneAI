@@ -31,6 +31,35 @@ export async function POST(request: Request) {
       )
     }
 
+    // Security: Verify user has access to this workspace
+    const user = await prisma.user.findFirst({
+      where: { clerkId: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Check workspace membership (skip for default-workspace in development)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isDefaultWorkspace = workspaceId === 'default-workspace'
+
+    if (!isDevelopment || !isDefaultWorkspace) {
+      const workspaceMembership = await prisma.userWorkspace.findFirst({
+        where: {
+          userId: user.id,
+          workspaceId
+        }
+      })
+
+      if (!workspaceMembership) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have access to this workspace' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Get the brand guideline
     let guideline = null
 

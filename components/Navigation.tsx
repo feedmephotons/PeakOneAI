@@ -94,8 +94,8 @@ export default function Navigation() {
               src="/peakone-logo.svg"
               alt="PeakOne AI"
               width={180}
-              height={40}
-              className="h-10 w-auto group-hover:scale-105 transition-transform duration-300"
+              height={24}
+              className="h-6 w-auto group-hover:scale-105 transition-transform duration-300 dark:brightness-110"
               priority
             />
           </Link>

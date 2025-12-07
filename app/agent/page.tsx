@@ -141,7 +141,7 @@ export default function AgentPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          workspaceId: 'default', // TODO: Get from context
+          workspaceId: 'default-workspace', // TODO: Get from context
           objective,
           startUrl: startUrl || undefined
         })

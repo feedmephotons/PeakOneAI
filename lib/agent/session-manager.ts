@@ -223,10 +223,12 @@ class SessionManager {
       task.actions = actions
       this.addLog(sessionId, 'info', `Generated ${actions.length} actions for task`)
 
-      // Execute each action
-      for (const action of actions) {
+      // Execute each action using index-based iteration to safely handle dynamic additions
+      let actionIndex = 0
+      while (actionIndex < task.actions.length) {
         if (state.isPaused || state.isCancelled) break
 
+        const action = task.actions[actionIndex]
         this.addLog(sessionId, 'info', `Executing: ${action.description}`)
 
         const result = await actionExecutor.executeAction(sessionId, action)
@@ -266,9 +268,12 @@ class SessionManager {
         }
 
         if (analysis.nextActions && analysis.nextActions.length > 0) {
-          // Add new actions to the task
+          // Add new actions to the task (will be picked up by while loop)
           task.actions.push(...analysis.nextActions)
+          this.addLog(sessionId, 'info', `Added ${analysis.nextActions.length} new actions`)
         }
+
+        actionIndex++
       }
 
       task.status = 'completed'
@@ -310,8 +315,69 @@ class SessionManager {
     state.isPaused = false
     this.addLog(sessionId, 'info', 'Session resumed by user')
 
-    // Continue execution
-    await this.executeSession(sessionId)
+    // Continue execution from where we left off (only pending tasks)
+    await this.continueExecution(sessionId)
+  }
+
+  // Continue execution from current position (for resume)
+  private async continueExecution(sessionId: string): Promise<void> {
+    const state = this.sessions.get(sessionId)
+    if (!state) throw new Error(`Session not found: ${sessionId}`)
+
+    await this.updateStatus(sessionId, 'executing')
+
+    // Find remaining tasks (pending or in_progress)
+    const remainingTasks = state.tasks.filter(
+      t => t.status === 'pending' || t.status === 'in_progress'
+    )
+
+    if (remainingTasks.length === 0) {
+      // All tasks complete
+      await this.updateStatus(sessionId, 'completed')
+      this.addLog(sessionId, 'success', 'Session completed - no remaining tasks')
+      return
+    }
+
+    for (const task of remainingTasks) {
+      // Check for pause/cancel
+      if (state.isPaused) {
+        this.addLog(sessionId, 'info', 'Session paused')
+        await this.updateStatus(sessionId, 'paused')
+        return
+      }
+
+      if (state.isCancelled) {
+        this.addLog(sessionId, 'info', 'Session cancelled')
+        await this.updateStatus(sessionId, 'failed')
+        return
+      }
+
+      // Execute task
+      await this.executeTask(sessionId, task)
+
+      if (task.status === 'failed') {
+        this.addLog(sessionId, 'error', `Task failed: ${task.description}`)
+      }
+    }
+
+    // Session complete
+    await this.updateStatus(sessionId, 'completed')
+    this.addLog(sessionId, 'success', 'Session completed successfully')
+
+    // Take final screenshot
+    try {
+      const screenshot = await browserManager.takeScreenshot(sessionId)
+      await prisma.agentScreenshot.create({
+        data: {
+          sessionId,
+          imageData: screenshot,
+          pageUrl: await browserManager.getCurrentUrl(sessionId),
+          description: 'Final session screenshot'
+        }
+      })
+    } catch {
+      // Ignore screenshot errors
+    }
   }
 
   async cancelSession(sessionId: string): Promise<void> {

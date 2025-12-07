@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import MegaMenuNav from './MegaMenuNav';
 import MobileMenu from '@/components/ui/MobileMenu';
+import NavStyleSwitcher from '@/components/ui/NavStyleSwitcher';
+import { useAppStore } from '@/stores/app-store';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -10,19 +13,36 @@ interface ResponsiveLayoutProps {
 
 export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { navStyle } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine sidebar width based on nav style
+  const sidebarWidth = navStyle === 'megamenu' ? '208px' : '280px'; // w-52 = 208px, w-[280px] = 280px
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar />
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+      {/* Desktop Navigation - conditionally render based on navStyle */}
+      <div className="hidden lg:block fixed left-0 top-0 h-screen z-40">
+        {mounted && navStyle === 'megamenu' ? (
+          <MegaMenuNav />
+        ) : (
+          <Sidebar />
+        )}
       </div>
 
       {/* Mobile Menu */}
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-      {/* Header */}
-      <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-white border-b border-gray-200 z-30">
+      {/* Header - full width on mobile, offset on desktop */}
+      <header
+        className="fixed top-0 right-0 h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 z-30 transition-all duration-200 left-0 lg:left-[var(--sidebar-width)]"
+        style={{ '--sidebar-width': mounted ? sidebarWidth : '280px' } as React.CSSProperties}
+      >
         <div className="flex items-center justify-between h-full px-4 lg:px-6">
           {/* Mobile Menu Button */}
           <button
@@ -53,6 +73,11 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Nav Style Switcher - Hidden on mobile */}
+            <div className="hidden lg:block">
+              <NavStyleSwitcher />
+            </div>
+
             {/* AI Button - Hidden on mobile */}
             <button className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 transition-colors">
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,9 +111,14 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pt-16 lg:ml-[280px] p-4 lg:p-6">
-        {children}
+      {/* Main Content - CSS variable for dynamic margin */}
+      <main
+        className="pt-16 p-4 lg:p-6 transition-all duration-200 max-lg:!ml-0"
+        style={{ '--sidebar-width': mounted ? sidebarWidth : '280px' } as React.CSSProperties}
+      >
+        <div className="lg:ml-[var(--sidebar-width)]">
+          {children}
+        </div>
       </main>
     </div>
   );
