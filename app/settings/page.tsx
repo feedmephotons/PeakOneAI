@@ -21,7 +21,7 @@ interface UserProfile {
   website: string
   company: string
   role: string
-  joinDate: Date
+  joinDate: Date | string
 }
 
 interface Settings {
@@ -333,7 +333,7 @@ export default function SettingsPage() {
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white">{profile.name}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{profile.role}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        Member since {profile.joinDate.toLocaleDateString()}
+                        Member since {new Date(profile.joinDate).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
