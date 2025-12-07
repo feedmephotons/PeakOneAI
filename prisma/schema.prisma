@@ -10,7 +10,8 @@ datasource db {
 // User and Authentication
 model User {
   id              String          @id @default(cuid())
-  clerkId         String          @unique // Clerk user ID
+  clerkId         String?         @unique // Clerk user ID (legacy)
+  supabaseId      String?         @unique // Supabase auth user ID
   email           String          @unique
   firstName       String?
   lastName        String?
