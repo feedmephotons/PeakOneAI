@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import MegaMenuNav from './MegaMenuNav';
 import MobileMenu from '@/components/ui/MobileMenu';
-import NavStyleSwitcher from '@/components/ui/NavStyleSwitcher';
 import { useAppStore } from '@/stores/app-store';
 
 interface ResponsiveLayoutProps {
@@ -73,11 +72,6 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Nav Style Switcher - Hidden on mobile */}
-            <div className="hidden lg:block">
-              <NavStyleSwitcher />
-            </div>
-
             {/* AI Button - Hidden on mobile */}
             <button className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 transition-colors">
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

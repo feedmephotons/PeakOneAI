@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { sessionManager } from '@/lib/agent/session-manager'
 
@@ -10,17 +10,25 @@ interface RouteParams {
 // GET - Get live view state for polling
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
 
-    // Get user from database to verify ownership
-    const user = await prisma.user.findFirst({
-      where: { clerkId: userId }
+    // Get user from database (try supabaseId first, then email)
+    let user = await prisma.user.findFirst({
+      where: { supabaseId: authUser.id }
     })
+
+    if (!user && authUser.email) {
+      user = await prisma.user.findFirst({
+        where: { email: authUser.email }
+      })
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })

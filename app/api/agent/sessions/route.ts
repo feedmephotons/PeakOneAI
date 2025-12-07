@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { sessionManager } from '@/lib/agent/session-manager'
 
 // GET - List all agent sessions for a workspace
 export async function GET(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -21,10 +23,17 @@ export async function GET(request: Request) {
       )
     }
 
-    // Get user from database
-    const user = await prisma.user.findFirst({
-      where: { clerkId: userId }
+    // Get user from database (try both supabaseId and clerkId for compatibility)
+    let user = await prisma.user.findFirst({
+      where: { supabaseId: authUser.id }
     })
+
+    // Fallback to email match if no supabaseId match
+    if (!user && authUser.email) {
+      user = await prisma.user.findFirst({
+        where: { email: authUser.email }
+      })
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -91,8 +100,10 @@ export async function GET(request: Request) {
 // POST - Create a new agent session
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -114,10 +125,17 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get user from database
-    const user = await prisma.user.findFirst({
-      where: { clerkId: userId }
+    // Get user from database (try both supabaseId and email for compatibility)
+    let user = await prisma.user.findFirst({
+      where: { supabaseId: authUser.id }
     })
+
+    // Fallback to email match if no supabaseId match
+    if (!user && authUser.email) {
+      user = await prisma.user.findFirst({
+        where: { email: authUser.email }
+      })
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
