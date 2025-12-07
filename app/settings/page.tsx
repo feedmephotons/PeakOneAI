@@ -6,8 +6,9 @@ import {
   User, Camera, Shield, Bell, Moon, Sun,
   Monitor, Palette, Trash2, Download, Upload,
   Save, Eye, EyeOff, Settings2, ChevronRight,
-  Database, CreditCard, Check
+  Database, CreditCard, Check, PanelLeft, LayoutGrid, Menu
 } from 'lucide-react'
+import { useAppStore, type NavStyle } from '@/stores/app-store'
 
 interface UserProfile {
   id: string
@@ -73,6 +74,7 @@ const TABS = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
+  const { navStyle, setNavStyle } = useAppStore()
   const [profile, setProfile] = useState<UserProfile>({
     id: '1',
     name: '',
@@ -604,6 +606,54 @@ export default function SettingsPage() {
                       >
                         <Monitor className="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-400" />
                         <p className="text-sm font-medium text-gray-900 dark:text-white">System</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Navigation Style */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Navigation Style</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Choose how you want to navigate through the app
+                    </p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <button
+                        onClick={() => setNavStyle('topnav')}
+                        className={`p-4 border-2 rounded-lg transition ${
+                          navStyle === 'topnav'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <Menu className="w-8 h-8 mx-auto mb-2 text-gray-600 dark:text-gray-400" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">Top Nav</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Horizontal menu</p>
+                      </button>
+
+                      <button
+                        onClick={() => setNavStyle('sidebar')}
+                        className={`p-4 border-2 rounded-lg transition ${
+                          navStyle === 'sidebar'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <PanelLeft className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">Sidebar</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Classic left panel</p>
+                      </button>
+
+                      <button
+                        onClick={() => setNavStyle('megamenu')}
+                        className={`p-4 border-2 rounded-lg transition ${
+                          navStyle === 'megamenu'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <LayoutGrid className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">Mega Menu</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Flyout panels</p>
                       </button>
                     </div>
                   </div>
