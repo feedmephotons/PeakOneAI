@@ -1,13 +1,14 @@
 "use client"
 
 import { useAppStore, NavStyle } from '@/stores/app-store'
-import { LayoutGrid, PanelLeft } from 'lucide-react'
+import { LayoutGrid, PanelLeft, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function NavStyleSwitcher() {
   const { navStyle, setNavStyle } = useAppStore()
 
   const options: { value: NavStyle; icon: React.ReactNode; label: string }[] = [
+    { value: 'topnav', icon: <Menu className="h-4 w-4" />, label: 'Top Nav' },
     { value: 'sidebar', icon: <PanelLeft className="h-4 w-4" />, label: 'Sidebar' },
     { value: 'megamenu', icon: <LayoutGrid className="h-4 w-4" />, label: 'Mega Menu' },
   ]
@@ -27,7 +28,7 @@ export function NavStyleSwitcher() {
           title={option.label}
         >
           {option.icon}
-          <span className="hidden sm:inline">{option.label}</span>
+          <span className="hidden xl:inline">{option.label}</span>
         </button>
       ))}
     </div>

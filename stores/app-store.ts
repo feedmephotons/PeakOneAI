@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AppMode } from '@/config/navigation'
 
-export type NavStyle = 'sidebar' | 'megamenu'
+export type NavStyle = 'topnav' | 'sidebar' | 'megamenu'
 
 interface AppState {
   // Navigation Style
@@ -31,8 +31,8 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      // Navigation Style - defaults to classic sidebar
-      navStyle: 'sidebar',
+      // Navigation Style - defaults to top navigation
+      navStyle: 'topnav',
       setNavStyle: (style) => set({ navStyle: style }),
 
       // Current Mode

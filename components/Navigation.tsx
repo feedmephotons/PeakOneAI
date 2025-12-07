@@ -8,6 +8,7 @@ import { Search, User, LogOut, Settings, ChevronDown, Sparkles } from 'lucide-re
 import Image from 'next/image'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import MegaMenu from './navigation/MegaMenu'
+import NavStyleSwitcher from '@/components/ui/NavStyleSwitcher'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef } from 'react'
 
@@ -107,6 +108,11 @@ export default function Navigation() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
+            {/* Nav Style Switcher */}
+            <div className="hidden lg:block">
+              <NavStyleSwitcher />
+            </div>
+
             {/* Search */}
             <button
               onClick={openSearch}
