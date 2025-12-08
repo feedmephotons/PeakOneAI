@@ -300,6 +300,7 @@ How can I help you today?`,
 
     try {
       // Call the real AI API
+      console.log('[Lisa] Calling /api/ai/chat with message:', messageContent)
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
@@ -627,7 +628,7 @@ How can I help you today?`,
             </button>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Lisa AI is powered by Google Gemini 3 Pro
+            Powered by Google Gemini 3 Pro
           </p>
         </div>
       </div>
