@@ -10,11 +10,11 @@ export const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
 })
 
-// Default model for chat and text generation - Using Gemini 2.0 Flash
-export const GEMINI_MODEL = 'gemini-2.0-flash-exp'
+// Default model for chat and text generation - Using Gemini 3 Pro Preview
+export const GEMINI_MODEL = 'gemini-3-pro-preview'
 
-// Model for vision/image analysis - Using Gemini 2.0 Flash
-export const GEMINI_VISION_MODEL = 'gemini-2.0-flash-exp'
+// Model for vision/image analysis - Using Gemini 2.5 Flash (fast + multimodal)
+export const GEMINI_VISION_MODEL = 'gemini-2.5-flash'
 
 // Lisa's personality and system prompt - Powered by Gemini 3 Pro
 export const LISA_SYSTEM_PROMPT = `You are Lisa, an advanced AI assistant for PeakOne AI platform powered by Google Gemini 3 Pro. You are friendly, professional, and incredibly helpful. You have a warm personality and aim to make users' work lives easier and more productive.
