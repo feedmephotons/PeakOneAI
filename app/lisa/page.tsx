@@ -298,28 +298,78 @@ How can I help you today?`,
     setAttachedFiles([])
     setIsTyping(true)
 
-    // Simulate AI processing time
-    setTimeout(() => {
-      const { response, suggestions } = getAIResponse(textToSend)
+    try {
+      // Call the real AI API
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageContent,
+          useRAG: false
+        }),
+      })
 
-      // If files were attached, add file analysis context
-      let finalResponse = response
-      if (attachments.length > 0) {
-        finalResponse = `I've received ${attachments.length} file(s) for analysis:\n${
-          attachments.map(a => `- ${a.name} (${(a.size / 1024).toFixed(1)} KB)`).join('\n')
-        }\n\n${response}`
+      if (!response.ok) {
+        throw new Error('Failed to get AI response')
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullResponse = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                if (parsed.type === 'content' && parsed.content) {
+                  fullResponse += parsed.content
+                }
+              } catch {
+                // Skip unparseable lines
+              }
+            }
+          }
+        }
       }
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: finalResponse,
+        content: fullResponse || 'I apologize, but I was unable to generate a response. Please try again.',
+        timestamp: new Date(),
+      }
+
+      setMessages(prev => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('AI chat error:', error)
+
+      // Fallback to simulated response if API fails
+      const { response: fallbackResponse, suggestions } = getAIResponse(textToSend)
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: fallbackResponse,
         timestamp: new Date(),
         suggestions
       }
 
       setMessages(prev => [...prev, assistantMessage])
+    } finally {
       setIsTyping(false)
-    }, 1000 + Math.random() * 1000) // Random delay 1-2 seconds
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -577,7 +627,7 @@ How can I help you today?`,
             </button>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Lisa AI is here to help with tasks, analysis, scheduling, and more. No API key required!
+            Lisa AI is powered by Google Gemini 3 Pro
           </p>
         </div>
       </div>
