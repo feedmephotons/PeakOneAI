@@ -123,7 +123,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
       {/* Main Content - CSS variable for dynamic margin */}
       <main
-        className="pt-16 p-4 lg:p-6 transition-all duration-200 max-lg:!ml-0"
+        className="pt-20 p-4 lg:p-6 transition-all duration-200 max-lg:!ml-0"
         style={{ '--sidebar-width': mounted ? sidebarWidth : '280px' } as React.CSSProperties}
       >
         <div className="lg:ml-[var(--sidebar-width)]">
