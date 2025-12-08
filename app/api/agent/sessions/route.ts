@@ -181,8 +181,13 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Create agent session error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to create session' },
+      {
+        error: 'Failed to create session',
+        details: errorMessage,
+        note: 'Computer Use requires Puppeteer which may not work on serverless platforms like Vercel'
+      },
       { status: 500 }
     )
   }
