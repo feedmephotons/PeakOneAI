@@ -10,8 +10,8 @@ export const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
 })
 
-// Default model for chat and text generation - Using Gemini 3 Pro Preview
-export const GEMINI_MODEL = 'gemini-3-pro-preview'
+// Default model for chat and text generation - Using Gemini 2.5 Flash for speed
+export const GEMINI_MODEL = 'gemini-2.5-flash'
 
 // Model for vision/image analysis - Using Gemini 2.5 Flash (fast + multimodal)
 export const GEMINI_VISION_MODEL = 'gemini-2.5-flash'

@@ -43,29 +43,80 @@ export default function PeakAIAssistant() {
     scrollToBottom()
   }, [messages])
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return
+  const [isLoading, setIsLoading] = useState(false)
 
-    const newMessage: Message = {
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return
+
+    const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: inputValue,
       timestamp: new Date()
     }
 
-    setMessages([...messages, newMessage])
+    setMessages(prev => [...prev, userMessage])
+    const messageToSend = inputValue
     setInputValue('')
+    setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageToSend, useRAG: false }),
+      })
+
+      if (!response.ok) throw new Error('Failed to get AI response')
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullResponse = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') continue
+              try {
+                const parsed = JSON.parse(data)
+                if (parsed.type === 'content' && parsed.content) {
+                  fullResponse += parsed.content
+                }
+              } catch {
+                // Skip unparseable
+              }
+            }
+          }
+        }
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I understand you want to ' + inputValue + '. I\'m still learning, but I\'ll help you with that soon!',
+        content: fullResponse || 'I apologize, but I was unable to generate a response.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiResponse])
-    }, 1000)
+    } catch (error) {
+      console.error('AI chat error:', error)
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorResponse])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -225,11 +276,15 @@ export default function PeakAIAssistant() {
 
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isLoading}
               className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl flex items-center justify-center transition-all hover:scale-105"
               title="Send message"
             >
-              <Send className="w-5 h-5 text-white" />
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-5 h-5 text-white" />
+              )}
             </button>
           </div>
 
