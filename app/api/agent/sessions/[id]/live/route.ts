@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { sessionManager } from '@/lib/agent/session-manager'
+import { agentSessionManager } from '@/lib/agent/agent-session'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -55,7 +55,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     // Get live state
-    const liveState = await sessionManager.getLiveViewState(id)
+    const liveState = await agentSessionManager.getLiveViewState(id)
 
     if (!liveState) {
       return NextResponse.json({
@@ -80,7 +80,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         url: liveState.url,
         status: liveState.status,
         currentAction: liveState.currentAction,
-        progress: liveState.progress,
+        modelResponse: liveState.modelResponse,
         logs: liveState.logs.slice(-20) // Last 20 logs for live view
       }
     })

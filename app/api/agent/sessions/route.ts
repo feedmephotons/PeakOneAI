@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { sessionManager } from '@/lib/agent/session-manager'
+import { agentSessionManager } from '@/lib/agent/agent-session'
 
 // GET - List all agent sessions for a workspace
 export async function GET(request: Request) {
@@ -161,8 +161,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create session using session manager
-    const session = await sessionManager.createSession(
+    // Create session using the new agent session manager
+    const { sessionId, session } = await agentSessionManager.createSession(
       workspaceId,
       user.id,
       objective,
@@ -171,12 +171,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       session: {
-        id: session.id,
+        id: sessionId,
         objective: session.objective,
         status: session.status,
-        startUrl: session.currentUrl,
+        startUrl: session.lastUrl,
         createdAt: session.startedAt
-      }
+      },
+      message: 'Session created. Use POST /api/agent/sessions/{id} with action: "start" to begin.'
     })
   } catch (error) {
     console.error('Create agent session error:', error)

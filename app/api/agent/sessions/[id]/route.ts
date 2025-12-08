@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { sessionManager } from '@/lib/agent/session-manager'
+import { agentSessionManager } from '@/lib/agent/agent-session'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -49,13 +49,6 @@ export async function GET(request: Request, { params }: RouteParams) {
     const session = await prisma.agentSession.findUnique({
       where: { id },
       include: {
-        tasks: {
-          orderBy: { order: 'asc' }
-        },
-        screenshots: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        },
         logs: {
           orderBy: { createdAt: 'desc' },
           take: 50
@@ -73,18 +66,11 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     // Get live state if session is active
-    let liveState = null
-    if (['executing', 'planning', 'paused'].includes(session.status)) {
-      liveState = await sessionManager.getLiveViewState(id)
-    }
-
-    // Get messages
-    const messages = sessionManager.getMessages(id)
+    const liveState = await agentSessionManager.getLiveViewState(id)
 
     return NextResponse.json({
       session,
-      liveState,
-      messages
+      liveState
     })
   } catch (error) {
     console.error('Get session error:', error)
@@ -95,7 +81,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 }
 
-// POST - Session control actions (start, pause, resume, cancel, message)
+// POST - Session control actions (start, pause, resume, cancel, confirm, deny)
 export async function POST(request: Request, { params }: RouteParams) {
   try {
     const { authUser, dbUser } = await getAuthUser()
@@ -110,9 +96,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const { id } = await params
     const body = await request.json()
-    const { action, message } = body as {
-      action: 'start' | 'pause' | 'resume' | 'cancel' | 'message'
-      message?: string
+    const { action } = body as {
+      action: 'start' | 'pause' | 'resume' | 'cancel' | 'confirm' | 'deny'
     }
 
     // Verify session exists
@@ -132,7 +117,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     switch (action) {
       case 'start':
         // Start session in background (don't await to prevent timeout)
-        sessionManager.startSession(id).catch(err => {
+        agentSessionManager.startSession(id).catch(err => {
           console.error('Session start error:', err)
         })
         return NextResponse.json({
@@ -141,7 +126,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         })
 
       case 'pause':
-        await sessionManager.pauseSession(id)
+        await agentSessionManager.pauseSession(id)
         return NextResponse.json({
           success: true,
           message: 'Session paused'
@@ -149,7 +134,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
       case 'resume':
         // Resume in background
-        sessionManager.resumeSession(id).catch(err => {
+        agentSessionManager.resumeSession(id).catch(err => {
           console.error('Session resume error:', err)
         })
         return NextResponse.json({
@@ -158,28 +143,33 @@ export async function POST(request: Request, { params }: RouteParams) {
         })
 
       case 'cancel':
-        await sessionManager.cancelSession(id)
+        await agentSessionManager.cancelSession(id)
         return NextResponse.json({
           success: true,
           message: 'Session cancelled'
         })
 
-      case 'message':
-        if (!message) {
-          return NextResponse.json(
-            { error: 'Message is required' },
-            { status: 400 }
-          )
-        }
-        await sessionManager.sendUserInstruction(id, message)
+      case 'confirm':
+        // User confirmed the pending action
+        agentSessionManager.confirmAction(id).catch(err => {
+          console.error('Confirm action error:', err)
+        })
         return NextResponse.json({
           success: true,
-          message: 'Instruction sent'
+          message: 'Action confirmed, continuing execution'
+        })
+
+      case 'deny':
+        // User denied the pending action
+        await agentSessionManager.denyAction(id)
+        return NextResponse.json({
+          success: true,
+          message: 'Action denied, session stopped'
         })
 
       default:
         return NextResponse.json(
-          { error: 'Invalid action' },
+          { error: 'Invalid action. Valid actions: start, pause, resume, cancel, confirm, deny' },
           { status: 400 }
         )
     }
@@ -222,7 +212,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     // Close session
-    await sessionManager.closeSession(id)
+    await agentSessionManager.closeSession(id)
 
     return NextResponse.json({
       success: true,

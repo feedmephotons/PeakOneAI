@@ -1,19 +1,23 @@
 import { gemini, GEMINI_MODEL, GEMINI_VISION_MODEL, LISA_SYSTEM_PROMPT } from '@/lib/gemini'
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/lib/supabase/server'
 import { geminiRAG } from '@/lib/rag/gemini-rag-service'
 
 export async function POST(request: Request) {
   try {
-    // Multi-tenant authentication with Clerk
-    const { userId, orgId } = await auth()
+    // Authentication with Supabase
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
+
+    // Use user's email domain as org context (for RAG)
+    const orgId = user.email?.split('@')[1] || 'default'
 
     // Parse request with RAG options
     const { message, useRAG = true } = await request.json()
