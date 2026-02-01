@@ -1,7 +1,13 @@
 import { Resend } from 'resend'
 
-// Initialize Resend client
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-initialize Resend client (avoid build-time errors when env var is missing)
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY)
+  }
+  return _resend
+}
 
 // Default from address - should match your verified domain in Resend
 export const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@peakone.ai'
@@ -35,7 +41,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<EmailResult>
   try {
     const { to, subject, html, text, from, replyTo, cc, bcc, attachments } = options
 
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: from || `${DEFAULT_FROM_NAME} <${DEFAULT_FROM_EMAIL}>`,
       to: Array.isArray(to) ? to : [to],
       subject,
@@ -79,7 +85,7 @@ export async function sendBatchEmails(
       replyTo: email.replyTo || undefined,
     }))
 
-    const result = await resend.batch.send(batchEmails)
+    const result = await getResend().batch.send(batchEmails)
 
     if (result.error) {
       return {
