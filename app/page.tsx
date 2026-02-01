@@ -36,6 +36,9 @@ export default function Home() {
     else setDashboardView('peak')
   }
 
+  // DEMO MODE: Skip auth check for investor demo
+  // TODO: Remove this after demo - restore auth check below
+  /*
   // Show loading state while checking auth
   if (isAuthenticated === null) {
     return (
@@ -49,6 +52,7 @@ export default function Home() {
   if (!isAuthenticated) {
     return <LandingPage />
   }
+  */
 
   // Show dashboard for authenticated users
   return (
