@@ -1,12 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
+// DEMO MODE: Demo user for investor demo
+const DEMO_USER = {
+  id: 'demo-user-id',
+  clerkId: 'demo-user-id',
+  email: 'sarah.chen@peakone.ai',
+  firstName: 'Sarah',
+  lastName: 'Chen',
+  name: 'Sarah Chen',
+  avatarUrl: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}
+
 export async function getCurrentUser() {
   const supabase = await createClient()
   const { data: { user: supabaseUser } } = await supabase.auth.getUser()
 
+  // DEMO MODE: Return demo user when not authenticated
   if (!supabaseUser) {
-    return null
+    return DEMO_USER
   }
 
   // Get or create user in database
@@ -54,6 +68,7 @@ export async function getCurrentOrganization() {
 export async function requireAuth() {
   const user = await getCurrentUser()
 
+  // DEMO MODE: getCurrentUser now always returns a user (demo user if not authenticated)
   if (!user) {
     throw new Error('Unauthorized')
   }

@@ -19,6 +19,13 @@ export default function Navigation() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
+  // DEMO MODE: Default demo user for investor demo
+  const DEMO_USER = {
+    email: 'sarah.chen@peakone.ai',
+    firstName: 'Sarah',
+    lastName: 'Chen',
+  }
+
   useEffect(() => {
     const supabase = createClient()
 
@@ -30,6 +37,9 @@ export default function Navigation() {
           firstName: user.user_metadata?.first_name,
           lastName: user.user_metadata?.last_name,
         })
+      } else {
+        // DEMO MODE: Use demo user when not authenticated
+        setUser(DEMO_USER)
       }
     })
 
@@ -42,7 +52,8 @@ export default function Navigation() {
           lastName: session.user.user_metadata?.last_name,
         })
       } else {
-        setUser(null)
+        // DEMO MODE: Use demo user when not authenticated
+        setUser(DEMO_USER)
       }
     })
 
@@ -63,7 +74,8 @@ export default function Navigation() {
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/sign-in')
+    // DEMO MODE: Go to landing page instead of sign-in
+    router.push('/landing')
     router.refresh()
   }
 
