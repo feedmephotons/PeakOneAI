@@ -187,6 +187,9 @@ export default function LandingPage() {
               <a href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Testimonials
               </a>
+              <a href="/deck" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Pitch Deck
+              </a>
             </div>
 
             <div className="flex items-center gap-4">

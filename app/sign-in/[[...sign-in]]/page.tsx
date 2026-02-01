@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, Loader2, Users } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Users, ArrowLeft } from 'lucide-react'
 
 // Demo accounts for testing (hidden by default)
 const demoAccounts = {
@@ -106,6 +106,15 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      {/* Back to Home */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>Back to home</span>
+      </Link>
+
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
