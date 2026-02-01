@@ -132,22 +132,15 @@ export default function Sidebar() {
       {/* Logo Section */}
       <div className="flex items-center justify-between h-14 px-3 border-b flex-shrink-0" style={{ borderColor: 'rgb(var(--sidebar-border))' }}>
         <Link href="/" className="flex items-center">
-          {isCollapsed ? (
-            <Image
-              src="/peakone-logo.png"
-              alt="PeakOne AI"
-              width={24}
-              height={24}
-              className="w-6 h-6 brightness-0 invert"
-            />
-          ) : (
-            <Image
-              src="/peakone-logo.svg"
-              alt="PeakOne AI"
-              width={112}
-              height={15}
-              className="h-3.5 w-auto brightness-0 invert"
-            />
+          <Image
+            src="/peakone-logo.png"
+            alt="PeakOne AI"
+            width={28}
+            height={28}
+            className="w-7 h-7"
+          />
+          {!isCollapsed && (
+            <span className="font-semibold text-white ml-2">Peak One AI</span>
           )}
         </Link>
         <button

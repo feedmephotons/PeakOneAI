@@ -176,12 +176,13 @@ export function MegaMenuNav({ className }: MegaMenuNavProps) {
         {/* Logo */}
         <div className="flex h-14 items-center gap-3 px-4 border-b border-white/10 dark:border-slate-700">
           <Image
-            src="/peakone-logo.svg"
+            src="/peakone-logo.png"
             alt="PeakOne AI"
-            width={140}
-            height={19}
-            className="h-5 w-auto brightness-0 invert"
+            width={32}
+            height={32}
+            className="h-8 w-8"
           />
+          <span className="font-semibold text-white text-lg">Peak One AI</span>
         </div>
 
         {/* Mode List */}

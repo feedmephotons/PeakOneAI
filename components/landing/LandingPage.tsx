@@ -166,15 +166,16 @@ export default function LandingPage() {
       }`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center gap-2">
               <Image
-                src="/peakone-logo.svg"
+                src="/peakone-logo.png"
                 alt="PeakOne AI"
-                width={180}
-                height={24}
-                className="h-6 w-auto"
+                width={32}
+                height={32}
+                className="h-8 w-8"
                 priority
               />
+              <span className="font-semibold text-gray-900 dark:text-white text-lg">Peak One AI</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -277,14 +278,15 @@ export default function LandingPage() {
               <div className="aspect-[16/10]">
                 {/* Top Bar */}
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <Image
-                      src="/peakone-logo.svg"
+                      src="/peakone-logo.png"
                       alt="PeakOne AI"
-                      width={120}
-                      height={16}
-                      className="h-4 w-auto"
+                      width={20}
+                      height={20}
+                      className="h-5 w-5"
                     />
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">Peak One AI</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-64 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center px-3 gap-2">
@@ -753,14 +755,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <Link href="/" className="flex items-center mb-6">
+              <Link href="/" className="flex items-center gap-2 mb-6">
                 <Image
-                  src="/peakone-logo.svg"
+                  src="/peakone-logo.png"
                   alt="PeakOne AI"
-                  width={160}
-                  height={22}
-                  className="h-5 w-auto brightness-0 invert"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7"
                 />
+                <span className="font-semibold text-white text-lg">Peak One AI</span>
               </Link>
               <p className="text-gray-500 leading-relaxed">
                 The AI-powered workspace for modern teams. Communicate, collaborate, and create together.

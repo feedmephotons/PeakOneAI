@@ -101,15 +101,16 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center group">
+          <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src="/peakone-logo.svg"
+              src="/peakone-logo.png"
               alt="PeakOne AI"
-              width={180}
-              height={24}
-              className="h-6 w-auto group-hover:scale-105 transition-transform duration-300 dark:brightness-110"
+              width={32}
+              height={32}
+              className="h-8 w-8 group-hover:scale-105 transition-transform duration-300"
               priority
             />
+            <span className="font-semibold text-gray-900 dark:text-white text-lg">Peak One AI</span>
           </Link>
 
           {/* Desktop navigation - MegaMenu */}
