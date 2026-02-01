@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2, Users, ArrowLeft } from 'lucide-react'
 
@@ -122,10 +123,14 @@ export default function SignInPage() {
             className="flex items-center justify-center gap-2 mb-4 cursor-pointer select-none"
             onClick={handleLogoClick}
           >
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">P1</span>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">PeakOne AI</h1>
+            <Image
+              src="/peakone-logo.png"
+              alt="PeakOne AI"
+              width={48}
+              height={48}
+              className="w-12 h-12"
+            />
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Peak One AI</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             Sign in to access your workspace
