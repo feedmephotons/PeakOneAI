@@ -14,6 +14,8 @@ const publicRoutes = [
   '/test',
   '/devops',
   '/video/demo',
+  '/deck',
+  '/landing',
 ]
 
 // Check if path matches any public route
@@ -66,12 +68,16 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // DEMO MODE: Disable auth redirect for investor demo
+  // TODO: Re-enable after demo
+  /*
   // Redirect to sign-in if not authenticated
   if (!user) {
     const signInUrl = new URL('/sign-in', request.url)
     signInUrl.searchParams.set('redirect_url', pathname)
     return NextResponse.redirect(signInUrl)
   }
+  */
 
   return supabaseResponse
 }
