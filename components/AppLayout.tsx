@@ -58,7 +58,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Use sidebar/megamenu layout when navStyle is 'sidebar' or 'megamenu'
-  const useSidebarLayout = mounted && (navStyle === 'sidebar' || navStyle === 'megamenu')
+  // DEMO MODE: Force top navigation for demo
+  const useSidebarLayout = false // mounted && (navStyle === 'sidebar' || navStyle === 'megamenu')
 
   return (
     <ErrorBoundary>
