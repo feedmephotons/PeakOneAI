@@ -45,7 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     pathname?.startsWith('/sign-up') ||
     pathname?.startsWith('/auth')
 
-  const isLandingPage = pathname === '/' && isAuthenticated === false
+  const isLandingPage = (pathname === '/' && isAuthenticated === false) || pathname === '/landing'
 
   // For auth pages and landing page, render without navigation
   if (isAuthPage || isLandingPage) {
