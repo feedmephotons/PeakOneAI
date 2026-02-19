@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Brain, Circle, FileText, Languages, ListChecks, Link2, Video } from 'lucide-react';
 import VideoCall from '@/components/video/VideoCall';
 
 interface Meeting {
@@ -25,6 +26,15 @@ interface Recording {
   summary: boolean;
   thumbnail?: string;
 }
+
+const PILLAR_BADGES = [
+  { label: 'Recorded', icon: Circle },
+  { label: 'Transcribed', icon: FileText },
+  { label: 'Translated', icon: Languages },
+  { label: 'Summarized', icon: Brain },
+  { label: 'Action Items', icon: ListChecks },
+  { label: 'Memory-Linked', icon: Link2 },
+] as const;
 
 export default function VideoPage() {
   const [showNewMeetingModal, setShowNewMeetingModal] = useState(false);
@@ -55,7 +65,7 @@ export default function VideoPage() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">{meeting.title}</h3>
-            <p className="text-sm text-gray-500 mt-1">{meeting.time} {meeting.duration && `• ${meeting.duration}`}</p>
+            <p className="text-sm text-gray-500 mt-1">{meeting.time} {meeting.duration && `\u2022 ${meeting.duration}`}</p>
           </div>
           {meeting.status === 'live' && (
             <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full animate-pulse">
@@ -79,7 +89,7 @@ export default function VideoPage() {
             {[...Array(Math.min(4, meeting.participants))].map((_, i) => (
               <div
                 key={i}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 border-2 border-white flex items-center justify-center text-white text-xs font-medium"
+                className="w-8 h-8 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-xs font-medium"
               >
                 {i + 1}
               </div>
@@ -94,9 +104,9 @@ export default function VideoPage() {
         </div>
 
         {meeting.hasAI && (
-          <div className="flex items-center text-sm text-violet-600 mb-4">
-            <span className="mr-2">🤖</span>
-            <span>Lisa will join for notes & summary</span>
+          <div className="flex items-center text-sm text-indigo-600 mb-4">
+            <Brain className="w-4 h-4 mr-2" />
+            <span>Lisa will record, transcribe &amp; summarize</span>
           </div>
         )}
 
@@ -131,7 +141,7 @@ export default function VideoPage() {
               <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
                 View Recording
               </button>
-              <button className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors text-sm font-medium">
+              <button className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium">
                 Summary
               </button>
             </>
@@ -144,8 +154,8 @@ export default function VideoPage() {
   const RecordingCard = ({ recording }: { recording: Recording }) => (
     <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
       <div className="flex items-start space-x-4">
-        <div className="w-32 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-32 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -155,27 +165,29 @@ export default function VideoPage() {
           <h3 className="text-lg font-semibold text-gray-900">{recording.title}</h3>
           <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
             <span>{recording.date}</span>
-            <span>•</span>
+            <span>&bull;</span>
             <span>{recording.duration}</span>
-            <span>•</span>
+            <span>&bull;</span>
             <span>{recording.size}</span>
           </div>
 
           <div className="flex items-center space-x-3 mt-3">
             {recording.transcript && (
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                ✓ Transcript
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                Transcript
               </span>
             )}
             {recording.summary && (
-              <span className="px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
-                ✓ Summary
+              <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full flex items-center gap-1">
+                <Brain className="w-3 h-3" />
+                Summary
               </span>
             )}
           </div>
 
           <div className="flex items-center space-x-2 mt-4">
-            <button className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors">
+            <button className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors">
               Play
             </button>
             <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
@@ -187,7 +199,7 @@ export default function VideoPage() {
               </button>
             )}
             {recording.summary && (
-              <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
+              <button className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm rounded-lg hover:bg-indigo-100 transition-colors">
                 Insights
               </button>
             )}
@@ -229,8 +241,8 @@ export default function VideoPage() {
         <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Video Calls</h1>
-              <p className="text-sm text-gray-500 mt-1">HD video meetings with AI-powered transcription and summaries</p>
+              <h1 className="text-2xl font-bold text-gray-900">Meetings</h1>
+              <p className="text-sm text-gray-500 mt-1">Meetings that run themselves</p>
             </div>
 
             <div className="flex items-center space-x-3">
@@ -242,10 +254,8 @@ export default function VideoPage() {
               </button>
               <button
                 onClick={startInstantMeeting}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center space-x-2">
+                <Video className="w-4 h-4" />
                 <span>Start Instant Meeting</span>
               </button>
             </div>
@@ -254,17 +264,30 @@ export default function VideoPage() {
       </div>
 
       <div className="w-full px-6 py-6">
-        {/* Quick Actions */}
+        {/* Hero Section */}
         <div className="bg-indigo-600 rounded-xl p-8 text-white mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold">Meeting Room</h2>
-              <p className="text-indigo-100 mt-1">Start or join meetings instantly</p>
+              <h2 className="text-2xl font-bold">Meetings that run themselves</h2>
+              <p className="text-indigo-200 mt-1">Every meeting is automatically captured, understood, and connected to your workflow.</p>
             </div>
             <div className="flex items-center space-x-2 bg-white/15 px-4 py-2 rounded-lg">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               <span className="text-sm font-medium">System Ready</span>
             </div>
+          </div>
+
+          {/* 6 Pillar Feature Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            {PILLAR_BADGES.map(({ label, icon: Icon }) => (
+              <div
+                key={label}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2.5"
+              >
+                <Icon className="w-4 h-4 text-white/80 flex-shrink-0" />
+                <span className="text-sm font-medium text-white/90">{label}</span>
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -275,13 +298,11 @@ export default function VideoPage() {
               }}
               className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+                <Video className="w-6 h-6" />
               </div>
               <h3 className="font-semibold mb-1">Start Multi-Party Room</h3>
-              <p className="text-sm text-violet-100">Real-time video with multiple participants</p>
-              <p className="text-xs text-violet-200 mt-2">Requires Daily.co API key</p>
+              <p className="text-sm text-indigo-200">Real-time video with multiple participants</p>
+              <p className="text-xs text-indigo-300 mt-2">Requires Daily.co API key</p>
             </button>
 
             <button
@@ -293,7 +314,7 @@ export default function VideoPage() {
                 </svg>
               </div>
               <h3 className="font-semibold mb-1">Join Meeting</h3>
-              <p className="text-sm text-violet-100">Enter meeting ID or link to join</p>
+              <p className="text-sm text-indigo-200">Enter meeting ID or link to join</p>
             </button>
 
             <button className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-colors text-left">
@@ -303,7 +324,7 @@ export default function VideoPage() {
                 </svg>
               </div>
               <h3 className="font-semibold mb-1">Schedule</h3>
-              <p className="text-sm text-violet-100">Plan meetings with calendar integration</p>
+              <p className="text-sm text-indigo-200">Plan meetings with calendar integration</p>
             </button>
           </div>
 
@@ -311,11 +332,11 @@ export default function VideoPage() {
           <div className="mt-6 flex items-center justify-between bg-white/10 rounded-lg p-4">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-sm font-bold">L</span>
+                <Brain className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="font-medium">Lisa Assistant</p>
-                <p className="text-sm text-indigo-100">Automatic transcription, notes, and action items</p>
+                <p className="font-medium">Lisa Meeting Intelligence</p>
+                <p className="text-sm text-indigo-200">Automatic recording, transcription, translation, summaries &amp; action items</p>
               </div>
             </div>
             <button
@@ -356,7 +377,7 @@ export default function VideoPage() {
 
           <div className="flex items-center space-x-3 text-sm">
             <span className="text-gray-500">Filter:</span>
-            <select className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500">
+            <select className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500">
               <option>All</option>
               <option>Today</option>
               <option>This Week</option>
@@ -389,18 +410,21 @@ export default function VideoPage() {
         {/* Meeting Intelligence */}
         <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Meeting Intelligence
-            </h3>
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Meeting Intelligence
+              </h3>
+            </div>
             <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
               View All
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-violet-50 rounded-lg p-4">
+            <div className="bg-indigo-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">📝</span>
+                <ListChecks className="w-5 h-5 text-indigo-600" />
                 <span className="text-2xl font-bold text-gray-900">47</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Action Items</p>
@@ -409,7 +433,9 @@ export default function VideoPage() {
 
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">⏱️</span>
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span className="text-2xl font-bold text-gray-900">12.5h</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Time Saved</p>
@@ -418,7 +444,9 @@ export default function VideoPage() {
 
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">👥</span>
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
                 <span className="text-2xl font-bold text-gray-900">89%</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Attendance Rate</p>
@@ -451,7 +479,7 @@ export default function VideoPage() {
                   type="text"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                   placeholder="Enter meeting ID or paste link..."
                 />
               </div>
@@ -472,7 +500,7 @@ export default function VideoPage() {
               </button>
               <button
                 onClick={joinMeetingWithCode}
-                className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
               >
                 Join Meeting
               </button>
@@ -502,7 +530,7 @@ export default function VideoPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Title</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                   placeholder="Enter meeting title..."
                 />
               </div>
@@ -512,21 +540,21 @@ export default function VideoPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500">
+                <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500">
                   <option>30 minutes</option>
                   <option>1 hour</option>
                   <option>1.5 hours</option>
@@ -538,23 +566,23 @@ export default function VideoPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Participants</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500"
                   placeholder="Enter email addresses..."
                 />
               </div>
 
-              <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                     checked={aiEnabled}
                     onChange={(e) => setAiEnabled(e.target.checked)}
                   />
                   <span className="ml-2 text-sm text-gray-700">
-                    <span className="font-medium">Enable Lisa AI Assistant</span>
+                    <span className="font-medium">Enable Lisa Meeting Intelligence</span>
                     <span className="block text-xs text-gray-500 mt-1">
-                      Automatic transcription, meeting notes, and action item extraction
+                      Automatic recording, transcription, translation, summaries, and action item extraction
                     </span>
                   </span>
                 </label>
@@ -568,7 +596,7 @@ export default function VideoPage() {
               >
                 Cancel
               </button>
-              <button className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
+              <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
                 Schedule Meeting
               </button>
             </div>

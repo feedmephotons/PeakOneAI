@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Mic, MicOff, Video, VideoOff, Phone, Settings, Users, ScreenShare,
-  Grid, Maximize2, Brain, Sparkles, CheckSquare, FileText, Download, Copy
+  Grid, Maximize2, Brain, CheckSquare, FileText, Download, Copy,
+  Circle, Languages, ListChecks, Link2
 } from 'lucide-react'
 import MeetingToTaskConverter from '@/components/meetings/MeetingToTaskConverter'
 
@@ -235,9 +236,20 @@ export default function MeetingRoomPage() {
     <div className="fixed inset-0 bg-gray-900 flex flex-col">
       {/* Header */}
       <div className="bg-gray-800 px-6 py-3 flex items-center justify-between border-b border-gray-700">
-        <div>
-          <h2 className="text-white font-semibold">Meeting ID: {meetingId}</h2>
-          <p className="text-gray-400 text-sm">{participants.length + 1} participants</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h2 className="text-white font-semibold">Meeting ID: {meetingId}</h2>
+            <p className="text-gray-400 text-sm">{participants.length + 1} participants</p>
+          </div>
+          {/* Meeting capability badges */}
+          <div className="hidden md:flex items-center gap-1.5">
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><Circle className="w-3 h-3 text-red-400" />REC</span>
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><FileText className="w-3 h-3" />Transcript</span>
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><Languages className="w-3 h-3" />Translate</span>
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><Brain className="w-3 h-3" />Summary</span>
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><ListChecks className="w-3 h-3" />Actions</span>
+            <span className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded text-[11px] text-gray-300"><Link2 className="w-3 h-3" />Memory</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -331,8 +343,8 @@ export default function MeetingRoomPage() {
                   <Brain className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Peak AI</h3>
-                  <p className="text-xs text-white/80">Meeting Intelligence</p>
+                  <h3 className="font-bold text-white">Meeting Intelligence</h3>
+                  <p className="text-xs text-white/80">Recorded, transcribed, summarized &amp; action-itemized</p>
                 </div>
               </div>
             </div>

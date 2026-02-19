@@ -4,6 +4,9 @@ import type { AppMode } from '@/config/navigation'
 
 export type NavStyle = 'topnav' | 'sidebar' | 'megamenu'
 
+// Mode-Based UI: Personal / Team / Enterprise
+export type UIMode = 'personal' | 'team' | 'enterprise'
+
 interface AppState {
   // Navigation Style
   navStyle: NavStyle
@@ -12,6 +15,10 @@ interface AppState {
   // Current Mode (for megamenu)
   currentMode: AppMode
   setCurrentMode: (mode: AppMode) => void
+
+  // UI Mode (Personal / Team / Enterprise)
+  uiMode: UIMode
+  setUIMode: (mode: UIMode) => void
 
   // Sidebar State
   sidebarCollapsed: boolean
@@ -39,6 +46,10 @@ export const useAppStore = create<AppState>()(
       currentMode: 'dashboard',
       setCurrentMode: (mode) => set({ currentMode: mode }),
 
+      // UI Mode - defaults to Team
+      uiMode: 'team',
+      setUIMode: (mode) => set({ uiMode: mode }),
+
       // Sidebar State
       sidebarCollapsed: false,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -59,6 +70,7 @@ export const useAppStore = create<AppState>()(
         navStyle: state.navStyle,
         sidebarCollapsed: state.sidebarCollapsed,
         currentMode: state.currentMode,
+        uiMode: state.uiMode,
       }),
     }
   )

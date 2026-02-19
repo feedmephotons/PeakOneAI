@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import GlobalSearch from '@/components/search/GlobalSearch'
+import CommandPalette from '@/components/commands/CommandPalette'
 import {
   Command, MessageSquare, FileText, CheckCircle, Video,
   Calendar, Settings, HelpCircle, Plus, Search, Clock
@@ -177,19 +177,30 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs or interacting with interactive elements
       const target = e.target as HTMLElement
-      if (
+      const isTyping =
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'SELECT' ||
-        target.tagName === 'BUTTON' ||
-        target.tagName === 'A' ||
         target.contentEditable === 'true' ||
         target.isContentEditable
+
+      // Always allow Escape, Cmd/Ctrl+K, and / (command palette triggers)
+      const isCommandPaletteTrigger =
+        e.key === 'Escape' ||
+        (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)) ||
+        (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.shiftKey)
+
+      // Block shortcuts inside text inputs unless it is a command palette trigger
+      if (isTyping && !isCommandPaletteTrigger) return
+
+      // Block shortcuts on buttons/links for non-modifier keys (except command palette triggers)
+      if (
+        (target.tagName === 'BUTTON' || target.tagName === 'A') &&
+        !isCommandPaletteTrigger &&
+        !e.ctrlKey && !e.metaKey
       ) {
-        // Allow Escape to work in inputs
-        if (e.key !== 'Escape') return
+        return
       }
 
       const matchingShortcut = shortcuts.find(shortcut => {
@@ -213,7 +224,7 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
   return (
     <KeyboardShortcutsContext.Provider value={{ shortcuts, isHelpOpen, setIsHelpOpen, openSearch: () => setIsSearchOpen(true) }}>
       {children}
-      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <CommandPalette isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <ShortcutsHelp />
     </KeyboardShortcutsContext.Provider>
   )
@@ -228,9 +239,9 @@ const ShortcutsHelp: React.FC = () => {
   const formatKey = (shortcut: Shortcut) => {
     const parts = []
     if (shortcut.ctrlKey || shortcut.metaKey) {
-      parts.push(isMac ? '⌘' : 'Ctrl')
+      parts.push(isMac ? '\u2318' : 'Ctrl')
     }
-    if (shortcut.shiftKey) parts.push('⇧')
+    if (shortcut.shiftKey) parts.push('\u21E7')
     parts.push(shortcut.key === ' ' ? 'Space' : shortcut.key.toUpperCase())
     return parts.join(' ')
   }

@@ -4,10 +4,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Video, FileText, Calendar, MessageSquare,
-  CheckSquare, Phone, ArrowRight, X, Clock,
+  CheckSquare, Phone, ArrowRight, X,
   Users, Brain, ChevronRight, Link2,
-  AlertCircle, Copy, FileWarning, Eye
+  AlertCircle, Copy,
+  Shield, Activity, Scale
 } from 'lucide-react'
+import { useAppStore, type UIMode } from '@/stores/app-store'
 
 // ─── AI Command Hero ────────────────────────────────────────────────────────
 
@@ -15,15 +17,36 @@ function CommandHero() {
   const [query, setQuery] = useState('')
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { uiMode } = useAppStore()
 
-  const quickActions = [
-    { label: 'Start meeting', icon: Video, path: '/video' },
-    { label: 'Draft follow-up', icon: FileText, path: '/messages' },
-    { label: 'Summarize yesterday', icon: Brain, path: '#ai' },
-    { label: 'Create task', icon: CheckSquare, path: '/tasks' },
-    { label: 'Organize files', icon: FileText, path: '/files' },
-    { label: 'Schedule call', icon: Phone, path: '/calendar' },
-  ]
+  const quickActionsByMode: Record<UIMode, { label: string; icon: React.ComponentType<{ className?: string }>; path: string }[]> = {
+    personal: [
+      { label: 'Make a call', icon: Phone, path: '/calls' },
+      { label: 'Draft email', icon: FileText, path: '/email' },
+      { label: 'Summarize yesterday', icon: Brain, path: '#ai' },
+      { label: 'Create task', icon: CheckSquare, path: '/tasks' },
+      { label: 'Organize files', icon: FileText, path: '/files' },
+      { label: 'Check calendar', icon: Calendar, path: '/calendar' },
+    ],
+    team: [
+      { label: 'Start meeting', icon: Video, path: '/video' },
+      { label: 'Draft follow-up', icon: FileText, path: '/messages' },
+      { label: 'Summarize yesterday', icon: Brain, path: '#ai' },
+      { label: 'Create task', icon: CheckSquare, path: '/tasks' },
+      { label: 'Organize files', icon: FileText, path: '/files' },
+      { label: 'Schedule call', icon: Phone, path: '/calendar' },
+    ],
+    enterprise: [
+      { label: 'Start meeting', icon: Video, path: '/video' },
+      { label: 'View activity log', icon: Activity, path: '/activity' },
+      { label: 'Review compliance', icon: Scale, path: '/settings/security' },
+      { label: 'Create task', icon: CheckSquare, path: '/tasks' },
+      { label: 'Admin panel', icon: Shield, path: '/settings/org' },
+      { label: 'Team overview', icon: Users, path: '/teams' },
+    ],
+  }
+
+  const quickActions = quickActionsByMode[uiMode] || quickActionsByMode.team
 
   const router = useRouter()
 
@@ -478,8 +501,9 @@ interface Observation {
 
 function AIObservations() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const { uiMode } = useAppStore()
 
-  const observations: Observation[] = [
+  const baseObservations: Observation[] = [
     {
       id: 'unresolved',
       icon: AlertCircle,
@@ -502,6 +526,33 @@ function AIObservations() {
       type: 'warning',
     },
   ]
+
+  const enterpriseObservations: Observation[] = [
+    {
+      id: 'permission-review',
+      icon: Shield,
+      text: 'permission changes pending review',
+      count: 5,
+      type: 'warning',
+    },
+    {
+      id: 'compliance-scan',
+      icon: Scale,
+      text: 'compliance scan completed',
+      type: 'info',
+    },
+    {
+      id: 'user-activity',
+      icon: Activity,
+      text: 'new users added this week',
+      count: 8,
+      type: 'info',
+    },
+  ]
+
+  const observations = uiMode === 'enterprise'
+    ? [...baseObservations, ...enterpriseObservations]
+    : baseObservations
 
   const visible = observations.filter((o) => !dismissed.has(o.id))
 
@@ -555,6 +606,90 @@ function AIObservations() {
   )
 }
 
+// ─── Enterprise Admin Summary ─────────────────────────────────────────────
+
+function EnterpriseAdminSummary() {
+  const router = useRouter()
+
+  const stats = [
+    { label: 'Active Users', value: '142', change: '+12 this week', href: '/settings/org' },
+    { label: 'Storage Used', value: '68%', change: '340 GB of 500 GB', href: '/settings/billing' },
+    { label: 'Compliance Score', value: '94%', change: 'Last scanned 2h ago', href: '/settings/security' },
+    { label: 'Open Tickets', value: '7', change: '3 high priority', href: '/help' },
+  ]
+
+  return (
+    <section className="pb-8">
+      <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        Admin Overview
+      </h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map((stat) => (
+          <button
+            key={stat.label}
+            onClick={() => router.push(stat.href)}
+            className="
+              group p-4 bg-white dark:bg-gray-800/50
+              border border-gray-100 dark:border-gray-700/50
+              rounded-xl text-left
+              hover:border-gray-200 dark:hover:border-gray-600
+              hover:shadow-sm transition-all duration-150
+            "
+          >
+            <p className="text-2xl font-semibold text-gray-900 dark:text-white mb-0.5">
+              {stat.value}
+            </p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {stat.label}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {stat.change}
+            </p>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ─── Personal AI Memory ──────────────────────────────────────────────────────
+
+function PersonalAIMemory() {
+  const memories = [
+    { id: '1', text: 'Prefers morning meetings before 11 AM', source: 'Calendar patterns' },
+    { id: '2', text: 'Working on Q4 proposal -- due Friday', source: 'Task context' },
+    { id: '3', text: 'Usually replies to Sarah within 30 min', source: 'Communication habits' },
+    { id: '4', text: 'Frequently references Design System v2 docs', source: 'File activity' },
+  ]
+
+  return (
+    <section className="pb-8">
+      <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        AI Memory
+      </h2>
+      <div className="space-y-2">
+        {memories.map((memory) => (
+          <div
+            key={memory.id}
+            className="
+              flex items-start gap-3 px-4 py-3
+              bg-white dark:bg-gray-800/50
+              border border-gray-100 dark:border-gray-700/50
+              rounded-xl
+            "
+          >
+            <Brain className="w-4 h-4 text-indigo-400 dark:text-indigo-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{memory.text}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{memory.source}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getGreeting(): string {
@@ -567,13 +702,30 @@ function getGreeting(): string {
 // ─── Main Dashboard ─────────────────────────────────────────────────────────
 
 export default function PeakDashboard() {
+  const { uiMode } = useAppStore()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const currentMode = mounted ? uiMode : 'team'
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-6 pt-10 pb-16">
         <CommandHero />
         <SuggestedNext />
+
+        {/* Enterprise mode: show admin summary above other sections */}
+        {currentMode === 'enterprise' && <EnterpriseAdminSummary />}
+
         <TodaysFocus />
         <AIObservations />
+
+        {/* Personal mode: show AI memory section */}
+        {currentMode === 'personal' && <PersonalAIMemory />}
+
         <MemoryLayer />
       </div>
     </div>

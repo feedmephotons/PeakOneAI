@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Phone, Video, Clock, Calendar, Users, Play, Search,
+  Phone, Video, Clock, Users, Play, Search,
   PhoneIncoming, PhoneOutgoing, PhoneMissed, MoreVertical,
-  Mic, MicOff, VideoOff, Bot, FileText
+  FileText, Shield, Brain, Lock
 } from 'lucide-react'
 
 interface Call {
@@ -153,11 +153,17 @@ export default function CallsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Call History
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Secure Calls
+              </h1>
+              <span className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-medium rounded-full border border-green-200 dark:border-green-800">
+                <Lock className="w-3 h-3" />
+                End-to-End Encrypted
+              </span>
+            </div>
             <p className="text-gray-600 dark:text-gray-400">
-              View and manage your calls, recordings, and transcripts
+              Encrypted voice and video calls with AI-powered transcription and summaries
             </p>
           </div>
           <Link
@@ -167,6 +173,17 @@ export default function CallsPage() {
             <Video className="w-4 h-4" />
             Start Call
           </Link>
+        </div>
+
+        {/* Security Banner */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-8 flex items-center gap-4">
+          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">Secure Communication</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">All calls are encrypted in transit and at rest. Recordings and transcripts are stored securely in your workspace.</p>
+          </div>
         </div>
 
         {/* Stats */}
@@ -202,7 +219,7 @@ export default function CallsPage() {
               placeholder="Search calls..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -226,7 +243,7 @@ export default function CallsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400">Loading calls...</p>
             </div>
           ) : filteredCalls.length === 0 ? (
@@ -262,6 +279,7 @@ export default function CallsPage() {
                         <p className="font-medium text-gray-900 dark:text-white truncate">
                           {call.participants.map(p => p.name).join(', ')}
                         </p>
+                        <Lock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-1">
@@ -280,7 +298,7 @@ export default function CallsPage() {
                       </div>
                       {call.aiSummary && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
-                          <Bot className="w-3 h-3 text-purple-500" />
+                          <Brain className="w-3 h-3 text-indigo-500" />
                           {call.aiSummary}
                         </p>
                       )}

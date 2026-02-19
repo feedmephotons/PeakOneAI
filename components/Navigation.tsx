@@ -5,27 +5,37 @@ import { usePathname, useRouter } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
 import {
-  Search, User, LogOut, Settings, ChevronDown, Plus,
+  Search, User, LogOut, Settings, ChevronDown,
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+  Phone, Calendar, Mail, Shield, Scale,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import CreateMenu from './navigation/CreateMenu'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef } from 'react'
-import { CORE_NAV } from '@/config/navigation'
+import { getNavForMode } from '@/config/navigation'
+import { useAppStore } from '@/stores/app-store'
+import { ModeSwitcher } from '@/components/ui/ModeSwitcher'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+  Phone, Calendar, Mail, Shield, Scale,
 }
 
 export default function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const { openSearch } = useKeyboardShortcuts()
+  const { uiMode } = useAppStore()
   const [user, setUser] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // DEMO MODE: Default demo user for investor demo
   const DEMO_USER = {
@@ -62,6 +72,7 @@ export default function Navigation() {
     })
 
     return () => subscription.unsubscribe()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Close menu when clicking outside
@@ -125,9 +136,9 @@ export default function Navigation() {
               </span>
             </Link>
 
-            {/* Core Navigation Links */}
+            {/* Core Navigation Links (filtered by UI mode) */}
             <div className="hidden lg:flex items-center gap-0.5">
-              {CORE_NAV.map((item) => {
+              {(mounted ? getNavForMode(uiMode) : getNavForMode('team')).map((item) => {
                 const Icon = ICON_MAP[item.icon]
                 const active = isActive(item.href)
 
@@ -186,10 +197,14 @@ export default function Navigation() {
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 py-1.5 z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 py-1.5 z-50">
                     <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{getUserDisplayName()}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    {/* Mode Switcher */}
+                    <div className="px-2 py-2 border-b border-gray-100 dark:border-gray-800">
+                      <ModeSwitcher variant="inline" />
                     </div>
                     <Link
                       href="/settings"

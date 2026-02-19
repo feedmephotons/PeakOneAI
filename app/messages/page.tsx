@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Search, Plus, Send, Paperclip, Phone, Video, MoreVertical,
   Hash, Users, Star, Smile, Image as ImageIcon,
-  File, Mic, BellOff
+  File, Mic, BellOff, Lock
 } from 'lucide-react'
 
 interface Message {
@@ -455,9 +455,14 @@ export default function MessagesPage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedConversation.type === 'channel' && '#'}{selectedConversation.name}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {selectedConversation.type === 'channel' && '#'}{selectedConversation.name}
+                    </h2>
+                    <span className="flex items-center gap-0.5 text-gray-400 dark:text-gray-500" title="End-to-end encrypted">
+                      <Lock className="w-3 h-3" />
+                    </span>
+                  </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {selectedConversation.type === 'direct' && selectedConversation.isOnline ? 'Active now' :
                      selectedConversation.type === 'channel' ? `${selectedConversation.participants.length} members` :
@@ -507,6 +512,10 @@ export default function MessagesPage() {
 
           {/* Message Input */}
           <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+              <Lock className="w-3 h-3" />
+              <span>Messages are encrypted</span>
+            </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
