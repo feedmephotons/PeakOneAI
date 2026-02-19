@@ -1,4 +1,4 @@
-# PeakOne AI Platform - Claude Development Notes
+# Peak One Platform - Claude Development Notes
 
 ## Project Overview
 AI-integrated communication and productivity platform combining messaging, video conferencing, AI assistant, project management, and cloud storage. Powered by Google Gemini 2.5 with "Lisa" AI assistant as the core differentiator.

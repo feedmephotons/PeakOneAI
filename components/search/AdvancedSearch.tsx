@@ -244,7 +244,7 @@ export default function AdvancedSearch({ isOpen, onSearch, onClose, entityType =
           </button>
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:opacity-90 transition font-medium"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
           >
             Search
           </button>

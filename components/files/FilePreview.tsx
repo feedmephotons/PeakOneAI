@@ -92,10 +92,10 @@ export default function FilePreview({ file, onClose }: FilePreviewProps) {
           {(file.aiSummary || file.aiTags) && (
             <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <h3 className="font-semibold text-purple-900 dark:text-purple-300 mb-2 flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-xs font-bold">AI</span>
                 </div>
-                Lisa AI Analysis
+                Lisa Analysis
               </h3>
               {file.aiSummary && (
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{file.aiSummary}</p>

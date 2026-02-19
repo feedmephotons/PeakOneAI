@@ -1,6 +1,6 @@
 'use client'
 
-import { Video, CheckSquare, Calendar, Users, ExternalLink, Clock, Sparkles, TrendingUp } from 'lucide-react'
+import { Video, CheckSquare, Calendar, Users, ExternalLink, Clock, Brain, TrendingUp } from 'lucide-react'
 
 interface MeetingReference {
   id: string
@@ -147,18 +147,18 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
         </div>
       </div>
 
-      {/* AI Insights */}
-      <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+      {/* Insights */}
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Insights</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Insights</h3>
         </div>
         <ul className="space-y-2">
           {context.aiInsights.map((insight, i) => (
             <li key={i} className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
-              <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
+              <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
               <span>{insight}</span>
             </li>
           ))}
@@ -286,8 +286,8 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
         }}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition border border-gray-200 dark:border-gray-700"
       >
-        <Sparkles className="w-5 h-5" />
-        <span className="font-medium">Ask Peak AI About This File</span>
+        <Brain className="w-5 h-5" />
+        <span className="font-medium">Ask Lisa About This File</span>
       </button>
     </div>
   )

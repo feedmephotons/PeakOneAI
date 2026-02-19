@@ -8,12 +8,12 @@ export default function AIAnalyticsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+          <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center">
             <BarChart3 className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Analytics</h1>
-            <p className="text-gray-600 dark:text-gray-400">Deep insights powered by Lisa AI</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+            <p className="text-gray-600 dark:text-gray-400">Deep insights into your team&apos;s performance</p>
           </div>
         </div>
 

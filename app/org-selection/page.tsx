@@ -39,7 +39,7 @@ export default function OrgSelectionPage() {
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl" />
+            <div className="w-12 h-12 bg-indigo-600 rounded-xl" />
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">SaasX</h1>
           </div>
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -55,7 +55,7 @@ export default function OrgSelectionPage() {
             <p className="mb-4">Organization selection requires Clerk authentication to be configured.</p>
             <button
               onClick={() => router.push('/files')}
-              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               Continue without organization
             </button>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, File, X, Sparkles, CheckCircle, Loader, FileText, Image, Film, Music, Archive } from 'lucide-react'
+import { Upload, File, X, Brain, CheckCircle, Loader, FileText, Image, Film, Music, Archive } from 'lucide-react'
 
 export default function FileUploadPage() {
   const [isDragging, setIsDragging] = useState(false)
@@ -189,8 +189,8 @@ export default function FileUploadPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5" />
-                    <span>Upload & Analyze with AI</span>
+                    <Upload className="w-5 h-5" />
+                    <span>Upload & Analyze</span>
                   </>
                 )}
               </button>
@@ -223,10 +223,10 @@ export default function FileUploadPage() {
                   </div>
 
                   {file.analysis && (
-                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg p-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                          <Brain className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900 mb-2">AI Analysis by Lisa</p>

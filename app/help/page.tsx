@@ -14,7 +14,7 @@ const HELP_CATEGORIES = [
     icon: Play,
     description: 'Learn the basics and set up your workspace',
     articles: [
-      { title: 'Welcome to PeakOne AI', url: '#' },
+      { title: 'Welcome to Peak One', url: '#' },
       { title: 'Setting up your profile', url: '#' },
       { title: 'Inviting team members', url: '#' },
       { title: 'Your first message', url: '#' },

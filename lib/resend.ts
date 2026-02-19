@@ -11,7 +11,7 @@ function getResend(): Resend {
 
 // Default from address - should match your verified domain in Resend
 export const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@peakone.ai'
-export const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'PeakOne AI'
+export const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Peak One'
 
 // Email types
 export interface SendEmailOptions {

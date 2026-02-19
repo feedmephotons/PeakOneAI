@@ -162,7 +162,7 @@ export default function CallsPage() {
           </div>
           <Link
             href="/video"
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
             <Video className="w-4 h-4" />
             Start Call

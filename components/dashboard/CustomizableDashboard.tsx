@@ -96,7 +96,7 @@ export default function CustomizableDashboard() {
 
             <button
               onClick={() => setIsWidgetPickerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               <Plus className="w-5 h-5" />
               <span>Add Widget</span>
@@ -133,7 +133,7 @@ export default function CustomizableDashboard() {
             </p>
             <button
               onClick={() => setIsWidgetPickerOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               <Plus className="w-5 h-5" />
               <span>Add Your First Widget</span>

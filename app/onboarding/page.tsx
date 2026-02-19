@@ -46,7 +46,7 @@ export default function OnboardingPage() {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl" />
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome to SaasX</h1>
           </div>
           <div className="flex justify-center gap-2">
@@ -55,7 +55,7 @@ export default function OnboardingPage() {
                 key={num}
                 className={`h-2 w-16 rounded-full transition-colors ${
                   num <= step
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600'
+                    ? 'bg-indigo-600'
                     : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               />
@@ -119,7 +119,7 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!formData.orgName || !formData.orgType}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
               </button>
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!formData.teamSize || !formData.role}
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                 </button>
@@ -189,7 +189,7 @@ export default function OnboardingPage() {
           {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -216,7 +216,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleCreateOrganization}
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating Workspace...' : 'Create Workspace & Continue'}
                 </button>

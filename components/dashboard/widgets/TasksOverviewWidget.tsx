@@ -71,7 +71,7 @@ export default function TasksOverviewWidget() {
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
-            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+            className="bg-indigo-600 h-2 rounded-full transition-all"
             style={{ width: `${total > 0 ? (stats.completed / total) * 100 : 0}%` }}
           />
         </div>

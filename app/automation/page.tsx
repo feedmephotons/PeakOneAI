@@ -170,7 +170,7 @@ export default function AutomationPage() {
               Automate repetitive tasks and workflows
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition">
+          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
             <Plus className="w-4 h-4" />
             Create Automation
           </button>

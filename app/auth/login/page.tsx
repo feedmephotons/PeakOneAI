@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Mail, Lock } from 'lucide-react'
+import { Brain, Mail, Lock } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -44,8 +44,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-3xl shadow-2xl p-8 space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 mb-4">
-              <Sparkles className="w-8 h-8 text-white" />
+            <div className="inline-flex p-3 rounded-2xl bg-indigo-600 mb-4">
+              <Brain className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-gray-500">Sign in to your SaasX account</p>
@@ -107,8 +107,8 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <div className="flex items-center justify-center space-x-2 text-gray-400">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm">Powered by Lisa AI</span>
+            <Brain className="w-4 h-4" />
+            <span className="text-sm">Powered by Lisa</span>
           </div>
         </div>
       </div>

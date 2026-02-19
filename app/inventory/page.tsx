@@ -23,7 +23,7 @@ export default function FeatureInventoryPage() {
         <div className="border-b-2 border-gray-900 pb-4 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">PeakOne AI — Feature Inventory</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Peak One — Feature Inventory</h1>
               <p className="text-gray-500 mt-1 text-sm">Comprehensive audit of all pages, features, and functionality</p>
             </div>
             <div className="text-right text-sm text-gray-500">
@@ -555,7 +555,7 @@ export default function FeatureInventoryPage() {
         {/* Footer */}
         <div className="border-t-2 border-gray-900 pt-4 mt-8 text-sm text-gray-500">
           <div className="flex justify-between">
-            <span>PeakOne AI — Feature Inventory Audit</span>
+            <span>Peak One — Feature Inventory Audit</span>
             <span>Page generated for print/PDF export</span>
           </div>
         </div>

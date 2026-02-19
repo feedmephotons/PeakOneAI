@@ -120,7 +120,7 @@ export default function DemoVideoPage() {
           <div className="flex gap-4">
             <button
               onClick={handleJoinDemo}
-              className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-200"
+              className="flex-1 px-8 py-4 bg-indigo-600 text-white rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all duration-200"
             >
               🚀 Start Demo
             </button>

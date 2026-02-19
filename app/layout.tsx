@@ -15,27 +15,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PeakOne AI - All-in-One Communication & AI Productivity Platform",
+  title: "Peak One - The Operating System for Work",
   description: "Combining secure messaging, video conferencing, AI-powered productivity, project management, and cloud storage in one unified platform",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PeakOne AI",
+    title: "Peak One",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "PeakOne AI",
-    title: "PeakOne AI - AI-Powered Productivity Platform",
+    siteName: "Peak One",
+    title: "Peak One - The Operating System for Work",
     description: "Messaging, video, tasks, and files unified with AI",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PeakOne AI",
-    description: "AI-Powered Productivity Platform",
+    title: "Peak One",
+    description: "The Operating System for Work",
   },
 };
 
@@ -68,7 +68,7 @@ export default function RootLayout({
         {/* iOS splash screens */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="PeakOne AI" />
+        <meta name="apple-mobile-web-app-title" content="Peak One" />
 
         {/* Windows */}
         <meta name="msapplication-TileColor" content="#7c3aed" />
@@ -76,7 +76,7 @@ export default function RootLayout({
 
         {/* General */}
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="application-name" content="PeakOne AI" />
+        <meta name="application-name" content="Peak One" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

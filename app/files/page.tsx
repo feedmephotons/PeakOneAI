@@ -505,7 +505,7 @@ export default function FilesPage() {
       <div className="flex h-full">
         {/* Sidebar */}
         <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
-          <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition mb-6 cursor-pointer">
+          <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition mb-6 cursor-pointer">
             <Upload className="w-4 h-4" />
             <span>Upload Files</span>
             <input
@@ -589,7 +589,7 @@ export default function FilesPage() {
             </div>
             <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2 mb-2">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+                className="bg-indigo-600 h-2 rounded-full transition-all"
                 style={{ width: `${Math.min(storagePercent, 100)}%` }}
               />
             </div>
@@ -888,7 +888,7 @@ export default function FilesPage() {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+                        className="bg-indigo-600 h-2 rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -945,7 +945,7 @@ export default function FilesPage() {
                     handleCreateFolder(input.value.trim())
                   }
                 }}
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 Create
               </button>
@@ -992,7 +992,7 @@ export default function FilesPage() {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Preview not available</p>
                   {previewFile.aiSummary && (
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-left max-w-2xl mx-auto">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">AI Summary</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Summary</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{previewFile.aiSummary}</p>
                       {previewFile.aiTags && (
                         <div className="flex flex-wrap gap-2 mt-3">

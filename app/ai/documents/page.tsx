@@ -127,7 +127,7 @@ export default function AIDocumentsPage() {
               </p>
             </div>
           </div>
-          <label className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition cursor-pointer">
+          <label className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition cursor-pointer">
             <Upload className="w-4 h-4" />
             Analyze Document
             <input type="file" className="hidden" />
@@ -196,11 +196,11 @@ export default function AIDocumentsPage() {
                         </div>
                       </div>
 
-                      {/* AI Summary */}
-                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 mb-4">
+                      {/* Summary */}
+                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 mb-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-purple-500" />
-                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Summary</span>
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Summary</span>
                         </div>
                         <p className="text-gray-700 dark:text-gray-300 text-sm">
                           {doc.summary}

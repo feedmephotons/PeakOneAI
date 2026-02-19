@@ -390,8 +390,8 @@ export default function AgentPage() {
               <button
                 onClick={sendMessage}
                 disabled={!inputValue.trim() || isCreating}
-                className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl
-                  hover:opacity-90 disabled:opacity-50 transition"
+                className="p-3 bg-indigo-600 text-white rounded-xl
+                  hover:bg-indigo-700 disabled:opacity-50 transition"
               >
                 {isCreating ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -484,7 +484,7 @@ export default function AgentPage() {
                   </div>
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                      className="h-full bg-indigo-600 transition-all duration-500"
                       style={{
                         width: `${(liveState.progress.completedTasks / liveState.progress.totalTasks) * 100}%`
                       }}

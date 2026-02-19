@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { Brain, CheckCircle, XCircle, Loader } from 'lucide-react'
 
 interface TestResults {
   database?: boolean
@@ -57,8 +57,8 @@ export default function TestPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-3xl shadow-2xl p-8">
           <div className="flex items-center space-x-3 mb-8">
-            <div className="p-3 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600">
-              <Sparkles className="w-8 h-8 text-white" />
+            <div className="p-3 rounded-2xl bg-indigo-600">
+              <Brain className="w-8 h-8 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">System Integration Test</h1>

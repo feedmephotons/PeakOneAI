@@ -1,6 +1,6 @@
 # BuildX MegaMenu Navigation Reference
 
-This document captures the complete architecture and implementation details of the BuildX project's MegaMenu left navigation system. Use this as a reference for implementing a similar navigation in PeakOne AI.
+This document captures the complete architecture and implementation details of the BuildX project's MegaMenu left navigation system. Use this as a reference for implementing a similar navigation in Peak One.
 
 ---
 
@@ -526,10 +526,10 @@ transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
 
 ---
 
-## Recommended Adaptations for PeakOne AI
+## Recommended Adaptations for Peak One
 
-1. **Simplify modes**: PeakOne may not need 11 modes - consider consolidating
-2. **Adjust colors**: Use PeakOne's brand colors instead of BuildX's palette
-3. **AI Insights**: Replace with PeakOne-specific AI insights or remove if not needed
+1. **Simplify modes**: Peak One may not need 11 modes - consider consolidating
+2. **Adjust colors**: Use Peak One's brand colors instead of BuildX's palette
+3. **AI Insights**: Replace with Peak One-specific AI insights or remove if not needed
 4. **Mobile nav**: The megamenu is desktop-only - ensure mobile nav is handled separately
-5. **Copilot integration**: Adapt the AI Copilot button to PeakOne's Lisa assistant
+5. **Copilot integration**: Adapt the AI Copilot button to Peak One's Lisa assistant

@@ -1,6 +1,6 @@
 'use client'
 
-import { Brain, Calendar, TrendingUp, Video, Plus, Sparkles, ChevronRight } from 'lucide-react'
+import { Brain, Calendar, TrendingUp, Video, Plus, ChevronRight } from 'lucide-react'
 
 interface AISuggestion {
   id: string
@@ -76,7 +76,7 @@ export default function AISuggestionsPanel() {
       case 'meeting':
         return <Video className="w-4 h-4" />
       default:
-        return <Sparkles className="w-4 h-4" />
+        return <Brain className="w-4 h-4" />
     }
   }
 
@@ -115,7 +115,7 @@ export default function AISuggestionsPanel() {
           <Brain className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Suggestions</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Suggestions</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Powered by your meetings</p>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function AISuggestionsPanel() {
       {/* Add from Meeting Button */}
       <button
         onClick={handleAddFromMeeting}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all"
+        className="w-full flex items-center justify-between px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
       >
         <div className="flex items-center gap-2">
           <Video className="w-5 h-5" />
@@ -214,15 +214,15 @@ export default function AISuggestionsPanel() {
         }}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition border border-gray-200 dark:border-gray-700"
       >
-        <Sparkles className="w-5 h-5" />
-        <span className="font-medium">Ask Peak AI</span>
+        <Brain className="w-5 h-5" />
+        <span className="font-medium">Ask Lisa</span>
       </button>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{suggestions.length}</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">AI Suggestions</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Suggestions</p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-green-100 dark:border-green-800">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{linkedMeetings.reduce((sum, m) => sum + m.actionItems, 0)}</p>

@@ -4,12 +4,20 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import DarkModeToggle from './DarkModeToggle'
 import { NotificationCenter } from '@/components/notifications/NotificationProvider'
-import { Search, User, LogOut, Settings, ChevronDown, Sparkles } from 'lucide-react'
+import {
+  Search, User, LogOut, Settings, ChevronDown, Plus,
+  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+} from 'lucide-react'
 import Image from 'next/image'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-import MegaMenu from './navigation/MegaMenu'
+import CreateMenu from './navigation/CreateMenu'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef } from 'react'
+import { CORE_NAV } from '@/config/navigation'
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+}
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -21,7 +29,7 @@ export default function Navigation() {
 
   // DEMO MODE: Default demo user for investor demo
   const DEMO_USER = {
-    email: 'sarah.chen@peakone.ai',
+    email: 'sarah.chen@peakone.com',
     firstName: 'Sarah',
     lastName: 'Chen',
   }
@@ -29,7 +37,6 @@ export default function Navigation() {
   useEffect(() => {
     const supabase = createClient()
 
-    // Get current user
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUser({
@@ -38,12 +45,10 @@ export default function Navigation() {
           lastName: user.user_metadata?.last_name,
         })
       } else {
-        // DEMO MODE: Use demo user when not authenticated
         setUser(DEMO_USER)
       }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser({
@@ -52,7 +57,6 @@ export default function Navigation() {
           lastName: session.user.user_metadata?.last_name,
         })
       } else {
-        // DEMO MODE: Use demo user when not authenticated
         setUser(DEMO_USER)
       }
     })
@@ -74,7 +78,6 @@ export default function Navigation() {
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    // DEMO MODE: Go to landing page instead of sign-in
     router.push('/landing')
     router.refresh()
   }
@@ -96,55 +99,77 @@ export default function Navigation() {
     return user?.email || 'User'
   }
 
-  return (
-    <nav className="sticky top-0 z-40 glass border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <Image
-              src="/peakone-logo.png"
-              alt="PeakOne AI"
-              width={32}
-              height={32}
-              className="h-8 w-8 group-hover:scale-105 transition-transform duration-300"
-              priority
-            />
-            <span className="font-semibold text-gray-900 dark:text-white text-lg">Peak One AI</span>
-          </Link>
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/'
+    return pathname.startsWith(href)
+  }
 
-          {/* Desktop navigation - MegaMenu */}
-          <div className="hidden lg:flex items-center gap-1">
-            <MegaMenu />
+  return (
+    <nav className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60">
+      <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14">
+          {/* Left: Logo + Nav Links */}
+          <div className="flex items-center gap-1">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 mr-6 shrink-0">
+              <Image
+                src="/peakone-logo.png"
+                alt="Peak One"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+                priority
+              />
+              <span className="hidden sm:block font-semibold text-gray-900 dark:text-white text-[15px] tracking-tight">
+                Peak One
+              </span>
+            </Link>
+
+            {/* Core Navigation Links */}
+            <div className="hidden lg:flex items-center gap-0.5">
+              {CORE_NAV.map((item) => {
+                const Icon = ICON_MAP[item.icon]
+                const active = isActive(item.href)
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+                      active
+                        ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    }`}
+                  >
+                    {Icon && <Icon className="w-4 h-4" />}
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Right side actions */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
+          {/* Right: Command Bar + Actions */}
+          <div className="flex items-center gap-2">
+            {/* Command Bar / Search */}
             <button
               onClick={openSearch}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white glass hover:shadow-lg transition-all duration-200 rounded-xl"
+              className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 bg-gray-100/80 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200/60 dark:border-gray-700/40 rounded-lg transition-colors w-48 lg:w-56"
             >
-              <Search className="w-4 h-4" />
-              <span className="hidden lg:inline font-medium">Search</span>
-              <kbd className="hidden xl:inline px-2 py-0.5 text-xs bg-white/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50 rounded font-medium">⌘K</kbd>
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <span className="flex-1 text-left truncate">Search or jump to...</span>
+              <kbd className="hidden lg:inline text-[10px] px-1.5 py-0.5 bg-white/60 dark:bg-gray-700/60 border border-gray-300/40 dark:border-gray-600/40 rounded text-gray-400 dark:text-gray-500 font-mono">
+                /
+              </kbd>
             </button>
 
-            {/* AI Assistant Quick Access */}
-            <button
-              onClick={() => {
-                // This will open the global AI assistant
-                const event = new CustomEvent('openPeakAI')
-                window.dispatchEvent(event)
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold"
-              title="Ask Peak AI (Cmd/Ctrl + J)"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden lg:inline text-sm">Ask AI</span>
-            </button>
+            {/* Create Button */}
+            <CreateMenu />
 
+            {/* Notifications */}
             <NotificationCenter />
+
+            {/* Dark Mode */}
             <DarkModeToggle />
 
             {/* User Menu */}
@@ -152,34 +177,31 @@ export default function Navigation() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md transition-all"
+                  className="flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-xs">
                     {getUserInitials()}
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
-                    {getUserDisplayName()}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 py-1.5 z-50">
+                    <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{getUserDisplayName()}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     </div>
                     <Link
                       href="/settings"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <Settings className="w-4 h-4" />
+                      <Settings className="w-4 h-4 text-gray-400" />
                       Settings
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border-t border-gray-200 dark:border-gray-700"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border-t border-gray-100 dark:border-gray-800"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign out
@@ -190,9 +212,9 @@ export default function Navigation() {
             ) : (
               <Link
                 href="/sign-in"
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl hover:shadow-lg transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-opacity"
               >
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
                 Sign in
               </Link>
             )}

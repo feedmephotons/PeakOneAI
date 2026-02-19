@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, MessageCircle, Upload, Shield, Activity, Zap, ArrowRight, Check } from 'lucide-react'
+import { Brain, MessageCircle, Upload, Shield, Activity, Zap, ArrowRight, Check } from 'lucide-react'
 
 export default function DemoPage() {
   const router = useRouter()
@@ -58,8 +58,8 @@ export default function DemoPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-8 py-16">
           <div className="text-center">
-            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 mb-6">
-              <Sparkles className="w-10 h-10 text-white" />
+            <div className="inline-flex p-3 rounded-2xl bg-indigo-600 mb-6">
+              <Brain className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-5xl font-bold text-gray-900 mb-4">
               SaasX Platform Demo

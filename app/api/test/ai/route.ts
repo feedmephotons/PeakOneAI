@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         {
           role: 'user',
           parts: [
-            { text: `You are Lisa, a helpful AI assistant for PeakOne AI. Keep responses brief for testing.\n\nUser: ${message}` }
+            { text: `You are Lisa, a helpful AI assistant for Peak One. Keep responses brief for testing.\n\nUser: ${message}` }
           ]
         }
       ],

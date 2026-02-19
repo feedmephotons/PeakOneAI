@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, ChevronDown, Sparkles } from 'lucide-react'
+import { FileText, ChevronDown, Brain } from 'lucide-react'
 import { Template, TemplateType, templateManager } from '@/lib/templates'
 
 interface TemplateSelectorProps {
@@ -109,7 +109,7 @@ export default function TemplateSelector({ type, onSelect, onOpenManager, classN
                               </p>
                             )}
                           </div>
-                          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition" />
+                          <Brain className="w-4 h-4 text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition" />
                         </div>
                       </button>
                     ))}

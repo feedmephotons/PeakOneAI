@@ -127,7 +127,7 @@ export default function TeamsPage() {
           </div>
           <button
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
             <UserPlus className="w-4 h-4" />
             Invite Member
@@ -218,7 +218,7 @@ export default function TeamsPage() {
                       <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
                               {member.initials}
                             </div>
                             <div>
@@ -313,7 +313,7 @@ export default function TeamsPage() {
               </button>
               <button
                 onClick={handleInvite}
-                className="flex-1 py-2 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition"
+                className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 Send Invite
               </button>

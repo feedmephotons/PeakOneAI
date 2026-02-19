@@ -329,7 +329,7 @@ export default function VideoCall({ meetingId, onLeave }: VideoCallProps) {
           <button
             onClick={() => setShowAIWidget(!showAIWidget)}
             className={`p-4 rounded-full transition ${
-              showAIWidget ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
+              showAIWidget ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
             }`}
             title="Peak AI Assistant"
           >

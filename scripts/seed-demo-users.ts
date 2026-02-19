@@ -91,7 +91,7 @@ async function seedUsers() {
   console.log('\nDemo user seeding complete!')
   console.log('\nTo access demo accounts:')
   console.log('1. Go to /sign-in')
-  console.log('2. Triple-click on the PeakOne AI logo')
+  console.log('2. Triple-click on the Peak One logo')
   console.log('3. Click any demo account to auto-login')
 }
 

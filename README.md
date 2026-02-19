@@ -1,4 +1,4 @@
-# PeakOne AI Platform - AI-Powered Communication & Productivity Suite
+# Peak One Platform - The Operating System for Work
 
 A comprehensive SaaS platform combining communication tools, AI assistance, project management, and cloud storage - powered by Google Gemini 2.5 for cutting-edge AI capabilities.
 
@@ -177,8 +177,8 @@ For investor demos, these features are fully functional:
 
 ## License
 
-Private - Peak One AI
+Private - Peak One
 
 ## Support
 
-For support or questions about the PeakOne AI platform, please contact the development team.
+For support or questions about the Peak One platform, please contact the development team.

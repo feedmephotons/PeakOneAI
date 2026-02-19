@@ -274,18 +274,17 @@ export default function TasksPage() {
           ))}
         </div>
 
-        {/* AI Insights */}
-        <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl p-6 text-white mb-6">
+        {/* Task Intelligence */}
+        <div className="bg-indigo-600 rounded-xl p-6 text-white mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold flex items-center">
-                <span className="mr-2">🤖</span>
-                Lisa&apos;s Task Intelligence
+              <h3 className="text-xl font-bold">
+                Task Intelligence
               </h3>
-              <p className="text-violet-100 mt-1">AI-powered task suggestions and insights</p>
+              <p className="text-indigo-100 mt-1">Suggestions and insights from your meetings</p>
             </div>
-            <button className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-colors text-sm font-medium">
-              View All Insights
+            <button className="px-4 py-2 bg-white/15 rounded-lg hover:bg-white/25 transition-colors text-sm font-medium">
+              View All
             </button>
           </div>
 

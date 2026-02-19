@@ -389,7 +389,7 @@ export default function TasksPage() {
             {/* Create button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               <Plus className="w-5 h-5" />
               <span>Create Task</span>
@@ -416,9 +416,9 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* AI Suggestions Sidebar */}
+          {/* Suggestions Sidebar */}
           <div className="hidden xl:block w-80 flex-shrink-0">
-            <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <AISuggestionsPanel />
             </div>
           </div>

@@ -143,7 +143,7 @@ export default function EmailPage() {
       <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
         <button
           onClick={() => setIsComposing(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition mb-3"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition mb-3"
         >
           <Edit className="w-4 h-4" />
           Compose
@@ -151,10 +151,10 @@ export default function EmailPage() {
 
         <Link
           href="/email/outreach"
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition mb-6"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition mb-6"
         >
-          <Sparkles className="w-4 h-4" />
-          AI Outreach
+          <Mail className="w-4 h-4" />
+          Outreach
         </Link>
 
         <nav className="space-y-1">
@@ -306,7 +306,7 @@ export default function EmailPage() {
               </div>
 
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
                   {selectedEmail.from.name.charAt(0)}
                 </div>
                 <div>

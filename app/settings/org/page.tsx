@@ -17,7 +17,7 @@ export default function OrgSettingsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Organization Logo</h2>
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <div className="w-20 h-20 bg-indigo-600 rounded-xl flex items-center justify-center">
               <Building2 className="w-10 h-10 text-white" />
             </div>
             <div>
@@ -86,7 +86,7 @@ export default function OrgSettingsPage() {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition">
+          <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
             Save Changes
           </button>
         </div>

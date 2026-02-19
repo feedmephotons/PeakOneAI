@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Mic, Minimize2, Maximize2, Sparkles } from 'lucide-react'
+import { X, Send, Mic, Minimize2, Maximize2, Brain } from 'lucide-react'
 
 interface Message {
   id: string
@@ -141,14 +141,14 @@ export default function PeakAIAssistant() {
         aria-label="Open Peak AI Assistant"
       >
         {/* Side tab design */}
-        <div className="flex items-center bg-gradient-to-b from-blue-500 to-purple-600 rounded-l-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-x-[-4px]">
+        <div className="flex items-center bg-indigo-600 rounded-l-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-x-[-4px]">
           {/* Tab handle */}
           <div className="flex flex-col items-center py-3 px-2 gap-2">
-            <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Brain className="w-5 h-5 text-white" />
             </div>
             <span className="text-white text-xs font-medium writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-              AI
+              Lisa
             </span>
           </div>
         </div>
@@ -172,13 +172,13 @@ export default function PeakAIAssistant() {
     >
       <div className="h-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 flex items-center justify-between">
+        <div className="bg-indigo-600 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Peak AI</h3>
+              <h3 className="font-bold text-white">Lisa</h3>
               <p className="text-xs text-white/80">AI that listens, learns, and leads</p>
             </div>
           </div>

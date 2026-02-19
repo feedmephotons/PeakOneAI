@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckSquare, X, Calendar, User, Flag, Sparkles, ArrowRight } from 'lucide-react'
+import { CheckSquare, X, Calendar, User, Flag, Brain, ArrowRight } from 'lucide-react'
 import { aiContext } from '@/lib/ai-context'
 
 interface ActionItem {
@@ -147,12 +147,12 @@ export default function MeetingToTaskConverter({
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6">
+        <div className="bg-indigo-600 p-6">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white">Convert to Tasks</h2>
@@ -306,7 +306,7 @@ export default function MeetingToTaskConverter({
               <button
                 onClick={handleCreateTasks}
                 disabled={selectedItems.size === 0}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+                className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
               >
                 Create {selectedItems.size} Task{selectedItems.size !== 1 ? 's' : ''}
                 <ArrowRight className="w-4 h-4" />

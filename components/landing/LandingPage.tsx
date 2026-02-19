@@ -78,7 +78,7 @@ const stats = [
 
 const testimonials = [
   {
-    quote: "PeakOne AI transformed how our team collaborates. The AI assistant alone saved us 10 hours a week.",
+    quote: "Peak One transformed how our team collaborates. The AI assistant alone saved us 10 hours a week.",
     author: 'Sarah Chen',
     role: 'CTO, TechStart Inc',
     avatar: 'SC',
@@ -169,13 +169,13 @@ export default function LandingPage() {
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/peakone-logo.png"
-                alt="PeakOne AI"
+                alt="Peak One"
                 width={32}
                 height={32}
                 className="h-8 w-8"
                 priority
               />
-              <span className="font-semibold text-gray-900 dark:text-white text-lg">Peak One AI</span>
+              <span className="font-semibold text-gray-900 dark:text-white text-lg">Peak One</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -281,12 +281,12 @@ export default function LandingPage() {
                   <div className="flex items-center gap-2">
                     <Image
                       src="/peakone-logo.png"
-                      alt="PeakOne AI"
+                      alt="Peak One"
                       width={20}
                       height={20}
                       className="h-5 w-5"
                     />
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm">Peak One AI</span>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">Peak One</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-64 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center px-3 gap-2">
@@ -456,7 +456,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Stop paying for multiple tools. PeakOne AI brings all your team&apos;s essentials together with AI that makes everything smarter.
+              Stop paying for multiple tools. Peak One brings all your team&apos;s essentials together with AI that makes everything smarter.
             </p>
           </div>
 
@@ -589,7 +589,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              See what teams are saying about their experience with PeakOne AI.
+              See what teams are saying about their experience with Peak One.
             </p>
           </div>
 
@@ -730,7 +730,7 @@ export default function LandingPage() {
             Ready to transform how your team works?
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-10">
-            Join 10,000+ teams already using PeakOne AI to collaborate smarter.
+            Join 10,000+ teams already using Peak One to collaborate smarter.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -758,12 +758,12 @@ export default function LandingPage() {
               <Link href="/" className="flex items-center gap-2 mb-6">
                 <Image
                   src="/peakone-logo.png"
-                  alt="PeakOne AI"
+                  alt="Peak One"
                   width={28}
                   height={28}
                   className="h-7 w-7"
                 />
-                <span className="font-semibold text-white text-lg">Peak One AI</span>
+                <span className="font-semibold text-white text-lg">Peak One</span>
               </Link>
               <p className="text-gray-500 leading-relaxed">
                 The AI-powered workspace for modern teams. Communicate, collaborate, and create together.
@@ -798,7 +798,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500">&copy; 2025 PeakOne AI. All rights reserved.</p>
+            <p className="text-gray-500">&copy; 2025 Peak One. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-white transition-colors">Twitter</a>
               <a href="#" className="hover:text-white transition-colors">LinkedIn</a>

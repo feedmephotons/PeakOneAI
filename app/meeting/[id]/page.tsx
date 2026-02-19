@@ -251,7 +251,7 @@ export default function MeetingRoomPage() {
             onClick={() => setShowAIPanel(!showAIPanel)}
             className={`p-2 rounded-lg transition ${
               showAIPanel
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                ? 'bg-indigo-600 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-gray-700'
             }`}
             title="Toggle AI Panel"
@@ -279,7 +279,7 @@ export default function MeetingRoomPage() {
               />
               {isVideoOff && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-20 h-20 bg-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     You
                   </div>
                 </div>
@@ -325,7 +325,7 @@ export default function MeetingRoomPage() {
         {showAIPanel && (
           <div className="w-96 bg-gray-800 border-l border-gray-700 flex flex-col">
             {/* AI Panel Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
+            <div className="bg-indigo-600 p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
                   <Brain className="w-5 h-5 text-white" />
@@ -405,10 +405,10 @@ export default function MeetingRoomPage() {
 
               {aiPanelTab === 'actions' && (
                 <>
-                  <div className="flex items-center justify-between gap-2 mb-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-500/20">
+                  <div className="flex items-center justify-between gap-2 mb-3 bg-indigo-500/10 rounded-lg p-3 border border-indigo-500/20">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-blue-400" />
-                      <p className="text-xs text-gray-300">AI detected {actionItems.filter(a => !a.completed).length} pending actions</p>
+                      <Brain className="w-4 h-4 text-indigo-400" />
+                      <p className="text-xs text-gray-300">Detected {actionItems.filter(a => !a.completed).length} pending actions</p>
                     </div>
                     <button
                       onClick={() => setShowTaskConverter(true)}
@@ -443,9 +443,9 @@ export default function MeetingRoomPage() {
 
               {aiPanelTab === 'notes' && (
                 <>
-                  <div className="flex items-center gap-2 mb-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-3 border border-purple-500/20">
-                    <FileText className="w-4 h-4 text-purple-400" />
-                    <p className="text-xs text-gray-300">AI-generated meeting notes</p>
+                  <div className="flex items-center gap-2 mb-3 bg-indigo-500/10 rounded-lg p-3 border border-indigo-500/20">
+                    <FileText className="w-4 h-4 text-indigo-400" />
+                    <p className="text-xs text-gray-300">Meeting notes</p>
                   </div>
                   {notes.map((note) => (
                     <div key={note.id} className="bg-gray-700 rounded-lg p-3">
@@ -473,10 +473,10 @@ export default function MeetingRoomPage() {
                   const event = new CustomEvent('openPeakAI')
                   window.dispatchEvent(event)
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white rounded-lg transition text-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-sm"
               >
-                <Sparkles className="w-4 h-4" />
-                Ask Peak AI
+                <Brain className="w-4 h-4" />
+                Ask Lisa
               </button>
             </div>
           </div>

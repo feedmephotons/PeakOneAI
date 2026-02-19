@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Upload, FileText, Sparkles, Plus, Trash2, Check, Edit3,
+  ArrowLeft, Upload, FileText, Brain, Plus, Trash2, Check, Edit3,
   AlertCircle, BookOpen, Settings, ToggleLeft, ToggleRight, Shield
 } from 'lucide-react'
 
@@ -142,7 +142,7 @@ export default function BrandVoiceSettingsPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-purple-500" />
+                  <Brain className="w-6 h-6 text-indigo-500" />
                   Brand Voice Intelligence
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -153,7 +153,7 @@ export default function BrandVoiceSettingsPage() {
 
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               <Plus className="w-4 h-4" />
               Add Guidelines
@@ -471,7 +471,7 @@ export default function BrandVoiceSettingsPage() {
               <button
                 onClick={handleUpload}
                 disabled={isUploading || !newGuideline.name.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
               >
                 {isUploading ? (
                   <>
@@ -480,7 +480,7 @@ export default function BrandVoiceSettingsPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Brain className="w-4 h-4" />
                     Create Guidelines
                   </>
                 )}

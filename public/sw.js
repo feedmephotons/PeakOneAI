@@ -186,7 +186,7 @@ async function syncTasks() {
 // Push notifications
 self.addEventListener('push', (event) => {
   let data = {
-    title: 'PeakOne AI',
+    title: 'Peak One',
     body: 'You have a new notification',
     icon: '/icons/pwa/icon-192.png',
     badge: '/icons/pwa/badge-72.png'

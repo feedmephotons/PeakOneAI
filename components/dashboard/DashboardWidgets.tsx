@@ -111,7 +111,7 @@ function TaskItem({ title, project, priority, dueDate, assignee, progress }: Tas
         </div>
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+            className="h-full bg-indigo-600 transition-all duration-300"
             style={{ width: `${progress}%` }}
           ></div>
         </div>
@@ -158,8 +158,8 @@ export default function DashboardWidgets() {
           <h1 className="text-2xl font-bold text-gray-900">Welcome back, John!</h1>
           <p className="text-gray-500 mt-1">Here&apos;s what&apos;s happening in your workspace today</p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all">
-          <span>Generate AI Report</span>
+        <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
+          <span>Generate Report</span>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
@@ -174,12 +174,11 @@ export default function DashboardWidgets() {
       </div>
 
       {/* AI Insights Banner */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+      <div className="bg-indigo-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-bold flex items-center space-x-2">
-              <span>🤖</span>
-              <span>AI Assistant Insights</span>
+              <span>Lisa Insights</span>
             </h3>
             <p className="text-indigo-100 mt-1">Automated suggestions based on your recent activity</p>
           </div>

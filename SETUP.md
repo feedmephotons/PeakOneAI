@@ -1,4 +1,4 @@
-# PeakOne AI Platform Setup Guide
+# Peak One Platform Setup Guide
 
 Complete setup instructions for all services and integrations.
 

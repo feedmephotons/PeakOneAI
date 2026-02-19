@@ -351,7 +351,7 @@ export default function MessagesPage() {
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition">
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
             <Plus className="w-4 h-4" />
             <span>New Message</span>
           </button>
@@ -561,7 +561,7 @@ export default function MessagesPage() {
               </button>
               <button
                 onClick={handleSendMessage}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition flex items-center gap-2"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 <span>Send</span>
@@ -698,7 +698,7 @@ function MessageBubble({
         {message.type === 'text' ? (
           <div className={`px-4 py-2 rounded-lg ${
             isOwn
-              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+              ? 'bg-indigo-600 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
           }`}>
             <p className="text-sm">{message.content}</p>

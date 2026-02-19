@@ -146,7 +146,7 @@ export default function PhonePage() {
         <div className="flex items-center space-x-2">
           {call.aiSummary && (
             <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
-              AI Summary
+              Summary
             </button>
           )}
           {call.transcribed && (
@@ -381,7 +381,7 @@ export default function PhonePage() {
                       )}
                       {call.aiSummary && (
                         <span className="px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
-                          ✓ AI Summary
+                          ✓ Summary
                         </span>
                       )}
                     </div>
@@ -401,7 +401,7 @@ export default function PhonePage() {
                     )}
                     {call.aiSummary && (
                       <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
-                        AI Insights
+                        Insights
                       </button>
                     )}
                   </div>
@@ -423,7 +423,7 @@ export default function PhonePage() {
           </div>
         )}
 
-        {/* AI Insights */}
+        {/* Insights */}
         <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">

@@ -163,13 +163,13 @@ export default function CallSummaryPage() {
           </div>
         </div>
 
-        {/* AI Summary */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        {/* Summary */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Summary</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Summary</h2>
           </div>
 
           <ul className="space-y-3">
@@ -217,7 +217,7 @@ export default function CallSummaryPage() {
                 </div>
                 <button
                   onClick={() => handleAddToTasks(item)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition text-sm font-medium"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
                 >
                   Add to Tasks
                 </button>
@@ -295,7 +295,7 @@ export default function CallSummaryPage() {
               const event = new CustomEvent('openPeakAI')
               window.dispatchEvent(event)
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
           >
             <Brain className="w-5 h-5" />
             <span>Ask Peak AI About This Call</span>

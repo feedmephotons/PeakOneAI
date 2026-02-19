@@ -190,7 +190,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               Create Task
             </button>

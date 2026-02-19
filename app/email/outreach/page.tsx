@@ -232,8 +232,8 @@ export default function EmailOutreachPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-purple-500" />
-                  AI Email Outreach
+                  <Mail className="w-6 h-6 text-indigo-500" />
+                  Email Outreach
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Create tailored email sequences to connect with leads and drive higher response rates
@@ -244,7 +244,7 @@ export default function EmailOutreachPage() {
             {generatedEmails.length > 0 && (
               <button
                 onClick={() => setShowSaveModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 <Save className="w-4 h-4" />
                 Save Campaign
@@ -351,7 +351,7 @@ export default function EmailOutreachPage() {
               <button
                 onClick={generateEmailSequence}
                 disabled={!targetAudience.trim() || isGenerating}
-                className="w-full mt-6 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+                className="w-full mt-6 flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
               >
                 {isGenerating ? (
                   <>
@@ -360,7 +360,7 @@ export default function EmailOutreachPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5" />
+                    <Mail className="w-5 h-5" />
                     Generate Email Sequence
                   </>
                 )}
@@ -369,7 +369,7 @@ export default function EmailOutreachPage() {
 
             {/* Stats Preview */}
             {generatedEmails.length > 0 && (
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+              <div className="bg-indigo-600 rounded-2xl p-6 text-white">
                 <h3 className="font-semibold mb-4">Sequence Overview</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
@@ -395,11 +395,11 @@ export default function EmailOutreachPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             {generatedEmails.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-20 px-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl flex items-center justify-center mb-6">
-                  <Mail className="w-10 h-10 text-purple-500" />
+                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mb-6">
+                  <Mail className="w-10 h-10 text-indigo-500" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Your AI-generated emails will appear here
+                  Your generated emails will appear here
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm">
                   Select a tone, enter your target audience, and click generate to create a personalized email sequence.
@@ -584,7 +584,7 @@ export default function EmailOutreachPage() {
               </button>
               <button
                 onClick={handleSaveCampaign}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition"
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 Save Campaign
               </button>
@@ -696,7 +696,7 @@ export default function EmailOutreachPage() {
               <button
                 onClick={handleSendEmail}
                 disabled={!sendTo.trim() || isSending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
               >
                 {isSending ? (
                   <>

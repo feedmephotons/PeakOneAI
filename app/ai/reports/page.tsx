@@ -15,15 +15,15 @@ export default function AIReportsPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center">
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Reports</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h1>
               <p className="text-gray-600 dark:text-gray-400">Auto-generated reports and analytics</p>
             </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition">
+          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
             <Bot className="w-4 h-4" />
             Generate Report
           </button>

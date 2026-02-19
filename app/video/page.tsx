@@ -107,7 +107,7 @@ export default function VideoPage() {
                 setActiveMeetingId(meeting.id)
                 setInCall(true)
               }}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium">
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
               Join Now
             </button>
           )}
@@ -118,7 +118,7 @@ export default function VideoPage() {
                   setActiveMeetingId(meeting.id)
                   setInCall(true)
                 }}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
                 Start Meeting
               </button>
               <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
@@ -132,7 +132,7 @@ export default function VideoPage() {
                 View Recording
               </button>
               <button className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors text-sm font-medium">
-                AI Summary
+                Summary
               </button>
             </>
           )}
@@ -169,13 +169,13 @@ export default function VideoPage() {
             )}
             {recording.summary && (
               <span className="px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
-                ✓ AI Summary
+                ✓ Summary
               </span>
             )}
           </div>
 
           <div className="flex items-center space-x-2 mt-4">
-            <button className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors">
+            <button className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors">
               Play
             </button>
             <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
@@ -188,7 +188,7 @@ export default function VideoPage() {
             )}
             {recording.summary && (
               <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
-                AI Insights
+                Insights
               </button>
             )}
           </div>
@@ -242,7 +242,7 @@ export default function VideoPage() {
               </button>
               <button
                 onClick={startInstantMeeting}
-                className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium flex items-center space-x-2">
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
@@ -255,14 +255,14 @@ export default function VideoPage() {
 
       <div className="w-full px-6 py-6">
         {/* Quick Actions */}
-        <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl p-8 text-white mb-6">
+        <div className="bg-indigo-600 rounded-xl p-8 text-white mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold">Meeting Room</h2>
-              <p className="text-violet-100 mt-1">Start or join meetings instantly with AI assistance</p>
+              <p className="text-indigo-100 mt-1">Start or join meetings instantly</p>
             </div>
-            <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <div className="flex items-center space-x-2 bg-white/15 px-4 py-2 rounded-lg">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               <span className="text-sm font-medium">System Ready</span>
             </div>
           </div>
@@ -307,13 +307,15 @@ export default function VideoPage() {
             </button>
           </div>
 
-          {/* AI Assistant Toggle */}
-          <div className="mt-6 flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          {/* Lisa Assistant Toggle */}
+          <div className="mt-6 flex items-center justify-between bg-white/10 rounded-lg p-4">
             <div className="flex items-center space-x-3">
-              <span className="text-2xl">🤖</span>
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-sm font-bold">L</span>
+              </div>
               <div>
-                <p className="font-medium">Lisa AI Assistant</p>
-                <p className="text-sm text-violet-100">Automatic transcription, notes, and action items</p>
+                <p className="font-medium">Lisa Assistant</p>
+                <p className="text-sm text-indigo-100">Automatic transcription, notes, and action items</p>
               </div>
             </div>
             <button
@@ -337,7 +339,7 @@ export default function VideoPage() {
             <button
               onClick={() => setSelectedView('meetings')}
               className={`px-4 py-2 rounded text-sm font-medium transition-all ${
-                selectedView === 'meetings' ? 'bg-violet-500 text-white' : 'text-gray-600 hover:text-gray-900'
+                selectedView === 'meetings' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               Meetings
@@ -345,7 +347,7 @@ export default function VideoPage() {
             <button
               onClick={() => setSelectedView('recordings')}
               className={`px-4 py-2 rounded text-sm font-medium transition-all ${
-                selectedView === 'recordings' ? 'bg-violet-500 text-white' : 'text-gray-600 hover:text-gray-900'
+                selectedView === 'recordings' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               Recordings
@@ -384,15 +386,14 @@ export default function VideoPage() {
           </div>
         )}
 
-        {/* AI Insights */}
+        {/* Meeting Intelligence */}
         <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <span className="mr-2">🤖</span>
-              Meeting Intelligence by Lisa
+            <h3 className="text-lg font-semibold text-gray-900">
+              Meeting Intelligence
             </h3>
-            <button className="text-sm text-violet-600 hover:text-violet-700 font-medium">
-              View All Insights
+            <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+              View All
             </button>
           </div>
 

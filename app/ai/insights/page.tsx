@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   Brain, TrendingUp, TrendingDown, Users, Clock, Target,
-  Lightbulb, AlertTriangle, ChevronRight, Sparkles, BarChart3
+  Lightbulb, AlertTriangle, ChevronRight, BarChart3
 } from 'lucide-react'
 
 interface Insight {
@@ -110,12 +110,12 @@ export default function AIInsightsPage() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+          <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center">
             <Brain className="w-7 h-7 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              AI Insights
+              Insights
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               Intelligent observations and recommendations from Lisa AI
@@ -127,7 +127,7 @@ export default function AIInsightsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-purple-500" />
+              <Brain className="w-4 h-4 text-indigo-500" />
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Insights</span>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{insights.length}</p>

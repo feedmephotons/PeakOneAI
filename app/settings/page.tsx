@@ -489,7 +489,7 @@ export default function SettingsPage() {
 
                       <button
                         onClick={handlePasswordChange}
-                        className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                       >
                         Update Password
                       </button>
@@ -831,7 +831,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
                           style={{ width: `${storage.percent}%` }}
                         />
                       </div>
@@ -891,7 +891,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {isSaving ? (
                     <>

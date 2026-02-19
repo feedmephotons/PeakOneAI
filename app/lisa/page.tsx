@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import {
-  Sparkles, Send, User, Bot, Mic, Paperclip, Settings, X, FileText,
+  Send, User, Bot, Mic, Paperclip, Settings, X, FileText,
   Image as ImageIcon, Calendar, CheckSquare, FileSearch, Brain,
   TrendingUp, Mail, Phone, Globe, Code, Database, Shield,
   Zap, BookOpen, Heart
@@ -404,8 +404,8 @@ How can I help you today?`,
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lisa AI</h2>

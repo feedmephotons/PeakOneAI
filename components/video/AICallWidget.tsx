@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Minimize2, Maximize2, X, Mic, Sparkles, MicOff } from 'lucide-react'
+import { Brain, Minimize2, Maximize2, X, Mic, MicOff } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
 import { AudioRecorder, transcribeAudio } from '@/lib/audio-recorder'
 
@@ -372,7 +372,7 @@ export default function AICallWidget({
       <div className="fixed bottom-24 right-6 z-40">
         <button
           onClick={() => setIsMinimized(false)}
-          className="group flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-105"
+          className="group flex items-center gap-3 bg-indigo-600 text-white px-6 py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all"
         >
           <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
             <Brain className="w-5 h-5" />
@@ -399,7 +399,7 @@ export default function AICallWidget({
   return (
     <div className="fixed bottom-24 right-6 w-96 max-h-[600px] z-40 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 flex items-center justify-between">
+      <div className="bg-indigo-600 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
             <Brain className="w-5 h-5 text-white" />
@@ -482,7 +482,7 @@ export default function AICallWidget({
           <>
             {actionItems.length === 0 ? (
               <div className="text-center py-8">
-                <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <Brain className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   No action items detected yet
                 </p>
@@ -552,7 +552,7 @@ export default function AICallWidget({
                             console.error('[AICallWidget] Error adding task to board:', error)
                           }
                         }}
-                        className="mt-3 w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-lg hover:opacity-90 transition"
+                        className="mt-3 w-full px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition"
                       >
                         Add to Task Board
                       </button>
@@ -585,7 +585,7 @@ export default function AICallWidget({
                   <button
                     onClick={generateSummary}
                     disabled={isGeneratingSummary}
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                    className="px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                   >
                     {isGeneratingSummary ? (
                       <span className="flex items-center gap-2">
@@ -594,7 +594,7 @@ export default function AICallWidget({
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
+                        <Brain className="w-4 h-4" />
                         Generate Summary
                       </span>
                     )}

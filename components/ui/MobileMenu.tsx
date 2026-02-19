@@ -1,104 +1,137 @@
-"use client";
+'use client'
 
-import React from 'react';
+import React from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import {
+  X, Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+  Plus, Settings, Brain, BarChart3, Mail, Calendar,
+} from 'lucide-react'
+import { CORE_NAV } from '@/config/navigation'
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+}
+
+const EXTRA_NAV = [
+  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+  { icon: Mail, label: 'Email', href: '/email' },
+  { icon: Calendar, label: 'Calendar', href: '/calendar' },
+  { icon: Brain, label: 'Lisa', href: '/lisa' },
+]
 
 interface MobileMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const menuItems = [
-    { icon: '📊', label: 'Dashboard', href: '/' },
-    { icon: '💬', label: 'Messages', href: '/messages', badge: '12' },
-    { icon: '📞', label: 'Calls', href: '/calls' },
-    { icon: '📹', label: 'Video', href: '/video' },
-    { icon: '🤖', label: 'AI Assistant', href: '/ai' },
-    { icon: '✅', label: 'Tasks', href: '/tasks', badge: '8' },
-    { icon: '📁', label: 'Files', href: '/files' },
-    { icon: '📊', label: 'Analytics', href: '/analytics' },
-    { icon: '⚙️', label: 'Settings', href: '/settings' },
-  ];
+  const pathname = usePathname()
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/'
+    return pathname.startsWith(href)
+  }
 
   return (
     <>
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Mobile Menu */}
+      {/* Drawer */}
       <div
-        className={`fixed top-0 left-0 h-full w-72 bg-gray-900 z-50 transform transition-transform duration-300 lg:hidden ${
+        className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-900 z-50 transform transition-transform duration-300 lg:hidden border-r border-gray-200 dark:border-gray-800 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-              S
-            </div>
-            <div>
-              <h1 className="text-white font-bold">SaaSX</h1>
-              <p className="text-xs text-gray-400">Peak One AI</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between h-14 px-4 border-b border-gray-100 dark:border-gray-800">
+          <Link href="/" className="flex items-center gap-2" onClick={onClose}>
+            <Image
+              src="/peakone-logo.png"
+              alt="Peak One"
+              width={24}
+              height={24}
+              className="h-6 w-6"
+            />
+            <span className="font-semibold text-gray-900 dark:text-white text-sm">Peak One</span>
+          </Link>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
-        {/* User Profile */}
-        <div className="p-4 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></span>
-            </div>
-            <div>
-              <p className="text-white text-sm font-medium">John Doe</p>
-              <p className="text-xs text-gray-400">Available</p>
-            </div>
+        {/* Core Nav */}
+        <nav className="flex-1 overflow-y-auto p-2">
+          <div className="mb-1 px-2 pt-2">
+            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Navigation</span>
           </div>
-        </div>
-
-        {/* Menu Items */}
-        <nav className="flex-1 overflow-y-auto p-3">
-          {menuItems.map((item, index) => (
-            <a
-              key={index}
-              href={item.href}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300 hover:text-white"
-            >
-              <div className="flex items-center space-x-3">
-                <span className="text-xl">{item.icon}</span>
+          {CORE_NAV.map((item) => {
+            const Icon = ICON_MAP[item.icon]
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  active
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                }`}
+              >
+                {Icon && <Icon className="w-4 h-4" />}
                 <span className="text-sm font-medium">{item.label}</span>
-              </div>
-              {item.badge && (
-                <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-500 text-white">
-                  {item.badge}
-                </span>
-              )}
-            </a>
-          ))}
+              </Link>
+            )
+          })}
+
+          {/* Extra navigation */}
+          <div className="mt-4 mb-1 px-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">More</span>
+          </div>
+          {EXTRA_NAV.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  active
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-gray-700">
-          <button className="w-full p-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-medium text-sm hover:from-indigo-600 hover:to-purple-600 transition-all">
-            Upgrade to Pro
-          </button>
+        {/* Bottom: Settings */}
+        <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+          <Link
+            href="/settings"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="text-sm font-medium">Settings</span>
+          </Link>
         </div>
       </div>
     </>
-  );
+  )
 }

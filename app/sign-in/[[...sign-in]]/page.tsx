@@ -125,12 +125,12 @@ export default function SignInPage() {
           >
             <Image
               src="/peakone-logo.png"
-              alt="PeakOne AI"
+              alt="Peak One"
               width={48}
               height={48}
               className="w-12 h-12"
             />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Peak One AI</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Peak One</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             Sign in to access your workspace
@@ -256,7 +256,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:opacity-90 focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

@@ -135,7 +135,7 @@ export default function DocsPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documentation</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">PeakOne AI Developer Docs</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Peak One Developer Docs</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

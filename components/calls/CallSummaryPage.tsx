@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import {
-  Brain, CheckSquare, Sparkles, FileText, Link as LinkIcon,
+  Brain, CheckSquare, FileText, Link as LinkIcon,
   Download, Share2, Copy, Clock, Users, Phone, MessageSquare, Search
 } from 'lucide-react'
 
@@ -168,10 +168,10 @@ export default function CallSummaryPage({ data }: CallSummaryPageProps) {
             </button>
             <button
               onClick={handleAskAI}
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-medium"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2 font-medium"
             >
               <Brain className="w-4 h-4" />
-              Ask AI About This Call
+              Ask Lisa About This Call
             </button>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function CallSummaryPage({ data }: CallSummaryPageProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              AI Summary
+              Summary
             </button>
             {data.transcripts && data.transcripts.length > 0 && (
               <button
@@ -237,15 +237,15 @@ export default function CallSummaryPage({ data }: CallSummaryPageProps) {
 
         {activeTab === 'summary' ? (
           <div className="space-y-8">
-            {/* AI Summary */}
-            <section className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            {/* Summary */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
                     <Brain className="w-5 h-5 text-white" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    AI Summary
+                    Summary
                   </h2>
                 </div>
                 <button
@@ -273,7 +273,7 @@ export default function CallSummaryPage({ data }: CallSummaryPageProps) {
                   <ul className="space-y-3">
                     {data.keyPoints.map((point, index) => (
                       <li key={index} className="flex gap-3">
-                        <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <Brain className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
                         <span className="text-gray-700 dark:text-gray-300">{point}</span>
                       </li>
                     ))}

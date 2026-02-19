@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Sparkles, Check, X, RefreshCw, Wand2, AlertCircle } from 'lucide-react'
+import { Check, X, RefreshCw, Wand2, AlertCircle } from 'lucide-react'
 import type { AnalysisResult, BrandSuggestion, EnforcementLevel, FieldType } from '@/lib/brand-voice/types'
 
 interface BrandVoiceTextareaProps {
@@ -269,7 +269,7 @@ export default function BrandVoiceTextarea({
             <>
               {showScore && (
                 <span className={`flex items-center gap-1 ${getScoreColor(analysis.overallScore)}`}>
-                  <Sparkles className="w-3 h-3" />
+                  <Check className="w-3 h-3" />
                   {analysis.overallScore}% on-brand
                 </span>
               )}
@@ -300,8 +300,8 @@ export default function BrandVoiceTextarea({
             <button
               onClick={rewriteText}
               disabled={isRewriting}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500
-                text-white rounded hover:opacity-90 disabled:opacity-50 transition"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-600
+                text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition"
             >
               {isRewriting ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />

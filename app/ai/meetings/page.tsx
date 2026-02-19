@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ResponsiveLayout from '@/components/layout/ResponsiveLayout'
-import { Search, Calendar, Users, Clock, FileText, Sparkles } from 'lucide-react'
+import { Search, Calendar, Users, Clock, FileText, CheckSquare } from 'lucide-react'
 
 interface Meeting {
   id: string
@@ -108,7 +108,7 @@ export default function MeetingIntelligencePage() {
           </div>
           <div className="bg-white p-4 rounded-xl border border-gray-200">
             <div className="flex items-center justify-between mb-2">
-              <Sparkles className="w-6 h-6 text-purple-500" />
+              <FileText className="w-6 h-6 text-indigo-500" />
             </div>
             <p className="text-sm text-gray-500">Action Items</p>
             <p className="text-2xl font-bold">{totalActionItems}</p>
@@ -170,7 +170,7 @@ export default function MeetingIntelligencePage() {
                             {formatDuration(meeting.duration)}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
+                            <CheckSquare className="w-3 h-3" />
                             {meeting.actionItems?.length || 0} action items
                           </span>
                         </div>
@@ -231,7 +231,7 @@ export default function MeetingIntelligencePage() {
                 {/* Summary */}
                 {selectedMeeting.summary && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">AI Summary</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Summary</h3>
                     <div className="prose prose-sm max-w-none bg-indigo-50 p-4 rounded-lg">
                       <div className="whitespace-pre-wrap text-gray-700">
                         {selectedMeeting.summary}
@@ -274,15 +274,15 @@ export default function MeetingIntelligencePage() {
 
                           alert(`✅ Added ${selectedMeeting.actionItems.length} tasks to board!`)
                         }}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition"
+                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                       >
                         Add All to Task Board
                       </button>
                     </div>
                     <div className="space-y-2">
                       {selectedMeeting.actionItems.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                          <Sparkles className="w-4 h-4 text-purple-600 mt-0.5" />
+                        <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <FileText className="w-4 h-4 text-indigo-600 mt-0.5" />
                           <div>
                             <p className="text-sm text-gray-900">{item.text}</p>
                             {item.assignee && (

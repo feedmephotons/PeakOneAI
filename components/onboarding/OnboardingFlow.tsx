@@ -61,7 +61,7 @@ export const OnboardingFlow: React.FC = () => {
       component: (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+            <div className="w-24 h-24 bg-indigo-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
               <Rocket className="w-12 h-12 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -362,7 +362,7 @@ export const OnboardingFlow: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg" />
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg" />
               <span className="font-bold text-xl">SaasX</span>
             </div>
             <button
@@ -383,7 +383,7 @@ export const OnboardingFlow: React.FC = () => {
                   <div
                     className={`flex-1 h-2 rounded-full transition-colors ${
                       index <= currentStep
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600'
+                        ? 'bg-indigo-600'
                         : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   />
@@ -401,7 +401,7 @@ export const OnboardingFlow: React.FC = () => {
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-2xl w-full">
             <div className="mb-8 text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white">
+              <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white">
                 {steps[currentStep].icon}
               </div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -433,7 +433,7 @@ export const OnboardingFlow: React.FC = () => {
 
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition"
+                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
                 {currentStep === steps.length - 1 ? (
