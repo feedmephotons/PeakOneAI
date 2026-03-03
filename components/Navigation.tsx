@@ -12,6 +12,7 @@ import {
 import Image from 'next/image'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import CreateMenu from './navigation/CreateMenu'
+import AppLauncher from './navigation/AppLauncher'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef } from 'react'
 import { getNavForMode } from '@/config/navigation'
@@ -173,6 +174,9 @@ export default function Navigation() {
                 /
               </kbd>
             </button>
+
+            {/* App Launcher */}
+            <AppLauncher />
 
             {/* Create Button */}
             <CreateMenu />

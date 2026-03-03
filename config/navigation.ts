@@ -27,13 +27,13 @@ export const CORE_NAV: NavItem[] = [
   // Team mode items
   { id: 'workspaces', label: 'Workspaces', icon: 'Users', href: '/teams', description: 'Team collaboration', modes: ['team'] },
   { id: 'threads', label: 'Threads', icon: 'MessageSquare', href: '/messages', description: 'Messages and chat', modes: ['team'] },
-  { id: 'meetings', label: 'Meetings', icon: 'Video', href: '/meeting', description: 'Video and calls', modes: ['team'] },
+  { id: 'meetings', label: 'Meetings', icon: 'Video', href: '/video', description: 'Video and calls', modes: ['team'] },
   { id: 'files', label: 'Files', icon: 'FolderOpen', href: '/files', description: 'Shared documents', modes: ['team'] },
   { id: 'tasks', label: 'Tasks', icon: 'CheckSquare', href: '/tasks', description: 'Shared tasks and boards', modes: ['team'] },
   // Enterprise mode items
   { id: 'workspaces-ent', label: 'Workspaces', icon: 'Users', href: '/teams', description: 'Team collaboration', modes: ['enterprise'] },
   { id: 'threads-ent', label: 'Threads', icon: 'MessageSquare', href: '/messages', description: 'Messages', modes: ['enterprise'] },
-  { id: 'meetings-ent', label: 'Meetings', icon: 'Video', href: '/meeting', description: 'Video and calls', modes: ['enterprise'] },
+  { id: 'meetings-ent', label: 'Meetings', icon: 'Video', href: '/video', description: 'Video and calls', modes: ['enterprise'] },
   { id: 'admin', label: 'Admin', icon: 'Shield', href: '/settings/org', description: 'Administration', modes: ['enterprise'] },
   { id: 'governance', label: 'Governance', icon: 'Scale', href: '/settings/security', description: 'Compliance and governance', modes: ['enterprise'] },
 ]
@@ -58,11 +58,11 @@ export interface CreateAction {
 
 export const CREATE_ACTIONS: CreateAction[] = [
   // Create actions (available in all modes)
-  { id: 'new-message', label: 'New Message', icon: 'MessageSquare', href: '/messages/new', description: 'Start a conversation', shortcut: 'N', category: 'create' },
-  { id: 'new-meeting', label: 'New Meeting', icon: 'Video', href: '/meeting/new', description: 'Schedule or start a call', shortcut: 'M', category: 'create' },
+  { id: 'new-message', label: 'New Message', icon: 'MessageSquare', href: '/messages', description: 'Start a conversation', shortcut: 'N', category: 'create' },
+  { id: 'new-meeting', label: 'New Meeting', icon: 'Video', href: '/video', description: 'Schedule or start a call', shortcut: 'M', category: 'create' },
   { id: 'new-task', label: 'New Task', icon: 'CheckSquare', href: '/tasks?new=true', description: 'Create a task', shortcut: 'T', category: 'create' },
-  { id: 'upload-file', label: 'Upload File', icon: 'Upload', href: '/files/upload', description: 'Upload documents or media', shortcut: 'U', category: 'create' },
-  { id: 'new-doc', label: 'New Document', icon: 'FileText', href: '/docs/new', description: 'Create a document', category: 'create' },
+  { id: 'upload-file', label: 'Upload File', icon: 'Upload', href: '/files', description: 'Upload documents or media', shortcut: 'U', category: 'create' },
+  { id: 'new-doc', label: 'New Document', icon: 'FileText', href: '/docs', description: 'Create a document', category: 'create' },
 
   // Navigate to power features
   { id: 'deck', label: 'Deck', icon: 'Presentation', href: '/deck', description: 'Pitch decks and slides', category: 'navigate', modes: ['team', 'enterprise'] },

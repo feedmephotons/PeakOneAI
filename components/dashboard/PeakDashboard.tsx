@@ -7,7 +7,8 @@ import {
   CheckSquare, Phone, ArrowRight, X,
   Users, Brain, ChevronRight, Link2,
   AlertCircle, Copy,
-  Shield, Activity, Scale
+  Shield, Activity, Scale,
+  BarChart3, Zap, FolderOpen
 } from 'lucide-react'
 import { useAppStore, type UIMode } from '@/stores/app-store'
 
@@ -149,6 +150,122 @@ function CommandHero() {
             )
           })}
         </div>
+
+        {/* Explore All Features CTA */}
+        <div className="mt-6">
+          <button
+            onClick={() => {
+              document.getElementById('feature-showcase')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
+          >
+            Explore All Features
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Feature Showcase ────────────────────────────────────────────────────────
+
+function FeatureShowcase() {
+  const router = useRouter()
+
+  const features = [
+    {
+      icon: Video,
+      title: 'Meetings',
+      description: 'AI-powered meetings that transcribe, summarize, and assign action items',
+      path: '/video',
+      iconBg: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+    },
+    {
+      icon: MessageSquare,
+      title: 'Messaging',
+      description: 'Threaded conversations with smart context and AI follow-ups',
+      path: '/messages',
+      iconBg: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+    },
+    {
+      icon: CheckSquare,
+      title: 'Tasks',
+      description: 'Kanban boards with AI-suggested priorities from your meetings',
+      path: '/tasks',
+      iconBg: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+    },
+    {
+      icon: FolderOpen,
+      title: 'Files',
+      description: 'Smart storage with AI analysis and cross-referenced insights',
+      path: '/files',
+      iconBg: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
+    },
+    {
+      icon: BarChart3,
+      title: 'Analytics',
+      description: 'Real-time dashboards and AI-generated performance reports',
+      path: '/analytics',
+      iconBg: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+    },
+    {
+      icon: Zap,
+      title: 'Automation',
+      description: 'Custom workflows and triggers that run in the background',
+      path: '/automation',
+      iconBg: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+    },
+    {
+      icon: Brain,
+      title: 'Lisa AI',
+      description: 'Your AI assistant that learns your patterns and preferences',
+      path: '#ai',
+      iconBg: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+    },
+    {
+      icon: Calendar,
+      title: 'Calendar',
+      description: 'Intelligent scheduling with meeting prep and conflict detection',
+      path: '/calendar',
+      iconBg: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
+    },
+  ]
+
+  const handleFeatureClick = (path: string) => {
+    if (path === '#ai') {
+      window.dispatchEvent(new CustomEvent('openPeakAI'))
+    } else {
+      router.push(path)
+    }
+  }
+
+  return (
+    <section id="feature-showcase" className="pb-8">
+      <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        Platform Capabilities
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {features.map((feature) => {
+          const Icon = feature.icon
+          return (
+            <div
+              key={feature.title}
+              onClick={() => handleFeatureClick(feature.path)}
+              className="p-4 bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 rounded-xl hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm transition-all duration-150 cursor-pointer group"
+            >
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${feature.iconBg}`}>
+                <Icon className="w-4.5 h-4.5" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                {feature.title}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+          )
+        })}
       </div>
     </section>
   )
@@ -712,10 +829,10 @@ export default function PeakDashboard() {
   const currentMode = mounted ? uiMode : 'team'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-6 pt-10 pb-16">
-        <CommandHero />
-        <SuggestedNext />
+    <div className="max-w-6xl mx-auto pt-4 pb-16">
+      <CommandHero />
+      <FeatureShowcase />
+      <SuggestedNext />
 
         {/* Enterprise mode: show admin summary above other sections */}
         {currentMode === 'enterprise' && <EnterpriseAdminSummary />}
@@ -726,8 +843,7 @@ export default function PeakDashboard() {
         {/* Personal mode: show AI memory section */}
         {currentMode === 'personal' && <PersonalAIMemory />}
 
-        <MemoryLayer />
-      </div>
+      <MemoryLayer />
     </div>
   )
 }

@@ -45,17 +45,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     pathname?.startsWith('/sign-up') ||
     pathname?.startsWith('/auth')
 
-  const isLandingPage = (pathname === '/' && isAuthenticated === false) || pathname === '/landing'
+  // Only treat /landing as a landing page (not homepage - demo mode shows dashboard with nav)
+  const isLandingPage = pathname === '/landing'
 
   // For auth pages and landing page, render without navigation
   if (isAuthPage || isLandingPage) {
     return <>{children}</>
   }
 
-  // Still loading auth state on home page - show minimal shell
-  if (pathname === '/' && isAuthenticated === null) {
-    return <>{children}</>
-  }
+  // DEMO MODE: Don't hide nav while auth is loading on homepage
+  // Previously this returned bare children, hiding the nav bar entirely
+  // if (pathname === '/' && isAuthenticated === null) {
+  //   return <>{children}</>
+  // }
 
   // Use sidebar/megamenu layout when navStyle is 'sidebar' or 'megamenu'
   // DEMO MODE: Force top navigation for demo
