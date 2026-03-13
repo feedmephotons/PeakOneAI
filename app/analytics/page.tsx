@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Weekly Activity
             </h3>
-            <BarChart data={weeklySummary} height={250} />
+            <BarChart data={weeklySummary.map(d => ({ category: d.label || d.date, value: d.value }))} height={250} />
           </div>
 
           {/* Tasks by Priority */}

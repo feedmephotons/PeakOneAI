@@ -9,7 +9,13 @@ export default function KeyboardShortcutsHint() {
   useEffect(() => {
     const hasSeenHint = localStorage.getItem('hasSeenKeyboardHint')
     if (!hasSeenHint) {
-      setTimeout(() => setShow(true), 2000)
+      const showTimer = setTimeout(() => setShow(true), 2000)
+      // Auto-dismiss after 10 seconds
+      const dismissTimer = setTimeout(() => {
+        setShow(false)
+        localStorage.setItem('hasSeenKeyboardHint', 'true')
+      }, 12000)
+      return () => { clearTimeout(showTimer); clearTimeout(dismissTimer) }
     }
   }, [])
 

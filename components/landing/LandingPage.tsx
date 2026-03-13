@@ -27,45 +27,73 @@ import {
   Phone,
   FileText,
   Bot,
+  Mail,
+  Workflow,
+  LayoutGrid,
+  BrainCircuit,
 } from 'lucide-react'
 import Image from 'next/image'
 
 const features = [
   {
-    icon: Sparkles,
-    title: 'AI-Powered Assistant',
-    description: 'Lisa, your intelligent AI assistant, helps with scheduling, summaries, and smart suggestions.',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
     icon: Video,
-    title: 'HD Video Conferencing',
-    description: 'Crystal-clear video calls with AI transcription, action items, and meeting summaries.',
+    title: 'AI-Powered Meetings',
+    description: 'HD video conferencing with live transcription, auto-generated summaries, and action item extraction.',
     color: 'from-blue-500 to-cyan-500',
   },
   {
     icon: MessageSquare,
-    title: 'Team Messaging',
-    description: 'Real-time chat with channels, threads, and seamless file sharing.',
+    title: 'Smart Messaging',
+    description: 'Threaded conversations with AI context, smart replies, and cross-channel search.',
     color: 'from-green-500 to-emerald-500',
   },
   {
-    icon: FolderOpen,
-    title: 'Smart File Storage',
-    description: 'AI-organized cloud storage with automatic tagging and intelligent search.',
-    color: 'from-orange-500 to-amber-500',
-  },
-  {
-    icon: Calendar,
-    title: 'Unified Calendar',
-    description: 'Schedule meetings, set reminders, and sync across all your devices.',
-    color: 'from-red-500 to-rose-500',
+    icon: Mail,
+    title: 'Email with AI Writing',
+    description: 'On-brand email drafting, follow-up assistance, and intelligent inbox prioritization.',
+    color: 'from-sky-500 to-blue-500',
   },
   {
     icon: CheckSquare,
     title: 'Task Management',
-    description: 'Kanban boards, project tracking, and AI-suggested task priorities.',
+    description: 'Kanban boards with AI-suggested priorities pulled directly from your meetings and messages.',
     color: 'from-indigo-500 to-violet-500',
+  },
+  {
+    icon: FolderOpen,
+    title: 'File Intelligence',
+    description: 'AI-powered analysis, automatic cross-referencing, and smart tagging across all your documents.',
+    color: 'from-orange-500 to-amber-500',
+  },
+  {
+    icon: BarChart3,
+    title: 'Analytics & Reports',
+    description: 'Real-time dashboards and AI-generated insights that surface what matters most.',
+    color: 'from-teal-500 to-green-500',
+  },
+  {
+    icon: Workflow,
+    title: 'Automation',
+    description: 'Custom workflow rules and triggers that eliminate repetitive tasks across your tools.',
+    color: 'from-rose-500 to-pink-500',
+  },
+  {
+    icon: BrainCircuit,
+    title: 'Lisa AI Assistant',
+    description: 'Your personal AI that learns your work patterns and proactively keeps you ahead.',
+    color: 'from-purple-500 to-pink-500',
+  },
+  {
+    icon: Calendar,
+    title: 'Calendar Intelligence',
+    description: 'Smart scheduling, automated meeting prep briefs, and conflict detection across teams.',
+    color: 'from-red-500 to-rose-500',
+  },
+  {
+    icon: Users,
+    title: 'Workspace Collaboration',
+    description: 'Dedicated team spaces with shared resources, permissions, and real-time co-editing.',
+    color: 'from-fuchsia-500 to-purple-500',
   },
 ]
 
@@ -240,7 +268,7 @@ export default function LandingPage() {
 
             {/* Subheadline */}
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Messaging, video, files, tasks, and calendar — unified with AI that actually understands your work.
+              Meetings, messaging, email, tasks, files, calendar, and analytics — unified with an AI assistant that actually understands your work.
             </p>
 
             {/* CTAs */}
@@ -449,6 +477,12 @@ export default function LandingPage() {
       <section id="features" className="py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full mb-6">
+              <LayoutGrid className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                10+ integrated tools
+              </span>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
               Everything you need,{' '}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -460,17 +494,64 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group p-8 bg-white dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 hover:-translate-y-1"
+                className="group p-6 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 hover:-translate-y-1"
               >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* See All Features CTA */}
+          <div className="text-center mt-12">
+            <Link
+              href="/features"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gray-900 to-gray-800 dark:from-white dark:to-gray-100 text-white dark:text-gray-900 font-semibold rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              See All Features
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Capabilities Banner */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        </div>
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-8 text-center">
+          <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            10+ integrated tools. One platform. Zero context-switching.
+          </h3>
+          <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
+            Replace your scattered stack of Slack, Zoom, Notion, Google Drive, and Asana with a single AI-native workspace that connects every workflow.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {[
+              { icon: Video, label: 'Video' },
+              { icon: MessageSquare, label: 'Chat' },
+              { icon: Mail, label: 'Email' },
+              { icon: CheckSquare, label: 'Tasks' },
+              { icon: FolderOpen, label: 'Files' },
+              { icon: Calendar, label: 'Calendar' },
+              { icon: BarChart3, label: 'Analytics' },
+              { icon: BrainCircuit, label: 'Lisa AI' },
+              { icon: Workflow, label: 'Automation' },
+              { icon: Users, label: 'Workspaces' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/20">
+                <item.icon className="w-4 h-4 text-white" />
+                <span className="text-sm font-medium text-white">{item.label}</span>
               </div>
             ))}
           </div>
@@ -772,7 +853,7 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Product</h4>
               <ul className="space-y-3">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">API</a></li>
@@ -798,7 +879,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500">&copy; 2025 Peak One. All rights reserved.</p>
+            <p className="text-gray-500">&copy; 2026 Peak One. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-white transition-colors">Twitter</a>
               <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
