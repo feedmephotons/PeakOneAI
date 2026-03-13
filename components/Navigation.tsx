@@ -163,6 +163,9 @@ export default function Navigation() {
 
           {/* Right: Command Bar + Actions */}
           <div className="flex items-center gap-2">
+            {/* Platform Tools Launcher (left of search) */}
+            <AppLauncher />
+
             {/* Command Bar / Search */}
             <button
               onClick={openSearch}
@@ -174,9 +177,6 @@ export default function Navigation() {
                 /
               </kbd>
             </button>
-
-            {/* App Launcher */}
-            <AppLauncher />
 
             {/* Create Button */}
             <CreateMenu />

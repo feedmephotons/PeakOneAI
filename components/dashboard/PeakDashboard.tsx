@@ -31,10 +31,10 @@ function CommandHero() {
     ],
     team: [
       { label: 'Start meeting', icon: Video, path: '/video' },
-      { label: 'Draft follow-up', icon: FileText, path: '/messages' },
-      { label: 'Summarize yesterday', icon: Brain, path: '#ai' },
+      { label: 'Draft follow-up', icon: FileText, path: '/email' },
+      { label: 'Send a message', icon: MessageSquare, path: '/messages' },
       { label: 'Create task', icon: CheckSquare, path: '/tasks' },
-      { label: 'Organize files', icon: FileText, path: '/files' },
+      { label: 'Summarize yesterday', icon: Brain, path: '#ai' },
       { label: 'Schedule call', icon: Phone, path: '/calendar' },
     ],
     enterprise: [
@@ -152,11 +152,9 @@ function CommandHero() {
         </div>
 
         {/* Explore All Features CTA */}
-        <div className="mt-6">
+        <div className="mt-6 flex items-center justify-center gap-3">
           <button
-            onClick={() => {
-              document.getElementById('feature-showcase')?.scrollIntoView({ behavior: 'smooth' })
-            }}
+            onClick={() => router.push('/features')}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
           >
             Explore All Features

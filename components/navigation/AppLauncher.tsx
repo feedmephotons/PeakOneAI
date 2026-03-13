@@ -3,10 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  LayoutGrid, MessageSquare, Video, Phone, Mail,
+  Grid3X3, MessageSquare, Video, Phone, Mail,
   CheckSquare, Calendar, FolderOpen, FileText, Briefcase,
   Brain, BarChart3, Zap, LayoutTemplate,
-  Users, Contact, Presentation, X,
+  Users, Contact, Presentation, X, ArrowRight,
 } from 'lucide-react'
 
 interface AppItem {
@@ -118,9 +118,10 @@ export default function AppLauncher() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-        aria-label="App launcher"
+        aria-label="Platform tools"
+        title="Platform Tools"
       >
-        <LayoutGrid className="w-4 h-4" />
+        <Grid3X3 className="w-[18px] h-[18px]" />
       </button>
 
       {isOpen && (
@@ -129,10 +130,10 @@ export default function AppLauncher() {
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
           {/* Panel */}
-          <div className="absolute right-0 mt-2 w-[340px] bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 backdrop-blur z-50 overflow-hidden">
+          <div className="absolute left-0 mt-2 w-[340px] bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 backdrop-blur z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">Apps</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Platform Tools</span>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
@@ -171,6 +172,17 @@ export default function AppLauncher() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* All Features link */}
+            <div className="px-3 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <button
+                onClick={() => { router.push('/features'); setIsOpen(false) }}
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              >
+                View All Features
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           </div>
         </>
