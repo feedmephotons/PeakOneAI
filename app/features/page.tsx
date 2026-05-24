@@ -6,7 +6,7 @@ import {
   FolderOpen, FileText, BarChart3, Zap, Brain, LayoutTemplate,
   Users, Contact, Presentation, Shield, Settings, Activity,
   Mic, FileSearch, Briefcase, Star, Search, Globe,
-  ArrowRight, Sparkles
+  ArrowRight, Sparkles, Terminal
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -262,6 +262,20 @@ const categories: FeatureCategory[] = [
           'Guides, tutorials, and support resources.',
         icon: Search,
         href: '/help',
+      },
+      {
+        name: 'DevOps',
+        description:
+          'Design doc and marketing guidelines.',
+        icon: Terminal,
+        href: '/devops',
+      },
+      {
+        name: 'Diagnostics',
+        description:
+          'Check DB, Storage, and AI service health.',
+        icon: Activity,
+        href: '/test',
       },
     ],
   },

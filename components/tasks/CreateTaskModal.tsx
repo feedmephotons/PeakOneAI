@@ -119,6 +119,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
                   </span>
                 </label>
                 <select
+                  id="task-status"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as Task['status'] })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
@@ -138,6 +139,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
                   </span>
                 </label>
                 <select
+                  id="task-priority"
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"

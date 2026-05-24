@@ -7,7 +7,7 @@ import {
   Search, Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
   Mail, Presentation, Phone, Settings, Sparkles, Brain, FileSearch,
   Languages, ArrowRightLeft, Plus, Calendar, Mic, Command as CommandIcon,
-  CornerDownLeft, ArrowUp, ArrowDown,
+  CornerDownLeft, ArrowUp, ArrowDown, Terminal, Activity,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       category: 'Navigation',
       icon: <Video className="w-4 h-4" />,
       keywords: ['video', 'call', 'conference'],
-      action: () => navigate('/meeting'),
+      action: () => navigate('/video'),
     },
     {
       id: 'nav-threads',
@@ -174,6 +174,24 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       keywords: ['preferences', 'account', 'config'],
       action: () => navigate('/settings'),
     },
+    {
+      id: 'nav-devops',
+      label: 'DevOps & Visual Identity',
+      description: 'Design doc and marketing guidelines',
+      category: 'Navigation',
+      icon: <Terminal className="w-4 h-4" />,
+      keywords: ['design', 'visual', 'devops', 'style', 'colors'],
+      action: () => navigate('/devops'),
+    },
+    {
+      id: 'nav-test',
+      label: 'System Integration Test',
+      description: 'Check DB, Storage, and AI service health',
+      category: 'Navigation',
+      icon: <Activity className="w-4 h-4" />,
+      keywords: ['test', 'health', 'diagnostics', 'supabase', 'database'],
+      action: () => navigate('/test'),
+    },
 
     // ── Create ──────────────────────────────────────────────────────────
     {
@@ -183,7 +201,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       category: 'Create',
       icon: <Video className="w-4 h-4" />,
       keywords: ['meeting', 'video', 'call', 'start'],
-      action: () => navigate('/meeting'),
+      action: () => navigate('/video'),
     },
     {
       id: 'create-task',

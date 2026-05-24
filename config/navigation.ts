@@ -36,6 +36,8 @@ export const CORE_NAV: NavItem[] = [
   { id: 'meetings-ent', label: 'Meetings', icon: 'Video', href: '/video', description: 'Video and calls', modes: ['enterprise'] },
   { id: 'admin', label: 'Admin', icon: 'Shield', href: '/settings/org', description: 'Administration', modes: ['enterprise'] },
   { id: 'governance', label: 'Governance', icon: 'Scale', href: '/settings/security', description: 'Compliance and governance', modes: ['enterprise'] },
+  { id: 'devops', label: 'DevOps', icon: 'Terminal', href: '/devops', description: 'Visual guidelines' },
+  { id: 'system-test', label: 'Test', icon: 'Activity', href: '/test', description: 'Diagnostics' },
 ]
 
 // Helper: filter nav items by current UI mode
@@ -94,6 +96,8 @@ export const ADMIN_NAV: NavItem[] = [
   { id: 'activity-log', label: 'Activity Log', icon: 'Activity', href: '/activity', description: 'Audit trail', modes: ['enterprise'] },
   { id: 'help', label: 'Help Center', icon: 'HelpCircle', href: '/help', description: 'Get support' },
   { id: 'api-docs', label: 'API Docs', icon: 'BookOpen', href: '/docs', description: 'Developer documentation', modes: ['enterprise'] },
+  { id: 'devops', label: 'DevOps', icon: 'Terminal', href: '/devops', description: 'Visual guidelines' },
+  { id: 'system-test', label: 'Test', icon: 'Activity', href: '/test', description: 'Diagnostics' },
 ]
 
 // Command bar items (searchable via Cmd+K)

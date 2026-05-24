@@ -157,6 +157,7 @@ model Project {
   tasks       Task[]
 
   @@index([workspaceId])
+  @@unique([workspaceId, name])
 }
 
 enum ProjectStatus {
@@ -177,6 +178,7 @@ model Task {
   completedAt DateTime?
   aiSuggested Boolean   @default(false)
   position    Int
+  tags        String[]  @default([])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

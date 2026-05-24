@@ -7,7 +7,7 @@ import { NotificationCenter } from '@/components/notifications/NotificationProvi
 import {
   Search, User, LogOut, Settings, ChevronDown,
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
-  Phone, Calendar, Mail, Shield, Scale,
+  Phone, Calendar, Mail, Shield, Scale, Terminal, Activity,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
@@ -21,7 +21,7 @@ import { ModeSwitcher } from '@/components/ui/ModeSwitcher'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
-  Phone, Calendar, Mail, Shield, Scale,
+  Phone, Calendar, Mail, Shield, Scale, Terminal, Activity,
 }
 
 export default function Navigation() {
@@ -147,10 +147,10 @@ export default function Navigation() {
                   <Link
                     key={item.id}
                     href={item.href}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
                       active
-                        ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'text-indigo-600 dark:text-indigo-400 bg-gray-950/[0.05] dark:bg-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] dark:shadow-none font-medium'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-950/[0.03] dark:hover:bg-white/[0.04]'
                     }`}
                   >
                     {Icon && <Icon className="w-4 h-4" />}

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { CheckSquare, X, Calendar, User, Flag, Brain, ArrowRight } from 'lucide-react'
 import { aiContext } from '@/lib/ai-context'
+import { createClient } from '@/lib/supabase/client'
+import { useNotifications } from '@/components/notifications/NotificationProvider'
 
 interface ActionItem {
   id: string
@@ -29,6 +31,7 @@ export default function MeetingToTaskConverter({
   onClose,
   onTasksCreated
 }: MeetingToTaskConverterProps) {
+  const { showNotification } = useNotifications()
   const [selectedItems, setSelectedItems] = useState<Set<string>>(
     new Set(actionItems.map(item => item.id))
   )
@@ -39,6 +42,17 @@ export default function MeetingToTaskConverter({
       priority: item.priority || 'MEDIUM'
     }]))
   )
+
+  const hasQueue = () => {
+    try {
+      const saved = localStorage.getItem('pending_sync_actions')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        return parsed.length > 0
+      }
+    } catch {}
+    return false
+  }
 
   const toggleItem = (id: string) => {
     const newSelected = new Set(selectedItems)
@@ -60,15 +74,21 @@ export default function MeetingToTaskConverter({
     })
   }
 
-  const handleCreateTasks = () => {
+  const handleCreateTasks = async () => {
     const selectedActionItems = actionItems.filter(item => selectedItems.has(item.id))
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
 
-    selectedActionItems.forEach(item => {
+    for (const item of selectedActionItems) {
       const data = taskData[item.id]
+
+      const taskId = session
+        ? `temp-task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        : `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
       // Create task entity in context system
       const taskEntity = {
-        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: taskId,
         type: 'task' as const,
         title: item.text,
         createdAt: new Date(),
@@ -109,10 +129,7 @@ export default function MeetingToTaskConverter({
         relatedEntities: [meetingId]
       })
 
-      // In a real app, you would also create the task in your task management system
-      // For now, we'll just save to localStorage
-      const existingTasks = JSON.parse(localStorage.getItem('tasks') || '[]')
-      existingTasks.push({
+      const newTask: any = {
         id: taskEntity.id,
         title: item.text,
         description: `From meeting: ${meetingTitle}\n\n${item.context || ''}`,
@@ -128,9 +145,99 @@ export default function MeetingToTaskConverter({
         comments: 0,
         createdAt: new Date(),
         updatedAt: new Date()
-      })
-      localStorage.setItem('tasks', JSON.stringify(existingTasks))
-    })
+      }
+
+      if (session) {
+        const queueAction = () => {
+          try {
+            const saved = localStorage.getItem('pending_sync_actions')
+            const queue = saved ? JSON.parse(saved) : []
+            queue.push({
+              type: 'CREATE',
+              taskId: newTask.id,
+              data: {
+                title: newTask.title,
+                description: newTask.description,
+                status: newTask.status,
+                priority: newTask.priority,
+                dueDate: newTask.dueDate,
+                tags: newTask.tags,
+                assignee: data.assignee,
+                meetingId: meetingId
+              },
+              timestamp: Date.now()
+            })
+            localStorage.setItem('pending_sync_actions', JSON.stringify(queue))
+            
+            showNotification({
+              type: 'warning',
+              title: 'Offline Task Created',
+              message: 'Task will sync automatically when online.'
+            })
+          } catch (err) {
+            console.error('[MeetingToTaskConverter] Failed to queue sync action:', err)
+          }
+        }
+
+        if (hasQueue()) {
+          queueAction()
+        } else {
+          try {
+            const response = await fetch('/api/tasks/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title: newTask.title,
+                description: newTask.description,
+                status: newTask.status,
+                priority: newTask.priority,
+                dueDate: newTask.dueDate,
+                tags: newTask.tags,
+                assignee: data.assignee,
+                meetingId: meetingId
+              })
+            })
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            const resData = await response.json()
+            if (resData.task) {
+              newTask.id = resData.task.id
+              newTask.createdAt = new Date(resData.task.createdAt)
+              newTask.updatedAt = new Date(resData.task.updatedAt)
+              if (resData.task.assignee) {
+                newTask.assignee = resData.task.assignee
+              }
+            }
+          } catch (apiError) {
+            console.error('[MeetingToTaskConverter] Failed to sync task to API:', apiError)
+            queueAction()
+          }
+        }
+      }
+
+      // Load tasks fresh from localStorage immediately before pushing and writing back
+      let tasks = []
+      try {
+        const savedTasks = localStorage.getItem('tasks')
+        tasks = savedTasks ? JSON.parse(savedTasks) : []
+      } catch (e) {
+        console.error('[MeetingToTaskConverter] Error loading tasks from localStorage:', e)
+      }
+
+      tasks.push(newTask)
+
+      try {
+        localStorage.setItem('tasks', JSON.stringify(tasks))
+      } catch (e) {
+        console.error('[MeetingToTaskConverter] Error saving tasks to localStorage:', e)
+      }
+    }
+
+    // Dispatch the storage event after creating all tasks
+    window.dispatchEvent(new Event('storage'))
 
     onTasksCreated(selectedItems.size)
     onClose()

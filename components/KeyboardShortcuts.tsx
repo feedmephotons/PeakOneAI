@@ -44,13 +44,13 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
       metaKey: true,
       description: 'Open command palette',
       icon: <Command className="w-4 h-4" />,
-      action: () => setIsSearchOpen(true)
+      action: () => setIsSearchOpen(prev => !prev)
     },
     {
       key: '/',
       description: 'Focus search',
       icon: <Search className="w-4 h-4" />,
-      action: () => setIsSearchOpen(true)
+      action: () => setIsSearchOpen(prev => !prev)
     },
     {
       key: 'h',
@@ -185,11 +185,10 @@ export const KeyboardShortcutsProvider: React.FC<{ children: React.ReactNode }> 
         target.contentEditable === 'true' ||
         target.isContentEditable
 
-      // Always allow Escape, Cmd/Ctrl+K, and / (command palette triggers)
+      // Always allow Escape, Cmd/Ctrl+K (command palette triggers)
       const isCommandPaletteTrigger =
         e.key === 'Escape' ||
-        (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)) ||
-        (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.shiftKey)
+        (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))
 
       // Block shortcuts inside text inputs unless it is a command palette trigger
       if (isTyping && !isCommandPaletteTrigger) return

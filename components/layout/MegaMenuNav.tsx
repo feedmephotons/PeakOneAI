@@ -6,14 +6,14 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
-  Settings, Brain,
+  Settings, Brain, Terminal, Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/app-store'
 import { CORE_NAV } from '@/config/navigation'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare, Terminal, Activity,
 }
 
 interface MegaMenuNavProps {

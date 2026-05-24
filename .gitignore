@@ -48,3 +48,9 @@ next-env.d.ts
 /app/generated/prisma
 .env.vercel
 .env*.local
+
+# agents
+.agents/
+..agents/
+.playwright-mcp/
+

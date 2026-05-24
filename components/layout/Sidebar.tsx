@@ -6,12 +6,12 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
-  Settings, Brain, ChevronLeft, ChevronRight,
+  Settings, Brain, ChevronLeft, ChevronRight, Terminal, Activity,
 } from 'lucide-react'
 import { CORE_NAV } from '@/config/navigation'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
+  Home, Users, Video, MessageSquare, FolderOpen, CheckSquare, Terminal, Activity,
 }
 
 export default function Sidebar() {

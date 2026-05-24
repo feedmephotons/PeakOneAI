@@ -6,7 +6,7 @@ import {
   Grid3X3, MessageSquare, Video, Phone, Mail,
   CheckSquare, Calendar, FolderOpen, FileText, Briefcase,
   Brain, BarChart3, Zap, LayoutTemplate,
-  Users, Contact, Presentation, X, ArrowRight,
+  Users, Contact, Presentation, X, ArrowRight, Terminal, Activity,
 } from 'lucide-react'
 
 interface AppItem {
@@ -76,6 +76,17 @@ const APP_CATEGORIES: AppCategory[] = [
       { label: 'Workspaces', icon: Users, href: '/teams' },
       { label: 'Contacts', icon: Contact, href: '/contacts' },
       { label: 'Deck Builder', icon: Presentation, href: '/deck' },
+    ],
+  },
+  {
+    label: 'Operations',
+    colorClasses: {
+      bg: 'bg-zinc-50 dark:bg-zinc-900/30',
+      text: 'text-zinc-600 dark:text-zinc-400',
+    },
+    items: [
+      { label: 'DevOps', icon: Terminal, href: '/devops' },
+      { label: 'Diagnostics', icon: Activity, href: '/test' },
     ],
   },
 ]

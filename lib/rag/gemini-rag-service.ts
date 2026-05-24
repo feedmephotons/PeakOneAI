@@ -48,6 +48,7 @@ export interface RAGChunk {
 export interface RAGQueryOptions {
   topK?: number
   similarityThreshold?: number
+  orgId?: string
   filter?: {
     sourceType?: string[]
     tags?: string[]
@@ -73,8 +74,8 @@ class GeminiRAGService {
   /**
    * Get or create RAG corpus for current tenant
    */
-  async getOrCreateCorpus(): Promise<RAGCorpus> {
-    const orgId = tenantContext.getCurrentOrgId()
+  async getOrCreateCorpus(overrideOrgId?: string): Promise<RAGCorpus> {
+    const orgId = overrideOrgId || tenantContext.getCurrentOrgId()
     if (!orgId) throw new Error('No organization context')
 
     const corpusId = `corpus_${orgId}`
@@ -86,10 +87,11 @@ class GeminiRAGService {
     try {
       // In production: Call Vertex AI API to get/create corpus
       // For now: Create mock corpus
+      const orgName = typeof window !== 'undefined' ? (tenantContext.getCurrentOrganization()?.name || 'Organization') : 'Demo Organization';
       const corpus: RAGCorpus = {
         corpusId,
         organizationId: orgId,
-        displayName: `${tenantContext.getCurrentOrganization()?.name} Knowledge Base`,
+        displayName: `${orgName} Knowledge Base`,
         documents: [],
         createdAt: new Date(),
         lastUpdated: new Date(),
@@ -120,7 +122,7 @@ class GeminiRAGService {
       throw new Error('Tenant isolation violation')
     }
 
-    const corpus = await this.getOrCreateCorpus()
+    const corpus = await this.getOrCreateCorpus(orgId)
 
     const document: RAGDocument = {
       ...doc,
@@ -158,10 +160,10 @@ class GeminiRAGService {
    */
   async query(query: string, options: RAGQueryOptions = {}): Promise<RAGQueryResult> {
     const startTime = Date.now()
-    const orgId = tenantContext.getCurrentOrgId()
+    const orgId = options.orgId || tenantContext.getCurrentOrgId()
     if (!orgId) throw new Error('No organization context')
 
-    const corpus = await this.getOrCreateCorpus()
+    const corpus = await this.getOrCreateCorpus(orgId)
 
     try {
       // In production: Call Vertex AI RAG Retrieval API
@@ -177,7 +179,7 @@ class GeminiRAGService {
       const queryTime = Date.now() - startTime
 
       // Mock result for development
-      const mockChunks: RAGChunk[] = this.getMockRelevantChunks(query, options.topK || 5)
+      const mockChunks: RAGChunk[] = this.getMockRelevantChunks(query, options.topK || 5, orgId)
       const mockSources = mockChunks.map(chunk =>
         corpus.documents.find(doc => doc.documentId === chunk.documentId)
       ).filter((doc): doc is RAGDocument => doc !== undefined)
@@ -201,7 +203,7 @@ class GeminiRAGService {
     const orgId = tenantContext.getCurrentOrgId()
     if (!orgId) throw new Error('No organization context')
 
-    const corpus = await this.getOrCreateCorpus()
+    const corpus = await this.getOrCreateCorpus(orgId)
 
     // Verify document belongs to current tenant
     const doc = corpus.documents.find(d => d.documentId === documentId)
@@ -261,7 +263,9 @@ class GeminiRAGService {
    * Get corpus statistics for current tenant
    */
   async getCorpusStats(): Promise<RAGCorpus['stats']> {
-    const corpus = await this.getOrCreateCorpus()
+    const orgId = tenantContext.getCurrentOrgId()
+    if (!orgId) throw new Error('No organization context')
+    const corpus = await this.getOrCreateCorpus(orgId)
     return corpus.stats
   }
 
@@ -273,7 +277,9 @@ class GeminiRAGService {
       throw new Error('Permission denied')
     }
 
-    const corpus = await this.getOrCreateCorpus()
+    const orgId = tenantContext.getCurrentOrgId()
+    if (!orgId) throw new Error('No organization context')
+    const corpus = await this.getOrCreateCorpus(orgId)
 
     // Delete all documents
     for (const doc of corpus.documents) {
@@ -334,9 +340,9 @@ class GeminiRAGService {
     return { success: true }
   }
 
-  private getMockRelevantChunks(query: string, topK: number): RAGChunk[] {
+  private getMockRelevantChunks(query: string, topK: number, overrideOrgId?: string): RAGChunk[] {
     // Mock implementation - returns relevant chunks based on query
-    const orgId = tenantContext.getCurrentOrgId()!
+    const orgId = overrideOrgId || tenantContext.getCurrentOrgId()!
 
     const mockChunks: RAGChunk[] = [
       {

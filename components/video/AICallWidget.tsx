@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Brain, Minimize2, Maximize2, X, Mic, MicOff } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
 import { AudioRecorder, transcribeAudio } from '@/lib/audio-recorder'
+import { createClient } from '@/lib/supabase/client'
 
 interface Transcript {
   id: string
@@ -47,9 +48,24 @@ export default function AICallWidget({
   const [meetingSummary, setMeetingSummary] = useState<string | null>(null)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
 
+  const hasQueue = () => {
+    try {
+      const saved = localStorage.getItem('pending_sync_actions')
+      if (saved) {
+        return JSON.parse(saved).length > 0
+      }
+    } catch {}
+    return false
+  }
+
   const socketRef = useRef<Socket | null>(null)
   const audioRecorderRef = useRef<AudioRecorder | null>(null)
   const transcriptsEndRef = useRef<HTMLDivElement>(null)
+  const transcriptsRef = useRef<Transcript[]>([])
+
+  useEffect(() => {
+    transcriptsRef.current = transcripts
+  }, [transcripts])
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -117,7 +133,7 @@ export default function AICallWidget({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             transcript: transcript.text,
-            context: transcripts.slice(-3).map(t => t.text).join(' ') // Last 3 messages for context
+            context: transcriptsRef.current.slice(-3).map(t => t.text).join(' ') // Last 3 messages for context
           })
         })
 
@@ -244,7 +260,7 @@ export default function AICallWidget({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   transcript: newTranscript.text,
-                  context: transcripts.slice(-3).map(t => t.text).join(' '),
+                  context: transcriptsRef.current.slice(-3).map(t => t.text).join(' '),
                   meetingId // Pass meetingId for demo mode detection
                 })
               })
@@ -323,19 +339,23 @@ export default function AICallWidget({
         setMeetingSummary(data.summary)
 
         // Save meeting to localStorage
-        const savedMeetings = localStorage.getItem('meetings') || '[]'
-        const meetings = JSON.parse(savedMeetings)
-        meetings.push({
-          id: meetingId,
-          title: `Meeting ${meetingId}`,
-          date: new Date().toISOString(),
-          duration: Math.floor((Date.now() - (transcripts[0] ? new Date(transcripts[0].timestamp).getTime() : Date.now())) / 1000),
-          transcripts,
-          summary: data.summary,
-          actionItems,
-          participants: [...new Set(transcripts.map(t => t.speaker))].length
-        })
-        localStorage.setItem('meetings', JSON.stringify(meetings))
+        try {
+          const savedMeetings = localStorage.getItem('meetings') || '[]'
+          const meetings = JSON.parse(savedMeetings)
+          meetings.push({
+            id: meetingId,
+            title: `Meeting ${meetingId}`,
+            date: new Date().toISOString(),
+            duration: Math.floor((Date.now() - (transcripts[0] ? new Date(transcripts[0].timestamp).getTime() : Date.now())) / 1000),
+            transcripts,
+            summary: data.summary,
+            actionItems,
+            participants: [...new Set(transcripts.map(t => t.speaker))].length
+          })
+          localStorage.setItem('meetings', JSON.stringify(meetings))
+        } catch (error) {
+          console.error('[AICallWidget] Error saving meeting to localStorage:', error)
+        }
 
         console.log('[AICallWidget] Meeting summary generated and saved')
       } else {
@@ -514,15 +534,16 @@ export default function AICallWidget({
                         </div>
                       )}
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           try {
-                            // Load existing tasks from localStorage
-                            const savedTasks = localStorage.getItem('tasks')
-                            const tasks = savedTasks ? JSON.parse(savedTasks) : []
+                            const supabase = createClient()
+                            const { data: { session } } = await supabase.auth.getSession()
 
                             // Create new task from action item
-                            const newTask = {
-                              id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            const newTask: any = {
+                              id: session 
+                                ? `temp-task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                                : `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                               title: item.text,
                               description: `From meeting: ${meetingId}`,
                               status: 'TODO',
@@ -536,9 +557,87 @@ export default function AICallWidget({
                               updatedAt: new Date()
                             }
 
+                            if (session) {
+                              try {
+                                if (hasQueue()) {
+                                  throw new Error('Sync queue is active. Appending to queue to maintain FIFO order.')
+                                }
+                                const response = await fetch('/api/tasks/create', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    title: newTask.title,
+                                    description: newTask.description,
+                                    status: newTask.status,
+                                    priority: newTask.priority,
+                                    dueDate: newTask.dueDate,
+                                    tags: newTask.tags,
+                                    assignee: item.assignee,
+                                    deadline: item.deadline,
+                                    meetingId: meetingId
+                                  })
+                                })
+                                if (response.ok) {
+                                  const data = await response.json()
+                                  if (data.task) {
+                                    newTask.id = data.task.id
+                                    newTask.createdAt = new Date(data.task.createdAt)
+                                    newTask.updatedAt = new Date(data.task.updatedAt)
+                                    if (data.task.assignee) {
+                                      newTask.assignee = data.task.assignee
+                                    }
+                                  }
+                                } else {
+                                  throw new Error('Server responded with error status')
+                                }
+                              } catch (apiError) {
+                                console.error('[AICallWidget] Failed to sync task to API, queuing offline action:', apiError)
+                                
+                                const newAction = {
+                                  type: 'CREATE',
+                                  taskId: newTask.id,
+                                  data: {
+                                    title: newTask.title,
+                                    description: newTask.description,
+                                    status: newTask.status,
+                                    priority: newTask.priority,
+                                    dueDate: newTask.dueDate,
+                                    tags: newTask.tags,
+                                    assignee: item.assignee,
+                                    deadline: item.deadline,
+                                    meetingId: meetingId
+                                  },
+                                  timestamp: Date.now()
+                                }
+                                try {
+                                  const savedActions = localStorage.getItem('pending_sync_actions')
+                                  const actions = savedActions ? JSON.parse(savedActions) : []
+                                  actions.push(newAction)
+                                  localStorage.setItem('pending_sync_actions', JSON.stringify(actions))
+                                } catch (e) {
+                                  console.error('[AICallWidget] Error saving action to outbox:', e)
+                                }
+                              }
+                            }
+
+                            // Load existing tasks from localStorage (read after database sync completes)
+                            let tasks = []
+                            try {
+                              const savedTasks = localStorage.getItem('tasks')
+                              tasks = savedTasks ? JSON.parse(savedTasks) : []
+                            } catch (e) {
+                              console.error('[AICallWidget] Error loading tasks from localStorage:', e)
+                            }
+
                             // Add to tasks
                             tasks.push(newTask)
-                            localStorage.setItem('tasks', JSON.stringify(tasks))
+                            try {
+                              localStorage.setItem('tasks', JSON.stringify(tasks))
+                            } catch (e) {
+                              console.error('[AICallWidget] Error saving tasks to localStorage:', e)
+                            }
 
                             // Show success notification
                             console.log('[AICallWidget] Task added to board:', newTask.title)

@@ -9,11 +9,12 @@ import {
 } from 'lucide-react'
 
 interface Message {
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  attachments?: Array<{ name: string; size: number; type: string }>
-  suggestions?: string[]
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  attachments?: Array<{ name: string; size: number; type: string }>;
+  suggestions?: string[];
 }
 
 // Simulated AI responses based on keywords and context
@@ -220,11 +221,22 @@ How would you like me to assist you specifically with this?`,
   }
 }
 
+// Helper to convert File to Base64 (including data prefix)
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = error => reject(error)
+  })
+}
+
 export default function LisaAIPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const [fileError, setFileError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -260,8 +272,21 @@ How can I help you today?`,
 
   const handleFileSelect = (files: FileList | null) => {
     if (files) {
+      setFileError(null)
       const newFiles = Array.from(files)
-      setAttachedFiles(prev => [...prev, ...newFiles])
+      const validFiles: File[] = []
+      
+      for (const file of newFiles) {
+        if (file.size > 4.5 * 1024 * 1024) {
+          setFileError(`File "${file.name}" exceeds the 4.5MB limit. Please upload a smaller file.`)
+          continue
+        }
+        validFiles.push(file)
+      }
+      
+      if (validFiles.length > 0) {
+        setAttachedFiles(prev => [...prev, ...validFiles])
+      }
     }
   }
 
@@ -269,19 +294,48 @@ How can I help you today?`,
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Autogrowing Textarea
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      const newHeight = Math.min(textarea.scrollHeight, 160)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [input])
+
   const sendMessage = async (messageText?: string) => {
     const textToSend = messageText || input
-    if ((!textToSend.trim() && attachedFiles.length === 0)) return
+    if (!textToSend.trim() && attachedFiles.length === 0) return
 
     let messageContent = textToSend
-    const attachments = attachedFiles.map(f => ({
-      name: f.name,
-      size: f.size,
-      type: f.type
-    }))
+    const filesToConvert = [...attachedFiles]
 
-    if (attachedFiles.length > 0) {
-      const fileNames = attachedFiles.map(f => f.name).join(', ')
+    // Empty input and attached files state early
+    setInput('')
+    setAttachedFiles([])
+    setIsTyping(true)
+
+    // Convert attached files to base64
+    let attachments: Array<{ name: string; size: number; type: string; base64: string }> = []
+    try {
+      attachments = await Promise.all(
+        filesToConvert.map(async (file) => {
+          const base64 = await fileToBase64(file)
+          return {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            base64,
+          }
+        })
+      )
+    } catch (err) {
+      console.error('[Lisa] Error converting files to base64:', err)
+    }
+
+    if (filesToConvert.length > 0) {
+      const fileNames = filesToConvert.map(f => f.name).join(', ')
       messageContent = `${textToSend}${textToSend ? '\n\n' : ''}[Attached files: ${fileNames}]`
     }
 
@@ -290,13 +344,12 @@ How can I help you today?`,
       role: 'user',
       content: messageContent,
       timestamp: new Date(),
-      attachments: attachments.length > 0 ? attachments : undefined
+      attachments: attachments.length > 0 ? attachments.map(a => ({ name: a.name, size: a.size, type: a.type })) : undefined
     }
 
     setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setAttachedFiles([])
-    setIsTyping(true)
+
+    const assistantMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
 
     try {
       // Call the real AI API
@@ -308,7 +361,8 @@ How can I help you today?`,
         },
         body: JSON.stringify({
           message: messageContent,
-          useRAG: false
+          useRAG: false,
+          attachments,
         }),
       })
 
@@ -316,28 +370,75 @@ How can I help you today?`,
         throw new Error('Failed to get AI response')
       }
 
+      // Hide typing bubble when streaming starts
+      setIsTyping(false)
+
+      // Add a placeholder assistant message
+      setMessages(prev => [
+        ...prev,
+        {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+        },
+      ])
+
       // Handle streaming response
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
-      let fullResponse = ''
+      let receivedContent = false
+      let lineBuffer = ''
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            if (lineBuffer.trim()) {
+              const line = lineBuffer.trim()
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6)
+                if (data !== '[DONE]') {
+                  try {
+                    const parsed = JSON.parse(data)
+                    if (parsed.type === 'content' && parsed.content) {
+                      receivedContent = true
+                      const contentChunk = parsed.content
+                      setMessages(prev => prev.map(msg => 
+                        msg.id === assistantMsgId ? { ...msg, content: msg.content + contentChunk } : msg
+                      ))
+                    }
+                  } catch {}
+                }
+              }
+            }
+            break
+          }
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
+          const chunk = decoder.decode(value, { stream: true })
+          lineBuffer += chunk
+          const lines = lineBuffer.split('\n')
+          
+          lineBuffer = lines.pop() || ''
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
+            const trimmedLine = line.trim()
+            if (!trimmedLine) continue
+
+            if (trimmedLine.startsWith('data: ')) {
+              const data = trimmedLine.slice(6)
               if (data === '[DONE]') continue
 
               try {
                 const parsed = JSON.parse(data)
                 if (parsed.type === 'content' && parsed.content) {
-                  fullResponse += parsed.content
+                  receivedContent = true
+                  const contentChunk = parsed.content
+
+                  // Progressively update the assistant message in state
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMsgId ? { ...msg, content: msg.content + contentChunk } : msg
+                  ))
                 }
               } catch {
                 // Skip unparseable lines
@@ -347,29 +448,47 @@ How can I help you today?`,
         }
       }
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: fullResponse || 'I apologize, but I was unable to generate a response. Please try again.',
-        timestamp: new Date(),
+      // If we didn't receive any content, put a fallback
+      if (!receivedContent) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMsgId ? { ...msg, content: 'I apologize, but I was unable to generate a response. Please try again.' } : msg
+        ))
       }
-
-      setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('AI chat error:', error)
+      setIsTyping(false)
 
-      // Fallback to simulated response if API fails
+      // Fallback to simulated response if fetch/network fails using setInterval (client-side fallback stream)
       const { response: fallbackResponse, suggestions } = getAIResponse(textToSend)
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: fallbackResponse,
-        timestamp: new Date(),
-        suggestions
-      }
+      // Append assistant message placeholder with suggestions
+      setMessages(prev => [
+        ...prev,
+        {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+          suggestions,
+        },
+      ])
 
-      setMessages(prev => [...prev, assistantMessage])
-    } finally {
-      setIsTyping(false)
+      const words = fallbackResponse.split(' ')
+      let currentWordIndex = 0
+
+      const intervalId = setInterval(() => {
+        if (currentWordIndex >= words.length) {
+          clearInterval(intervalId)
+          return
+        }
+
+        const nextWord = words[currentWordIndex] + (currentWordIndex === words.length - 1 ? '' : ' ')
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMsgId ? { ...msg, content: msg.content + nextWord } : msg
+        ))
+
+        currentWordIndex++
+      }, 50)
     }
   }
 
@@ -399,16 +518,22 @@ How can I help you today?`,
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden relative">
+      {/* Ambient Siri-style glow background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-indigo-400/20 to-purple-400/0 blur-[120px] dark:from-indigo-600/10 dark:to-purple-600/0 animate-pulse" style={{ animationDuration: '8s' }}></div>
+        <div className="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-violet-400/20 to-fuchsia-400/0 blur-[120px] dark:from-violet-600/10 dark:to-fuchsia-600/0 animate-pulse" style={{ animationDuration: '12s' }}></div>
+      </div>
+
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="hidden md:flex w-80 backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-r border-zinc-200/50 dark:border-zinc-800/50 flex flex-col relative z-10">
+        <div className="p-6 border-b border-zinc-200/50 dark:border-zinc-800/50">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lisa AI</h2>
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">Lisa AI</h2>
               <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
                 Online & Ready
@@ -417,8 +542,8 @@ How can I help you today?`,
           </div>
         </div>
 
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h3>
+        <div className="p-4 border-b border-zinc-200/50 dark:border-zinc-800/50">
+          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Quick Actions</h3>
           <div className="space-y-2">
             {quickActions.map((action, index) => {
               const Icon = action.icon
@@ -426,7 +551,7 @@ How can I help you today?`,
                 <button
                   key={index}
                   onClick={() => sendMessage(action.action)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Icon className="w-4 h-4 text-violet-500" />
                   <span>{action.label}</span>
@@ -437,7 +562,7 @@ How can I help you today?`,
         </div>
 
         <div className="flex-1 p-4 overflow-y-auto">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Capabilities</h3>
+          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Capabilities</h3>
           <div className="space-y-3">
             {capabilities.map((capability, index) => {
               const Icon = capability.icon
@@ -447,8 +572,8 @@ How can I help you today?`,
                     <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{capability.title}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{capability.desc}</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">{capability.title}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{capability.desc}</p>
                   </div>
                 </div>
               )
@@ -456,8 +581,8 @@ How can I help you today?`,
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+        <div className="p-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
             <Settings className="w-4 h-4" />
             <span className="text-sm">Settings</span>
           </button>
@@ -465,22 +590,22 @@ How can I help you today?`,
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative z-10 bg-transparent">
         {/* Chat Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-b border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Chat with Lisa</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Your intelligent AI assistant</p>
+              <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Chat with Lisa</h1>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Your intelligent AI assistant</p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
                 <Mic className="w-5 h-5" />
               </button>
-              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
                 <BookOpen className="w-5 h-5" />
               </button>
             </div>
@@ -488,18 +613,18 @@ How can I help you today?`,
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-transparent">
           {messages.map((message, index) => (
-            <div key={index}>
+            <div key={index} className="animate-in">
               <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex max-w-3xl ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                     message.role === 'user'
-                      ? 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-zinc-200 dark:bg-zinc-700'
                       : 'bg-gradient-to-br from-violet-500 to-purple-600'
                   }`}>
                     {message.role === 'user' ? (
-                      <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <User className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
                     ) : (
                       <Bot className="w-4 h-4 text-white" />
                     )}
@@ -508,14 +633,14 @@ How can I help you today?`,
                     <div className={`px-4 py-3 rounded-2xl ${
                       message.role === 'user'
                         ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200'
+                        : 'bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md text-zinc-800 dark:text-zinc-200 shadow-sm'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {message.attachments.map((file, i) => (
+                           {message.attachments.map((file, i) => (
                             <div key={i} className={`flex items-center gap-2 text-xs ${
-                              message.role === 'user' ? 'text-violet-100' : 'text-gray-500 dark:text-gray-400'
+                              message.role === 'user' ? 'text-violet-100' : 'text-zinc-500 dark:text-zinc-400'
                             }`}>
                               {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
                               <span>{file.name}</span>
@@ -525,7 +650,7 @@ How can I help you today?`,
                       )}
                     </div>
                     <p className={`text-xs mt-1 ${
-                      message.role === 'user' ? 'text-gray-500 dark:text-gray-400 text-right' : 'text-gray-400 dark:text-gray-500'
+                      message.role === 'user' ? 'text-zinc-500 dark:text-zinc-400 text-right' : 'text-zinc-400 dark:text-zinc-500'
                     }`}>
                       {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -535,7 +660,7 @@ How can I help you today?`,
                           <button
                             key={i}
                             onClick={() => sendMessage(suggestion)}
-                            className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition"
+                            className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-all duration-200 active:scale-95"
                           >
                             {suggestion}
                           </button>
@@ -554,11 +679,11 @@ How can I help you today?`,
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl">
+                <div className="px-4 py-3 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl backdrop-blur-md shadow-sm">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </div>
                 </div>
               </div>
@@ -569,21 +694,26 @@ How can I help you today?`,
         </div>
 
         {/* Input Area */}
-        <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-t border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4 sticky bottom-0 z-10">
+          {fileError && (
+            <div className="mb-2 text-xs text-red-500 font-medium bg-red-500/10 dark:bg-red-500/5 px-3 py-1.5 rounded-lg border border-red-500/20 animate-in">
+              {fileError}
+            </div>
+          )}
           {/* Attached Files Display */}
           {attachedFiles.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mb-3 flex flex-wrap gap-2 animate-in">
               {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
+                <div key={index} className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
                   {file.type.startsWith('image/') ? (
-                    <ImageIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <ImageIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   ) : (
-                    <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   )}
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{file.name}</span>
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">{file.name}</span>
                   <button
                     onClick={() => removeAttachedFile(index)}
-                    className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
+                    className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -600,9 +730,9 @@ How can I help you today?`,
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask Lisa anything..."
-                className="w-full px-4 py-3 pr-12 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                className="w-full px-4 py-3 pr-12 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-200"
                 rows={1}
-                style={{ minHeight: '48px', maxHeight: '120px' }}
+                style={{ minHeight: '48px' }}
               />
               <input
                 ref={fileInputRef}
@@ -614,7 +744,7 @@ How can I help you today?`,
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute right-3 bottom-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                className="absolute right-3 bottom-3 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors duration-200"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
@@ -622,13 +752,13 @@ How can I help you today?`,
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() && attachedFiles.length === 0}
-              className="p-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/20"
             >
               <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Powered by Google Gemini 3 Pro
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
+            Powered by Google Gemini 2.5 Flash
           </p>
         </div>
       </div>

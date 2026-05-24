@@ -45,17 +45,25 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
     'COMPLETED': 'TODO' as const
   }
 
+  const isTemp = task.id.startsWith('temp-')
+
   const handleDragStart = (e: React.DragEvent) => {
+    if (isTemp) {
+      e.preventDefault()
+      return
+    }
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('taskId', task.id)
   }
 
   return (
     <div
-      draggable
+      draggable={!isTemp}
       onDragStart={handleDragStart}
-      className={`bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border transition-all group relative cursor-move ${
-        isSelected ? 'border-purple-500 ring-2 ring-purple-200 dark:ring-purple-900/50' : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
+      className={`bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border transition-all group relative ${
+        isTemp ? 'animate-pulse opacity-60 cursor-default' : 'cursor-move hover:shadow-md'
+      } ${
+        isSelected ? 'border-purple-500 ring-2 ring-purple-200 dark:ring-purple-900/50' : 'border-gray-200 dark:border-gray-700'
       }`}
     >
       {/* Selection checkbox */}
@@ -64,9 +72,12 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
           <input
             type="checkbox"
             checked={isSelected}
+            disabled={isTemp}
             onChange={() => onToggleSelect(task.id)}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer"
+            className={`w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 focus:ring-2 ${
+              isTemp ? 'cursor-not-allowed' : 'cursor-pointer'
+            }`}
           />
         </div>
       )}
@@ -77,12 +88,21 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
           {task.title}
         </h4>
         <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          {isTemp ? (
+            <div className="flex items-center justify-center text-gray-400 py-1">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          )}
 
           {showMenu && (
             <div className="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-40">
