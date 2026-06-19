@@ -586,22 +586,22 @@ export default function MessagesPage() {
   const emojis = ['😀', '😂', '❤️', '👍', '🎉', '🚀', '💯', '🔥']
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-80 bg-peak-glass border-r border-peak-border flex flex-col">
         {/* Search Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-peak-border">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-peak-dim" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-peak-border text-peak placeholder:text-peak-dim rounded-xl focus:outline-none focus:border-peak-primary/50"
             />
           </div>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-peak-primary hover:bg-peak-primary-600 text-white rounded-xl transition-colors">
             <Plus className="w-4 h-4" />
             <span>New Message</span>
           </button>
@@ -612,7 +612,7 @@ export default function MessagesPage() {
           {/* Pinned */}
           {filteredConversations.some(c => c.isPinned) && (
             <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Pinned</h3>
+              <h3 className="text-xs font-semibold text-peak-muted uppercase tracking-wider">Pinned</h3>
             </div>
           )}
           {filteredConversations.filter(c => c.isPinned).map(conversation => (
@@ -630,10 +630,10 @@ export default function MessagesPage() {
 
           {/* Channels */}
           <div className="px-4 py-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Channels</h3>
+            <h3 className="text-xs font-semibold text-peak-muted uppercase tracking-wider">Channels</h3>
             <button
               onClick={() => setShowChannels(!showChannels)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="text-peak-dim hover:text-peak"
             >
               {showChannels ? '−' : '+'}
             </button>
@@ -653,10 +653,10 @@ export default function MessagesPage() {
 
           {/* Direct Messages */}
           <div className="px-4 py-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Direct Messages</h3>
+            <h3 className="text-xs font-semibold text-peak-muted uppercase tracking-wider">Direct Messages</h3>
             <button
               onClick={() => setShowDirectMessages(!showDirectMessages)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="text-peak-dim hover:text-peak"
             >
               {showDirectMessages ? '−' : '+'}
             </button>
@@ -680,37 +680,37 @@ export default function MessagesPage() {
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full relative">
           {/* Chat Header */}
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="bg-peak-glass border-b border-peak-border px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {selectedConversation.type === 'channel' ? (
-                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                    <Hash className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <div className="w-10 h-10 bg-white/[0.04] border border-peak-border rounded-xl flex items-center justify-center">
+                    <Hash className="w-5 h-5 text-peak-muted" />
                   </div>
                 ) : selectedConversation.type === 'group' ? (
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-semibold">
+                  <div className="w-10 h-10 bg-peak-primary rounded-xl flex items-center justify-center text-white font-semibold">
                     <Users className="w-5 h-5" />
                   </div>
                 ) : (
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className="w-10 h-10 bg-peak-primary rounded-full flex items-center justify-center text-white font-semibold">
                       {selectedConversation.name.charAt(0)}
                     </div>
                     {selectedConversation.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-peak-green rounded-full border-2 border-peak-bg" />
                     )}
                   </div>
                 )}
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-peak">
                       {selectedConversation.type === 'channel' && '#'}{selectedConversation.name}
                     </h2>
-                    <span className="flex items-center gap-0.5 text-gray-400 dark:text-gray-500" title="End-to-end encrypted">
+                    <span className="flex items-center gap-0.5 text-peak-dim" title="End-to-end encrypted">
                       <Lock className="w-3 h-3" />
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-peak-muted">
                     {selectedConversation.type === 'direct' && selectedConversation.isOnline ? 'Active now' :
                      selectedConversation.type === 'channel' ? `${selectedConversation.participants.length} members` :
                      selectedConversation.type === 'group' ? `${selectedConversation.participants.length} members` :
@@ -722,18 +722,18 @@ export default function MessagesPage() {
                 {/* Route call buttons appropriately */}
                 <Link
                   href={`/phone?contact=${encodeURIComponent(selectedConversation.name)}&autoDial=true`}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="p-2 hover:bg-white/[0.04] rounded-lg transition"
                 >
-                  <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Phone className="w-5 h-5 text-peak-muted" />
                 </Link>
                 <Link
                   href={`/video?roomId=${encodeURIComponent(selectedConversation.id)}&startCall=true`}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="p-2 hover:bg-white/[0.04] rounded-lg transition"
                 >
-                  <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Video className="w-5 h-5 text-peak-muted" />
                 </Link>
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-                  <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <button className="p-2 hover:bg-white/[0.04] rounded-lg transition">
+                  <MoreVertical className="w-5 h-5 text-peak-muted" />
                 </button>
               </div>
             </div>
@@ -741,8 +741,8 @@ export default function MessagesPage() {
 
           {/* Reconnect Banner */}
           {offlineActive && (
-            <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2 z-10 shadow-md">
-              <span className="w-2.5 h-2.5 bg-white rounded-full animate-ping" />
+            <div className="bg-peak-amber/15 border-b border-peak-amber/30 text-peak-amber text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2 z-10">
+              <span className="w-2.5 h-2.5 bg-peak-amber rounded-full animate-ping" />
               <span>You are offline. Reconnecting... Messages will be synced when back online.</span>
             </div>
           )}
@@ -758,16 +758,16 @@ export default function MessagesPage() {
               />
             ))}
             {Object.keys(typingUsers).length > 0 && Object.entries(typingUsers).map(([userId, userName]) => (
-              <div key={userId} className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+              <div key={userId} className="flex items-center gap-2 text-peak-muted">
+                <div className="w-8 h-8 bg-peak-primary rounded-full flex items-center justify-center text-white text-xs font-semibold">
                   {userName.charAt(0)}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-400">{userName} is typing...</span>
+                  <span className="text-[10px] text-peak-dim">{userName} is typing...</span>
                   <div className="flex gap-1 mt-1">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 bg-peak-dim rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-peak-dim rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-peak-dim rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -776,17 +776,17 @@ export default function MessagesPage() {
           </div>
 
           {/* Message Input */}
-          <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+          <div className="bg-peak-glass border-t border-peak-border px-6 py-4">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-peak-dim mb-2">
               <Lock className="w-3 h-3" />
               <span>Messages are encrypted</span>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-2 hover:bg-white/[0.04] rounded-lg transition"
               >
-                <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Paperclip className="w-5 h-5 text-peak-muted" />
               </button>
               <input
                 ref={fileInputRef}
@@ -797,9 +797,9 @@ export default function MessagesPage() {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-2 hover:bg-white/[0.04] rounded-lg transition"
               >
-                <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <ImageIcon className="w-5 h-5 text-peak-muted" />
               </button>
               <div className="flex-1 relative">
                 <input
@@ -808,28 +808,28 @@ export default function MessagesPage() {
                   onChange={handleInputChange}
                   onKeyPress={(e) => e.key === 'Enter' && newMessage.length <= 1000 && handleSendMessage()}
                   placeholder="Type a message..."
-                  className={`w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    newMessage.length > 1000 ? 'border-red-500 ring-2 ring-red-500' : ''
+                  className={`w-full px-4 py-2 bg-white/[0.04] border text-peak placeholder:text-peak-dim rounded-xl focus:outline-none focus:border-peak-primary/50 ${
+                    newMessage.length > 1000 ? 'border-peak-red ring-2 ring-peak-red' : 'border-peak-border'
                   }`}
                 />
                 <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <span className={`text-[10px] ${newMessage.length > 1000 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] ${newMessage.length > 1000 ? 'text-peak-red font-bold' : 'text-peak-dim'}`}>
                     {newMessage.length}/1000
                   </span>
                   <button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
+                    className="p-1 hover:bg-white/[0.08] rounded transition"
                   >
-                    <Smile className="w-5 h-5 text-gray-400" />
+                    <Smile className="w-5 h-5 text-peak-dim" />
                   </button>
                 </div>
                 {newMessage.length > 1000 && (
-                  <div className="text-red-500 text-xs mt-1 absolute left-0 top-full">
+                  <div className="text-peak-red text-xs mt-1 absolute left-0 top-full">
                     Message exceeds 1000 character limit
                   </div>
                 )}
                 {showEmojiPicker && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 z-10">
+                  <div className="absolute bottom-full right-0 mb-2 bg-peak-glass border border-peak-border rounded-xl shadow-lg p-2 grid grid-cols-4 gap-1 z-10">
                     {emojis.map(emoji => (
                       <button
                         key={emoji}
@@ -837,7 +837,7 @@ export default function MessagesPage() {
                           setNewMessage(newMessage + emoji)
                           setShowEmojiPicker(false)
                         }}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition text-xl"
+                        className="p-2 hover:bg-white/[0.06] rounded transition text-xl"
                       >
                         {emoji}
                       </button>
@@ -845,13 +845,13 @@ export default function MessagesPage() {
                   </div>
                 )}
               </div>
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-                <Mic className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <button className="p-2 hover:bg-white/[0.04] rounded-lg transition">
+                <Mic className="w-5 h-5 text-peak-muted" />
               </button>
               <button
                 onClick={handleSendMessage}
                 disabled={newMessage.length > 1000}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 bg-peak-primary hover:bg-peak-primary-600 text-white rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
                 <span>Send</span>
@@ -862,13 +862,13 @@ export default function MessagesPage() {
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="w-10 h-10 text-gray-400" />
+            <div className="w-20 h-20 bg-white/[0.04] border border-peak-border rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-10 h-10 text-peak-dim" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold text-peak mb-2">
               Select a conversation
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-peak-muted">
               Choose a conversation from the sidebar to start messaging
             </p>
           </div>
@@ -895,52 +895,52 @@ function ConversationItem({
   return (
     <div
       onClick={onClick}
-      className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition group ${
-        isSelected ? 'bg-gray-100 dark:bg-gray-700' : ''
+      className={`px-4 py-3 hover:bg-white/[0.04] cursor-pointer transition group ${
+        isSelected ? 'bg-white/[0.06]' : ''
       }`}
     >
       <div className="flex items-center gap-3">
         <div className="relative">
           {conversation.type === 'channel' ? (
-            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-              <Hash className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <div className="w-10 h-10 bg-white/[0.04] border border-peak-border rounded-xl flex items-center justify-center">
+              <Hash className="w-5 h-5 text-peak-muted" />
             </div>
           ) : conversation.type === 'group' ? (
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white">
+            <div className="w-10 h-10 bg-peak-primary rounded-xl flex items-center justify-center text-white">
               <Users className="w-5 h-5" />
             </div>
           ) : (
             <>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 bg-peak-primary rounded-full flex items-center justify-center text-white font-semibold">
                 {conversation.name.charAt(0)}
               </div>
               {conversation.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-peak-green rounded-full border-2 border-peak-bg" />
               )}
             </>
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="font-medium text-gray-900 dark:text-white truncate">
+            <span className="font-medium text-peak truncate">
               {conversation.type === 'channel' && '#'}{conversation.name}
             </span>
             <div className="flex items-center gap-1">
-              {conversation.isPinned && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
-              {conversation.isMuted && <BellOff className="w-3 h-3 text-gray-400" />}
+              {conversation.isPinned && <Star className="w-3 h-3 text-peak-amber fill-current" />}
+              {conversation.isMuted && <BellOff className="w-3 h-3 text-peak-dim" />}
               {conversation.lastMessageTime && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-peak-muted">
                   {formatTime(conversation.lastMessageTime)}
                 </span>
               )}
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            <p className="text-sm text-peak-muted truncate">
               {conversation.lastMessage}
             </p>
             {conversation.unreadCount > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs font-medium rounded-full">
+              <span className="ml-2 px-2 py-0.5 bg-peak-primary text-white text-xs font-medium rounded-full">
                 {conversation.unreadCount}
               </span>
             )}
@@ -952,10 +952,10 @@ function ConversationItem({
               e.stopPropagation()
               onPin()
             }}
-            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+            className="p-1 hover:bg-white/[0.08] rounded"
             title={conversation.isPinned ? 'Unpin' : 'Pin'}
           >
-            <Star className={`w-4 h-4 ${conversation.isPinned ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+            <Star className={`w-4 h-4 ${conversation.isPinned ? 'text-peak-amber fill-current' : 'text-peak-dim'}`} />
           </button>
         </div>
       </div>
@@ -976,26 +976,26 @@ function MessageBubble({
   return (
     <div className={`flex items-start gap-3 ${isOwn ? 'justify-end' : ''}`}>
       {!isOwn && showAvatar && (
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+        <div className="w-8 h-8 bg-peak-primary rounded-full flex items-center justify-center text-white text-xs font-semibold">
           {message.senderName.charAt(0)}
         </div>
       )}
       {!isOwn && !showAvatar && <div className="w-8" />}
       <div className={`max-w-md ${isOwn ? 'items-end flex flex-col' : ''}`}>
         {!isOwn && showAvatar && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{message.senderName}</p>
+          <p className="text-xs text-peak-muted mb-1">{message.senderName}</p>
         )}
         {message.type === 'text' ? (
-          <div className={`px-4 py-2 rounded-lg ${
+          <div className={`px-4 py-2 rounded-2xl ${
             isOwn
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+              ? 'bg-peak-primary/20 border border-peak-primary/40 text-peak'
+              : 'bg-white/[0.04] border border-peak-border text-peak'
           }`}>
             <p className="text-sm">{message.content}</p>
             {message.reactions && message.reactions.length > 0 && (
               <div className="flex gap-1 mt-2">
                 {message.reactions.map((reaction, i) => (
-                  <span key={i} className="text-sm bg-white/20 rounded px-1">
+                  <span key={i} className="text-sm bg-white/10 rounded px-1">
                     {reaction.emoji} {reaction.users.length}
                   </span>
                 ))}
@@ -1003,7 +1003,7 @@ function MessageBubble({
             )}
           </div>
         ) : message.type === 'image' ? (
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 max-w-sm">
+          <div className="bg-white/[0.04] rounded-2xl overflow-hidden border border-peak-border max-w-sm">
             {message.fileUrl ? (
               <img
                 src={message.fileUrl}
@@ -1011,34 +1011,34 @@ function MessageBubble({
                 className="max-w-full max-h-60 object-contain"
               />
             ) : (
-              <div className="w-64 h-48 bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                <ImageIcon className="w-12 h-12 text-gray-400" />
+              <div className="w-64 h-48 bg-white/[0.04] flex items-center justify-center">
+                <ImageIcon className="w-12 h-12 text-peak-dim" />
               </div>
             )}
-            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-black/20">
-              <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{message.fileName}</p>
+            <div className="px-3 py-2 border-t border-peak-border bg-white/[0.02]">
+              <p className="text-xs text-peak-muted truncate">{message.fileName}</p>
             </div>
           </div>
         ) : (
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 flex items-center gap-3 border border-gray-200 dark:border-gray-600">
-            <File className="w-8 h-8 text-gray-400" />
+          <div className="bg-white/[0.04] rounded-2xl p-3 flex items-center gap-3 border border-peak-border">
+            <File className="w-8 h-8 text-peak-dim" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs">{message.fileName}</p>
+              <p className="text-sm font-medium text-peak truncate max-w-xs">{message.fileName}</p>
               {message.fileUrl ? (
                 <a
                   href={message.fileUrl}
                   download={message.fileName}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="text-xs text-peak-primary-300 hover:underline"
                 >
                   Download file
                 </a>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">Processing file...</p>
+                <p className="text-xs text-peak-muted">Processing file...</p>
               )}
             </div>
           </div>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+        <p className="text-xs text-peak-muted mt-1 flex items-center gap-2">
           <span>{formatTime(message.timestamp)}</span>
           {message.isEdited && <span>• Edited</span>}
           {isOwn && (

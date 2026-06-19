@@ -19,6 +19,7 @@ import AutomationManager from '@/components/automation/AutomationManager'
 import { automationEngine } from '@/lib/automation'
 import AISuggestionsPanel from '@/components/tasks/AISuggestionsPanel'
 import { createClient } from '@/lib/supabase/client'
+import { GlassPanel, AskLisaBar } from '@/components/peak'
 
 interface SyncAction {
   type: 'CREATE' | 'UPDATE' | 'DELETE'
@@ -85,10 +86,10 @@ export interface Task {
 }
 
 const COLUMNS = [
-  { id: 'TODO', title: 'To Do', color: 'bg-gray-500' },
-  { id: 'IN_PROGRESS', title: 'In Progress', color: 'bg-blue-500' },
-  { id: 'IN_REVIEW', title: 'In Review', color: 'bg-yellow-500' },
-  { id: 'COMPLETED', title: 'Completed', color: 'bg-green-500' },
+  { id: 'TODO', title: 'To Do', color: 'bg-peak-dim' },
+  { id: 'IN_PROGRESS', title: 'In Progress', color: 'bg-peak-primary' },
+  { id: 'IN_REVIEW', title: 'In Review', color: 'bg-peak-amber' },
+  { id: 'COMPLETED', title: 'Completed', color: 'bg-peak-green' },
 ]
 
 export default function TasksPage() {
@@ -958,67 +959,71 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading tasks...</p>
+          <div className="w-12 h-12 border-4 border-peak-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-peak-muted">Loading tasks...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="w-full p-6">
       <div className="w-full">
         {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Task Management
+            <div className="mb-2 flex items-center gap-3">
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak">
+                Tasks
               </h1>
               {syncStatus === 'synced' ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/30 backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-peak-green/12 text-peak-green ring-1 ring-peak-green/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-peak-green animate-pulse"></span>
                   Cloud Synced
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30 backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-peak-amber/12 text-peak-amber ring-1 ring-peak-amber/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-peak-amber"></span>
                   Demo Mode
                 </span>
               )}
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-peak-muted">
               Organize and track your team&apos;s work
             </p>
+          </div>
+
+          <div className="hidden w-72 lg:block">
+            <AskLisaBar placeholder="Ask Lisa about a task…" />
           </div>
         </div>
 
         {/* Controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <GlassPanel className="p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-peak-dim" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search tasks..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                 />
               </div>
             </div>
 
             {/* Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-400" />
+              <Filter className="w-5 h-5 text-peak-dim" />
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                className="px-4 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
               >
                 <option value="all">All Priorities</option>
                 <option value="URGENT">Urgent</option>
@@ -1037,7 +1042,7 @@ export default function TasksPage() {
             {/* Tag Manager */}
             <button
               onClick={() => setIsTagManagerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className="flex items-center gap-2 px-4 py-2 border border-peak-border rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
               title="Manage Tags"
             >
               <Settings className="w-4 h-4" />
@@ -1046,7 +1051,7 @@ export default function TasksPage() {
             {/* Advanced Search */}
             <button
               onClick={() => setIsAdvancedSearchOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className="flex items-center gap-2 px-4 py-2 border border-peak-border rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
               title="Advanced Search"
             >
               <Search className="w-4 h-4" />
@@ -1055,7 +1060,7 @@ export default function TasksPage() {
             {/* Saved Searches */}
             <button
               onClick={() => setIsSavedSearchesOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className="flex items-center gap-2 px-4 py-2 border border-peak-border rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
               title="Saved Searches"
             >
               <Star className="w-4 h-4" />
@@ -1064,7 +1069,7 @@ export default function TasksPage() {
             {/* Automation */}
             <button
               onClick={() => setIsAutomationManagerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
+              className="flex items-center gap-2 px-4 py-2 border border-peak-primary/30 text-peak-primary-300 rounded-lg hover:bg-peak-primary/[0.08] transition"
               title="Automation"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1075,13 +1080,13 @@ export default function TasksPage() {
             {/* Create button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-peak-primary text-white rounded-lg shadow-peak-glow hover:bg-peak-primary-600 transition-colors"
             >
               <Plus className="w-5 h-5" />
               <span>Create Task</span>
             </button>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Main Content with Sidebar Layout */}
         <div className="flex gap-6">
@@ -1104,9 +1109,9 @@ export default function TasksPage() {
 
           {/* Suggestions Sidebar */}
           <div className="hidden xl:block w-80 flex-shrink-0">
-            <div className="sticky top-24 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <GlassPanel className="sticky top-24 p-6">
               <AISuggestionsPanel />
-            </div>
+            </GlassPanel>
           </div>
         </div>
 

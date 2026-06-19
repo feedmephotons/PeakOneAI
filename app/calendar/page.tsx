@@ -5,6 +5,7 @@ import {
   Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users,
   Video, Calendar, Bell, X, Trash2, RefreshCw
 } from 'lucide-react'
+import { GlassPanel, SectionLabel, AskLisaBar } from '@/components/peak'
 
 interface Event {
   id: string
@@ -258,110 +259,115 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 py-6 sm:px-8">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your schedule and appointments</p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {syncMessage && (
-                <div className={`text-xs px-3 py-1.5 rounded-lg border ${
-                  syncStatus === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
-                  syncStatus === 'conflict' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
-                  'bg-red-50 border-red-200 text-red-800'
-                }`} id="calendar-sync-message">
-                  {syncMessage}
-                </div>
-              )}
-              <button
-                onClick={handleSyncCalendar}
-                disabled={syncStatus === 'syncing'}
-                className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                id="calendar-sync-btn"
-              >
-                <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                Sync Calendar
-              </button>
-              <button
-                onClick={goToToday}
-                className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setShowEventModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New Event
-              </button>
-            </div>
+      <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-peak-muted">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-peak-primary/15 text-peak-primary-300">
+              <Calendar className="h-3 w-3" />
+            </span>
+            Schedule
           </div>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak">Calendar</h1>
+          <p className="mt-2 text-sm text-peak-muted">Manage your schedule and appointments</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {syncMessage && (
+            <div className={`text-xs px-3 py-1.5 rounded-lg border ${
+              syncStatus === 'success' ? 'bg-peak-green/12 border-peak-green/25 text-peak-green' :
+              syncStatus === 'conflict' ? 'bg-peak-amber/12 border-peak-amber/25 text-peak-amber' :
+              'bg-peak-red/12 border-peak-red/25 text-peak-red'
+            }`} id="calendar-sync-message">
+              {syncMessage}
+            </div>
+          )}
+          <div className="hidden w-56 xl:block">
+            <AskLisaBar placeholder="Ask Lisa about your schedule…" />
+          </div>
+          <button
+            onClick={handleSyncCalendar}
+            disabled={syncStatus === 'syncing'}
+            className="px-4 py-2 bg-white/[0.04] border border-peak-border rounded-xl hover:bg-white/[0.08] transition-colors text-sm font-medium text-peak flex items-center gap-2 disabled:opacity-60"
+            id="calendar-sync-btn"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+            Sync Calendar
+          </button>
+          <button
+            onClick={goToToday}
+            className="px-4 py-2 bg-white/[0.04] border border-peak-border rounded-xl hover:bg-white/[0.08] transition-colors text-sm font-medium text-peak"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setShowEventModal(true)}
+            className="px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 shadow-peak-glow transition text-sm font-semibold flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Event
+          </button>
         </div>
       </div>
 
-      <div className="w-full px-6 py-6">
+      <div>
         {/* Calendar Controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <GlassPanel className="p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigateMonth('prev')}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/[0.06] rounded-lg transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <ChevronLeft className="w-5 h-5 text-peak-muted" />
               </button>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-peak">
                 {monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
               </h2>
               <button
                 onClick={() => navigateMonth('next')}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/[0.06] rounded-lg transition-colors"
               >
-                <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <ChevronRight className="w-5 h-5 text-peak-muted" />
               </button>
             </div>
 
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center gap-1 rounded-xl border border-peak-border bg-white/[0.02] p-1">
               <button
                 onClick={() => setViewMode('month')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                  viewMode === 'month' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  viewMode === 'month' ? 'bg-peak-primary/20 text-peak-primary-300' : 'text-peak-muted hover:text-peak'
                 }`}
               >
                 Month
               </button>
               <button
                 onClick={() => setViewMode('week')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                  viewMode === 'week' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  viewMode === 'week' ? 'bg-peak-primary/20 text-peak-primary-300' : 'text-peak-muted hover:text-peak'
                 }`}
               >
                 Week
               </button>
               <button
                 onClick={() => setViewMode('day')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                  viewMode === 'day' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  viewMode === 'day' ? 'bg-peak-primary/20 text-peak-primary-300' : 'text-peak-muted hover:text-peak'
                 }`}
               >
                 Day
               </button>
             </div>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Month View */}
         {viewMode === 'month' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-7 bg-white/[0.02] border-b border-peak-border">
               {dayNamesShort.map((day) => (
-                <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div key={day} className="p-3 text-center text-xs font-medium uppercase tracking-wider text-peak-muted">
                   {day}
                 </div>
               ))}
@@ -376,17 +382,17 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={index}
-                    className={`min-h-[100px] p-2 border-r border-b border-gray-200 dark:border-gray-700 ${
-                      !isCurrentMonth ? 'bg-gray-50 dark:bg-gray-900' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    } ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''} transition-colors cursor-pointer`}
+                    className={`min-h-[100px] p-2 border-r border-b border-peak-border ${
+                      !isCurrentMonth ? 'bg-white/[0.01]' : 'hover:bg-white/[0.04]'
+                    } ${isToday ? 'bg-peak-primary/10' : ''} transition-colors cursor-pointer`}
                     onClick={() => {
                       setSelectedDate(date)
                       if (viewMode === 'month') setViewMode('day')
                     }}
                   >
                     <div className={`text-sm font-medium mb-1 ${
-                      !isCurrentMonth ? 'text-gray-400 dark:text-gray-600' : 'text-gray-900 dark:text-white'
-                    } ${isToday ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                      !isCurrentMonth ? 'text-peak-dim' : 'text-peak'
+                    } ${isToday ? 'flex h-6 w-6 items-center justify-center rounded-full bg-peak-primary text-white' : ''}`}>
                       {date.getDate()}
                     </div>
 
@@ -399,14 +405,14 @@ export default function CalendarPage() {
                             setSelectedEvent(event)
                             setShowEventDetails(true)
                           }}
-                          className={`text-xs px-1.5 py-0.5 rounded ${event.color} text-white truncate cursor-pointer hover:opacity-80 flex items-center gap-1`}
+                          className="text-xs px-1.5 py-0.5 rounded-md bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/20 truncate cursor-pointer hover:bg-peak-primary/25 flex items-center gap-1"
                         >
                           {typeIcons[event.type]}
                           {event.isAllDay ? event.title : `${event.startTime} ${event.title}`}
                         </div>
                       ))}
                       {dayEvents.length > 3 && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-peak-muted">
                           +{dayEvents.length - 3} more
                         </div>
                       )}
@@ -420,9 +426,9 @@ export default function CalendarPage() {
 
         {/* Week View */}
         {viewMode === 'week' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="grid grid-cols-8 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-              <div className="p-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-8 bg-white/[0.02] border-b border-peak-border">
+              <div className="p-3 text-center text-xs font-medium uppercase tracking-wider text-peak-muted border-r border-peak-border">
                 Time
               </div>
               {weekDays.map((date, index) => {
@@ -431,20 +437,20 @@ export default function CalendarPage() {
                   <div
                     key={index}
                     className={`p-3 text-center text-sm font-medium ${
-                      isToday ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'
+                      isToday ? 'text-peak-primary-300 bg-peak-primary/10' : 'text-peak-muted'
                     }`}
                   >
                     <div>{dayNamesShort[date.getDay()]}</div>
-                    <div className="text-lg font-semibold">{date.getDate()}</div>
+                    <div className={`text-lg font-semibold ${isToday ? 'text-peak-primary-300' : 'text-peak'}`}>{date.getDate()}</div>
                   </div>
                 )
               })}
             </div>
 
-            <div className="overflow-y-auto max-h-[600px]">
+            <div className="peak-scrollbar overflow-y-auto max-h-[600px]">
               {timeSlots.map((time) => (
-                <div key={time} className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700">
-                  <div className="p-2 text-xs text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-600">
+                <div key={time} className="grid grid-cols-8 border-b border-peak-border">
+                  <div className="p-2 text-xs text-peak-dim border-r border-peak-border">
                     {time}
                   </div>
                   {weekDays.map((date, index) => {
@@ -452,7 +458,7 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={index}
-                        className="p-1 min-h-[50px] border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        className="p-1 min-h-[50px] border-r border-peak-border hover:bg-white/[0.04] transition-colors"
                       >
                         {dayEvents.map((event) => (
                           <div
@@ -461,7 +467,7 @@ export default function CalendarPage() {
                               setSelectedEvent(event)
                               setShowEventDetails(true)
                             }}
-                            className={`text-xs px-1 py-0.5 rounded ${event.color} text-white truncate cursor-pointer hover:opacity-80`}
+                            className="text-xs px-1 py-0.5 rounded-md bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/20 truncate cursor-pointer hover:bg-peak-primary/25"
                           >
                             {event.title}
                           </div>
@@ -477,22 +483,22 @@ export default function CalendarPage() {
 
         {/* Day View */}
         {viewMode === 'day' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl overflow-hidden">
+            <div className="p-4 bg-white/[0.02] border-b border-peak-border">
+              <h3 className="text-lg font-semibold text-peak">
                 {dayNames[selectedDate.getDay()]}, {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
               </h3>
             </div>
 
-            <div className="overflow-y-auto max-h-[600px]">
+            <div className="peak-scrollbar overflow-y-auto max-h-[600px]">
               {timeSlots.map((time) => {
                 const dayEvents = getEventsForDate(selectedDate).filter(e => e.startTime?.startsWith(time.slice(0, 2)))
                 return (
-                  <div key={time} className="flex border-b border-gray-200 dark:border-gray-700">
-                    <div className="w-20 p-3 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-600">
+                  <div key={time} className="flex border-b border-peak-border">
+                    <div className="w-20 p-3 text-sm text-peak-dim border-r border-peak-border">
                       {time}
                     </div>
-                    <div className="flex-1 p-3 min-h-[60px] hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <div className="flex-1 p-3 min-h-[60px] hover:bg-white/[0.04] transition-colors">
                       {dayEvents.map((event) => (
                         <div
                           key={event.id}
@@ -500,16 +506,16 @@ export default function CalendarPage() {
                             setSelectedEvent(event)
                             setShowEventDetails(true)
                           }}
-                          className={`mb-2 p-2 rounded ${event.color} text-white cursor-pointer hover:opacity-80`}
+                          className="mb-2 p-2 rounded-xl bg-peak-primary/15 text-peak ring-1 ring-peak-primary/25 cursor-pointer hover:bg-peak-primary/25 transition-colors"
                         >
-                          <div className="font-medium text-sm flex items-center gap-2">
+                          <div className="font-medium text-sm flex items-center gap-2 text-peak-primary-300">
                             {typeIcons[event.type]}
                             {event.title}
                           </div>
                           {event.description && (
-                            <p className="text-xs mt-1 opacity-90">{event.description}</p>
+                            <p className="text-xs mt-1 text-peak-muted">{event.description}</p>
                           )}
-                          <div className="flex items-center gap-4 mt-2 text-xs">
+                          <div className="flex items-center gap-4 mt-2 text-xs text-peak-muted">
                             <span>{event.startTime} - {event.endTime}</span>
                             {event.location && (
                               <span className="flex items-center gap-1">
@@ -535,9 +541,9 @@ export default function CalendarPage() {
         )}
 
         {/* Upcoming Events */}
-        <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Events</h3>
-          <div className="space-y-3">
+        <GlassPanel className="mt-6 p-6">
+          <SectionLabel className="mb-4">Upcoming Events</SectionLabel>
+          <div className="space-y-2">
             {events
               .filter(e => new Date(e.date) >= new Date())
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -549,20 +555,20 @@ export default function CalendarPage() {
                     setSelectedEvent(event)
                     setShowEventDetails(true)
                   }}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 hover:bg-white/[0.04] rounded-xl transition-colors cursor-pointer"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-2 h-12 ${event.color} rounded-full`}></div>
+                    <div className="w-1 h-12 bg-peak-primary rounded-full"></div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                        {typeIcons[event.type]}
+                      <p className="font-medium text-peak flex items-center gap-2">
+                        <span className="text-peak-primary-300">{typeIcons[event.type]}</span>
                         {event.title}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-peak-muted">
                         {event.date} • {event.isAllDay ? 'All day' : `${event.startTime} - ${event.endTime}`}
                       </p>
                       {event.participants && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-peak-dim mt-1">
                           With: {event.participants.join(', ')}
                         </p>
                       )}
@@ -571,15 +577,15 @@ export default function CalendarPage() {
                 </div>
               ))}
           </div>
-        </div>
+        </GlassPanel>
       </div>
 
       {/* Create/Edit Event Modal */}
       {showEventModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-peak-panel border border-peak-border rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold tracking-tight text-peak">
                 Create New Event
               </h2>
               <button
@@ -587,7 +593,7 @@ export default function CalendarPage() {
                   setShowEventModal(false)
                   setShowDoubleBookingWarning(false)
                 }}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-peak-dim hover:text-peak transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -595,30 +601,30 @@ export default function CalendarPage() {
 
             <div className="space-y-4">
               {showDoubleBookingWarning && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-lg text-xs" id="calendar-double-booking-warning">
+                <div className="p-3 bg-peak-amber/12 border border-peak-amber/25 text-peak-amber rounded-lg text-xs" id="calendar-double-booking-warning">
                   ⚠️ This slot is already booked. Click &quot;Create Event&quot; again to double book, or choose another time.
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Title
                 </label>
                 <input
                   type="text"
                   value={newEvent.title}
                   onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Type
                 </label>
                 <select
                   value={newEvent.type}
                   onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as Event['type'], color: typeColors[e.target.value as Event['type']] })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
                 >
                   <option value="meeting">Meeting</option>
                   <option value="task">Task</option>
@@ -628,14 +634,14 @@ export default function CalendarPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Date
                 </label>
                 <input
                   type="date"
                   value={newEvent.date}
                   onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
                 />
               </div>
 
@@ -645,60 +651,60 @@ export default function CalendarPage() {
                     type="checkbox"
                     checked={newEvent.isAllDay}
                     onChange={(e) => setNewEvent({ ...newEvent, isAllDay: e.target.checked })}
-                    className="mr-2"
+                    className="mr-2 accent-peak-primary"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">All day</span>
+                  <span className="text-sm text-peak-muted">All day</span>
                 </label>
               </div>
 
               {!newEvent.isAllDay && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-peak-muted mb-1">
                       Start Time
                     </label>
                     <input
                       type="time"
                       value={newEvent.startTime}
                       onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-peak-muted mb-1">
                       End Time
                     </label>
                     <input
                       type="time"
                       value={newEvent.endTime}
                       onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Location (Optional)
                 </label>
                 <input
                   type="text"
                   value={newEvent.location}
                   onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                   placeholder="Add location or meeting link"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Description (Optional)
                 </label>
                 <textarea
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                   rows={3}
                   placeholder="Add notes or description"
                 />
@@ -711,13 +717,13 @@ export default function CalendarPage() {
                   setShowEventModal(false)
                   setShowDoubleBookingWarning(false)
                 }}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition"
+                className="px-4 py-2 text-peak-muted hover:text-peak transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateEvent}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="px-6 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 shadow-peak-glow transition font-semibold"
               >
                 Create Event
               </button>
@@ -728,51 +734,51 @@ export default function CalendarPage() {
 
       {/* Event Details Modal */}
       {showEventDetails && selectedEvent && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-peak-panel border border-peak-border rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                {typeIcons[selectedEvent.type]}
+              <h2 className="text-xl font-semibold tracking-tight text-peak flex items-center gap-2">
+                <span className="text-peak-primary-300">{typeIcons[selectedEvent.type]}</span>
                 {selectedEvent.title}
               </h2>
               <button
                 onClick={() => setShowEventDetails(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-peak-dim hover:text-peak transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                <Calendar className="w-4 h-4" />
+              <div className="flex items-center gap-3 text-sm text-peak-muted">
+                <Calendar className="w-4 h-4 text-peak-dim" />
                 <span>{selectedEvent.date}</span>
               </div>
 
               {!selectedEvent.isAllDay && (
-                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-sm text-peak-muted">
+                  <Clock className="w-4 h-4 text-peak-dim" />
                   <span>{selectedEvent.startTime} - {selectedEvent.endTime}</span>
                 </div>
               )}
 
               {selectedEvent.location && (
-                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <MapPin className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-sm text-peak-muted">
+                  <MapPin className="w-4 h-4 text-peak-dim" />
                   <span>{selectedEvent.location}</span>
                 </div>
               )}
 
               {selectedEvent.participants && selectedEvent.participants.length > 0 && (
-                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-sm text-peak-muted">
+                  <Users className="w-4 h-4 text-peak-dim" />
                   <span>{selectedEvent.participants.join(', ')}</span>
                 </div>
               )}
 
               {selectedEvent.description && (
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="pt-3 border-t border-peak-border">
+                  <p className="text-sm text-peak">
                     {selectedEvent.description}
                   </p>
                 </div>
@@ -782,13 +788,13 @@ export default function CalendarPage() {
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
                 onClick={() => handleDeleteEvent(selectedEvent.id)}
-                className="px-4 py-2 text-red-600 hover:text-red-700 transition"
+                className="px-4 py-2 text-peak-red hover:bg-peak-red/10 rounded-lg transition"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowEventDetails(false)}
-                className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                className="px-6 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-xl hover:bg-white/[0.08] transition"
               >
                 Close
               </button>

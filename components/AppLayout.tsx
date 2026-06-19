@@ -16,7 +16,11 @@ import { useAppStore } from '@/stores/app-store'
 
 // Routes that render inside the navy "operating system" shell (Phase 2 redesign).
 // Existing routes keep the legacy top-nav until their page agent migrates them.
-const PEAK_OS_ROUTES = ['/', '/missions', '/memory', '/people', '/lisa']
+const PEAK_OS_ROUTES = [
+  '/', '/missions', '/memory', '/people', '/lisa',
+  '/home', '/tasks', '/calendar', '/messages', '/calls',
+  '/files', '/analytics', '/automation', '/settings/integrations',
+]
 
 function isPeakOsRoute(pathname: string | null): boolean {
   if (!pathname) return false

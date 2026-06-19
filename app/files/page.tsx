@@ -13,6 +13,9 @@ import {
 } from 'lucide-react'
 import FileContextPanel from '@/components/files/FileContextPanel'
 
+// Pinned "now" for deterministic relative-time math (avoids hydration #418).
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
 interface FileItem {
   id: string
   name: string
@@ -351,7 +354,7 @@ export default function FilesPage() {
         matchesFilter = file.starred === true
         break
       case 'recent':
-        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000)
+        const threeDaysAgo = PEAK_NOW - (3 * 24 * 60 * 60 * 1000)
         matchesFilter = file.modifiedAt.getTime() > threeDaysAgo
         break
       case 'shared':
@@ -390,16 +393,16 @@ export default function FilesPage() {
   const storagePercent = (usedStorage / totalStorage) * 100
 
   return (
-    <div {...getRootProps()} className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div {...getRootProps()} className="text-peak">
       <input {...getInputProps()} />
 
       {/* Upload overlay */}
       {isDragActive && (
-        <div className="fixed inset-0 z-50 bg-blue-500/20 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 text-center">
-            <Upload className="w-16 h-16 mx-auto mb-4 text-blue-500 animate-bounce" />
-            <p className="text-xl font-semibold text-gray-900 dark:text-white">Drop files to upload</p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Files will be uploaded to current folder</p>
+        <div className="fixed inset-0 z-50 bg-peak-primary/20 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl p-8 text-center">
+            <Upload className="w-16 h-16 mx-auto mb-4 text-peak-primary-300 animate-bounce" />
+            <p className="text-xl font-semibold text-peak">Drop files to upload</p>
+            <p className="text-peak-muted mt-2">Files will be uploaded to current folder</p>
           </div>
         </div>
       )}
@@ -412,7 +415,7 @@ export default function FilesPage() {
             onClick={() => setContextMenu(null)}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 w-48"
+            className="fixed z-50 bg-peak-glass border border-peak-border rounded-xl shadow-xl py-2 w-48 backdrop-blur-xl"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
@@ -420,7 +423,7 @@ export default function FilesPage() {
                 setPreviewFile(contextMenu.file)
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Eye className="w-4 h-4" /> Open
             </button>
@@ -429,7 +432,7 @@ export default function FilesPage() {
                 handleRename(contextMenu.file.id)
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Edit3 className="w-4 h-4" /> Rename
             </button>
@@ -438,7 +441,7 @@ export default function FilesPage() {
                 handleShare(contextMenu.file)
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Share2 className="w-4 h-4" /> Share
             </button>
@@ -447,7 +450,7 @@ export default function FilesPage() {
                 handleStarToggle(contextMenu.file.id)
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Star className="w-4 h-4" /> {contextMenu.file.starred ? 'Unstar' : 'Star'}
             </button>
@@ -456,7 +459,7 @@ export default function FilesPage() {
                 navigator.clipboard.writeText(contextMenu.file.name)
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Copy className="w-4 h-4" /> Copy
             </button>
@@ -470,7 +473,7 @@ export default function FilesPage() {
                 setContextMenu(null)
                 notifications.general.success('File moved successfully')
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Move className="w-4 h-4" /> Move
             </button>
@@ -484,17 +487,17 @@ export default function FilesPage() {
                 }
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
               <Download className="w-4 h-4" /> Download
             </button>
-            <hr className="my-2 border-gray-200 dark:border-gray-700" />
+            <hr className="my-2 border-peak-border" />
             <button
               onClick={() => {
                 handleDelete([contextMenu.file.id])
                 setContextMenu(null)
               }}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-peak-red hover:bg-peak-red/10 flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" /> Delete
             </button>
@@ -504,8 +507,8 @@ export default function FilesPage() {
 
       <div className="flex h-full">
         {/* Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
-          <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition mb-6 cursor-pointer">
+        <div className="w-64 bg-peak-glass border-r border-peak-border p-4">
+          <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition mb-6 cursor-pointer shadow-peak-glow">
             <Upload className="w-4 h-4" />
             <span>Upload Files</span>
             <input
@@ -528,8 +531,8 @@ export default function FilesPage() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
                 filterType === 'all' && !currentFolderId
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak'
               }`}
             >
               <Home className="w-4 h-4" />
@@ -539,8 +542,8 @@ export default function FilesPage() {
               onClick={() => setFilterType('starred')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
                 filterType === 'starred'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -550,8 +553,8 @@ export default function FilesPage() {
               onClick={() => setFilterType('recent')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
                 filterType === 'recent'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak'
               }`}
             >
               <Clock className="w-4 h-4" />
@@ -561,8 +564,8 @@ export default function FilesPage() {
               onClick={() => setFilterType('shared')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
                 filterType === 'shared'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak'
               }`}
             >
               <Share2 className="w-4 h-4" />
@@ -572,8 +575,8 @@ export default function FilesPage() {
               onClick={() => setFilterType('trash')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
                 filterType === 'trash'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak'
               }`}
             >
               <Trash2 className="w-4 h-4" />
@@ -582,18 +585,18 @@ export default function FilesPage() {
           </nav>
 
           {/* Storage indicator */}
-          <div className="mt-8 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <div className="mt-8 p-3 bg-white/[0.04] border border-peak-border rounded-xl">
             <div className="flex items-center gap-2 mb-2">
-              <HardDrive className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Storage</span>
+              <HardDrive className="w-4 h-4 text-peak-muted" />
+              <span className="text-xs font-medium text-peak-muted">Storage</span>
             </div>
-            <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2 mb-2">
+            <div className="w-full bg-white/[0.06] rounded-full h-2 mb-2">
               <div
-                className="bg-indigo-600 h-2 rounded-full transition-all"
+                className="bg-peak-primary h-2 rounded-full transition-all"
                 style={{ width: `${Math.min(storagePercent, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-peak-muted">
               {formatFileSize(usedStorage)} of {formatFileSize(totalStorage)} used
             </p>
           </div>
@@ -604,7 +607,7 @@ export default function FilesPage() {
           {/* Main content */}
           <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="bg-peak-glass border-b border-peak-border px-6 py-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <button
@@ -612,16 +615,16 @@ export default function FilesPage() {
                     setCurrentFolderId(null)
                     setFilterType('all')
                   }}
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="text-peak-muted hover:text-peak"
                 >
                   <Home className="w-4 h-4" />
                 </button>
                 {breadcrumbs.map((crumb) => (
                   <React.Fragment key={crumb.id}>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <ChevronRight className="w-4 h-4 text-peak-dim" />
                     <button
                       onClick={() => setCurrentFolderId(crumb.id)}
-                      className="text-gray-900 dark:text-white font-medium hover:text-blue-600 dark:hover:text-blue-400"
+                      className="text-peak font-medium hover:text-peak-primary-300"
                     >
                       {crumb.name}
                     </button>
@@ -632,18 +635,18 @@ export default function FilesPage() {
               <div className="flex items-center gap-2">
                 {selectedFiles.size > 0 && (
                   <>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-peak-muted">
                       {selectedFiles.size} selected
                     </span>
                     <button
                       onClick={() => handleDelete(Array.from(selectedFiles))}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                      className="p-2 text-peak-red hover:bg-peak-red/10 rounded-lg transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setSelectedFiles(new Set())}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                      className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -651,14 +654,14 @@ export default function FilesPage() {
                 )}
                 <button
                   onClick={() => setIsCreateFolderOpen(true)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition"
                   title="New folder"
                 >
                   <FolderPlus className="w-4 h-4" />
                 </button>
                 <div className="relative">
                   <button
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition flex items-center gap-1"
+                    className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition flex items-center gap-1"
                   >
                     <span className="text-sm">{sortBy === 'name' ? 'Name' : sortBy === 'modified' ? 'Modified' : 'Size'}</span>
                     <ChevronDown className="w-3 h-3" />
@@ -666,7 +669,7 @@ export default function FilesPage() {
                 </div>
                 <button
                   onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition"
                   title={viewMode === 'grid' ? 'List view' : 'Grid view'}
                 >
                   {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
@@ -676,13 +679,13 @@ export default function FilesPage() {
 
             {/* Search bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-peak-dim" />
               <input
                 type="text"
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-peak-border rounded-xl text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
               />
             </div>
           </div>
@@ -692,15 +695,15 @@ export default function FilesPage() {
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">Loading files...</p>
+                  <div className="w-12 h-12 border-4 border-peak-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-peak-muted">Loading files...</p>
                 </div>
               </div>
             ) : filteredFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
-                <FolderOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-2">No files found</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">
+                <FolderOpen className="w-16 h-16 text-peak-dim mb-4" />
+                <p className="text-peak-muted mb-2">No files found</p>
+                <p className="text-sm text-peak-dim">
                   Drop files here or click upload to get started
                 </p>
               </div>
@@ -712,19 +715,19 @@ export default function FilesPage() {
                     onClick={(e) => handleFileClick(file, e)}
                     onContextMenu={(e) => handleContextMenu(e, file)}
                     className={`group cursor-pointer ${
-                      selectedFiles.has(file.id) ? 'ring-2 ring-blue-500 rounded-lg' : ''
+                      selectedFiles.has(file.id) ? 'ring-2 ring-peak-primary rounded-2xl' : ''
                     }`}
                   >
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 hover:shadow-md transition border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                    <div className="bg-peak-glass rounded-2xl p-3 hover:bg-white/[0.04] transition border border-peak-border flex items-center gap-3">
                       {/* Icon/Thumbnail */}
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        file.type === 'folder' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700'
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        file.type === 'folder' ? 'bg-peak-primary/15' : 'bg-white/[0.04]'
                       }`}>
                         {file.thumbnailUrl ? (
-                          <Image src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded-lg" width={40} height={40} />
+                          <Image src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover rounded-xl" width={40} height={40} />
                         ) : (
                           <div className={`${
-                            file.type === 'folder' ? 'text-blue-500' : 'text-gray-400'
+                            file.type === 'folder' ? 'text-peak-primary-300' : 'text-peak-dim'
                           }`}>
                             {getFileIcon(file)}
                           </div>
@@ -733,10 +736,10 @@ export default function FilesPage() {
 
                       {/* File Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={file.name}>
+                        <p className="text-sm font-medium text-peak truncate" title={file.name}>
                           {file.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-peak-muted">
                           {file.type === 'folder' ? 'Folder' : formatFileSize(file.size)}
                           {file.sharedWith && file.sharedWith.length > 0 && (
                             <span className="ml-2 inline-flex items-center gap-1">
@@ -750,10 +753,10 @@ export default function FilesPage() {
                       {/* Status Icons */}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {file.starred && (
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                          <Star className="w-4 h-4 text-peak-amber fill-current" />
                         )}
                         {file.isPublic && (
-                          <Link2 className="w-4 h-4 text-blue-500" />
+                          <Link2 className="w-4 h-4 text-peak-primary-300" />
                         )}
                       </div>
                     </div>
@@ -763,8 +766,8 @@ export default function FilesPage() {
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <tr className="border-b border-peak-border">
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">
                       <input
                         type="checkbox"
                         onChange={(e) => {
@@ -775,13 +778,14 @@ export default function FilesPage() {
                           }
                         }}
                         checked={selectedFiles.size === filteredFiles.length && filteredFiles.length > 0}
+                        className="accent-peak-primary"
                       />
                     </th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Name</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Modified</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Size</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Shared</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Actions</th>
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">Name</th>
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">Modified</th>
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">Size</th>
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">Shared</th>
+                    <th className="text-left py-2 px-4 text-xs font-medium uppercase tracking-wider text-peak-muted">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -790,8 +794,8 @@ export default function FilesPage() {
                       key={file.id}
                       onClick={(e) => handleFileClick(file, e)}
                       onContextMenu={(e) => handleContextMenu(e, file)}
-                      className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
-                        selectedFiles.has(file.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      className={`border-b border-peak-border hover:bg-white/[0.04] cursor-pointer ${
+                        selectedFiles.has(file.id) ? 'bg-peak-primary/10' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
@@ -800,43 +804,44 @@ export default function FilesPage() {
                           checked={selectedFiles.has(file.id)}
                           onChange={() => {}}
                           onClick={(e) => e.stopPropagation()}
+                          className="accent-peak-primary"
                         />
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className={`${file.type === 'folder' ? 'text-blue-500' : 'text-gray-400'}`}>
+                          <div className={`${file.type === 'folder' ? 'text-peak-primary-300' : 'text-peak-dim'}`}>
                             {getFileIcon(file)}
                           </div>
                           <div>
-                            <p className="text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                            <p className="text-sm text-peak flex items-center gap-2">
                               {file.name}
-                              {file.starred && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
-                              {file.isPublic && <Link2 className="w-3 h-3 text-blue-500" />}
+                              {file.starred && <Star className="w-3 h-3 text-peak-amber fill-current" />}
+                              {file.isPublic && <Link2 className="w-3 h-3 text-peak-primary-300" />}
                             </p>
                             {file.aiSummary && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              <p className="text-xs text-peak-muted mt-0.5">
                                 {file.aiSummary.substring(0, 50)}...
                               </p>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                        {file.modifiedAt.toLocaleDateString()}
+                      <td className="py-3 px-4 text-sm text-peak-muted">
+                        {file.modifiedAt.toLocaleDateString('en-US', { timeZone: 'UTC' })}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      <td className="py-3 px-4 text-sm text-peak-muted">
                         {file.type === 'folder' ? '-' : formatFileSize(file.size)}
                       </td>
                       <td className="py-3 px-4">
                         {file.sharedWith && file.sharedWith.length > 0 ? (
                           <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                            <Users className="w-4 h-4 text-peak-dim" />
+                            <span className="text-sm text-peak-muted">
                               {file.sharedWith.length}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-sm text-peak-dim">-</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -846,27 +851,27 @@ export default function FilesPage() {
                               e.stopPropagation()
                               handleShare(file)
                             }}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            className="p-1 hover:bg-white/[0.04] rounded"
                           >
-                            <Share2 className="w-4 h-4 text-gray-400" />
+                            <Share2 className="w-4 h-4 text-peak-dim" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleStarToggle(file.id)
                             }}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            className="p-1 hover:bg-white/[0.04] rounded"
                           >
-                            <Star className={`w-4 h-4 ${file.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                            <Star className={`w-4 h-4 ${file.starred ? 'text-peak-amber fill-current' : 'text-peak-dim'}`} />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleContextMenu(e, file)
                             }}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            className="p-1 hover:bg-white/[0.04] rounded"
                           >
-                            <MoreVertical className="w-4 h-4 text-gray-400" />
+                            <MoreVertical className="w-4 h-4 text-peak-dim" />
                           </button>
                         </div>
                       </td>
@@ -878,17 +883,17 @@ export default function FilesPage() {
 
             {/* Upload progress */}
             {Object.keys(uploadProgress).length > 0 && (
-              <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-80 border border-gray-200 dark:border-gray-700">
-                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Uploading files</h3>
+              <div className="fixed bottom-4 right-4 bg-peak-glass rounded-2xl shadow-xl p-4 w-80 border border-peak-border backdrop-blur-xl">
+                <h3 className="font-medium text-peak mb-3">Uploading files</h3>
                 {Object.entries(uploadProgress).map(([id, progress]) => (
                   <div key={id} className="mb-2">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-gray-600 dark:text-gray-400">File {id.substring(0, 8)}...</span>
-                      <span className="text-gray-600 dark:text-gray-400">{progress}%</span>
+                      <span className="text-peak-muted">File {id.substring(0, 8)}...</span>
+                      <span className="text-peak-muted">{progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="w-full bg-white/[0.06] rounded-full h-2">
                       <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all"
+                        className="bg-peak-primary h-2 rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -901,8 +906,8 @@ export default function FilesPage() {
 
           {/* File Context Panel Sidebar */}
           {showContextPanel && (
-            <div className="hidden xl:block w-96 flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
-              <div className="sticky top-0 h-screen overflow-y-auto bg-white dark:bg-gray-900 p-6">
+            <div className="hidden xl:block w-96 flex-shrink-0 border-l border-peak-border">
+              <div className="sticky top-0 h-screen overflow-y-auto bg-peak-glass p-6">
                 <FileContextPanel file={selectedFileForContext || undefined} />
               </div>
             </div>
@@ -912,15 +917,15 @@ export default function FilesPage() {
 
       {/* Create Folder Modal */}
       {isCreateFolderOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl w-full max-w-md p-6 backdrop-blur-xl">
+            <h3 className="text-xl font-semibold text-peak mb-4">
               Create New Folder
             </h3>
             <input
               type="text"
               placeholder="Folder name"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white mb-4"
+              className="w-full px-4 py-2 bg-white/[0.04] border border-peak-border rounded-xl text-peak placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50 mb-4"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   const input = e.target as HTMLInputElement
@@ -934,7 +939,7 @@ export default function FilesPage() {
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsCreateFolderOpen(false)}
-                className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                className="px-6 py-2 border border-peak-border text-peak-muted rounded-xl hover:bg-white/[0.04] hover:text-peak transition"
               >
                 Cancel
               </button>
@@ -945,7 +950,7 @@ export default function FilesPage() {
                     handleCreateFolder(input.value.trim())
                   }
                 }}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="px-6 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition shadow-peak-glow"
               >
                 Create
               </button>
@@ -956,18 +961,18 @@ export default function FilesPage() {
 
       {/* File Preview Modal */}
       {previewFile && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden backdrop-blur-xl">
+            <div className="flex items-center justify-between p-4 border-b border-peak-border">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{previewFile.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {formatFileSize(previewFile.size)} • Modified {previewFile.modifiedAt.toLocaleDateString()}
+                <h3 className="text-lg font-semibold text-peak">{previewFile.name}</h3>
+                <p className="text-sm text-peak-muted">
+                  {formatFileSize(previewFile.size)} • Modified {previewFile.modifiedAt.toLocaleDateString('en-US', { timeZone: 'UTC' })}
                 </p>
               </div>
               <button
                 onClick={() => setPreviewFile(null)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -986,18 +991,18 @@ export default function FilesPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-20 h-20 bg-white/[0.04] border border-peak-border rounded-full flex items-center justify-center mx-auto mb-4 text-peak-dim">
                     {getFileIcon(previewFile)}
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Preview not available</p>
+                  <p className="text-peak-muted mb-4">Preview not available</p>
                   {previewFile.aiSummary && (
-                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-left max-w-2xl mx-auto">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Summary</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{previewFile.aiSummary}</p>
+                    <div className="bg-white/[0.04] border border-peak-border rounded-2xl p-4 text-left max-w-2xl mx-auto">
+                      <h4 className="text-sm font-semibold text-peak mb-2">Summary</h4>
+                      <p className="text-sm text-peak-muted">{previewFile.aiSummary}</p>
                       {previewFile.aiTags && (
                         <div className="flex flex-wrap gap-2 mt-3">
                           {previewFile.aiTags.map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded">
+                            <span key={tag} className="px-2 py-1 bg-peak-primary/15 text-peak-primary-300 text-xs rounded-full ring-1 ring-peak-primary/20">
                               {tag}
                             </span>
                           ))}
@@ -1015,14 +1020,14 @@ export default function FilesPage() {
                           link.click()
                         }
                       }}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2"
+                      className="px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition flex items-center gap-2 shadow-peak-glow"
                     >
                       <Download className="w-4 h-4" />
                       Download
                     </button>
                     <button
                       onClick={() => handleShare(previewFile)}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2"
+                      className="px-4 py-2 border border-peak-border text-peak-muted rounded-xl hover:bg-white/[0.04] hover:text-peak transition flex items-center gap-2"
                     >
                       <Share2 className="w-4 h-4" />
                       Share

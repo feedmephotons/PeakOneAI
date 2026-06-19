@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
+  GlassPanel,
+  SectionLabel,
+  StatTile,
+  AskLisaBar,
+} from '@/components/peak'
+import {
   Phone, Video, Clock, Users, Play, Search,
   PhoneIncoming, PhoneOutgoing, PhoneMissed, MoreVertical,
   FileText, Shield, Brain, Lock
@@ -100,9 +106,9 @@ export default function CallsPage() {
   }, [])
 
   const getDirectionIcon = (call: Call) => {
-    if (call.status === 'missed') return <PhoneMissed className="w-4 h-4 text-red-500" />
-    if (call.direction === 'incoming') return <PhoneIncoming className="w-4 h-4 text-green-500" />
-    return <PhoneOutgoing className="w-4 h-4 text-blue-500" />
+    if (call.status === 'missed') return <PhoneMissed className="w-4 h-4 text-peak-red" />
+    if (call.direction === 'incoming') return <PhoneIncoming className="w-4 h-4 text-peak-green" />
+    return <PhoneOutgoing className="w-4 h-4 text-peak-primary-300" />
   }
 
   const formatDuration = (seconds?: number) => {
@@ -148,185 +154,181 @@ export default function CallsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Secure Calls
-              </h1>
-              <span className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-medium rounded-full border border-green-200 dark:border-green-800">
-                <Lock className="w-3 h-3" />
-                End-to-End Encrypted
-              </span>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Encrypted voice and video calls with AI-powered transcription and summaries
-            </p>
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-peak-muted">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-peak-primary/15 text-peak-primary-300">
+              <Phone className="h-3 w-3" />
+            </span>
+            Secure Calls
+          </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-semibold tracking-tight text-peak md:text-4xl">
+              Secure Calls
+            </h1>
+            <span className="flex items-center gap-1 rounded-full bg-peak-green/12 px-2.5 py-1 text-xs font-medium text-peak-green ring-1 ring-peak-green/25">
+              <Lock className="w-3 h-3" />
+              End-to-End Encrypted
+            </span>
+          </div>
+          <p className="mt-2 max-w-xl text-sm text-peak-muted">
+            Encrypted voice and video calls with AI-powered transcription and summaries
+          </p>
+        </div>
+
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="hidden w-64 lg:block">
+            <AskLisaBar placeholder="Ask Lisa about a call…" />
           </div>
           <Link
             href="/video"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-peak-primary px-4 py-2.5 text-sm font-semibold text-white shadow-peak-glow transition-colors hover:bg-peak-primary-600"
           >
             <Video className="w-4 h-4" />
             Start Call
           </Link>
         </div>
+      </div>
 
-        {/* Security Banner */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-8 flex items-center gap-4">
-          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">Secure Communication</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">All calls are encrypted in transit and at rest. Recordings and transcripts are stored securely in your workspace.</p>
-          </div>
+      {/* Security Banner */}
+      <GlassPanel className="mb-8 flex items-center gap-4 p-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/20">
+          <Shield className="w-5 h-5" />
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Calls</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.video}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Video Calls</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.audio}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Audio Calls</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-2xl font-bold text-red-500">{stats.missed}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Missed</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatDuration(stats.totalDuration)}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Time</p>
-          </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-peak">Secure Communication</p>
+          <p className="text-xs text-peak-muted">All calls are encrypted in transit and at rest. Recordings and transcripts are stored securely in your workspace.</p>
         </div>
+      </GlassPanel>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search calls..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            {(['all', 'video', 'audio', 'missed'] as const).map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filter === f
-                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5">
+        <StatTile variant="tile" value={stats.total} label="Total Calls" tone="primary" />
+        <StatTile variant="tile" value={stats.video} label="Video Calls" tone="blue" />
+        <StatTile variant="tile" value={stats.audio} label="Audio Calls" tone="green" />
+        <StatTile variant="tile" value={stats.missed} label="Missed" tone="red" />
+        <StatTile variant="tile" value={formatDuration(stats.totalDuration)} label="Total Time" tone="neutral" />
+      </div>
+
+      {/* Filters */}
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-peak-dim" />
+          <input
+            type="text"
+            placeholder="Search calls..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl border border-peak-border bg-white/[0.04] py-3 pl-12 pr-4 text-peak placeholder:text-peak-dim focus:border-peak-primary/50 focus:outline-none"
+          />
         </div>
-
-        {/* Calls List */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading calls...</p>
-            </div>
-          ) : filteredCalls.length === 0 ? (
-            <div className="p-12 text-center">
-              <Phone className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">No calls found</p>
-              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
-                {searchQuery ? 'Try a different search' : 'Start a call to see it here'}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredCalls.map(call => (
-                <div key={call.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                  <div className="flex items-center gap-4">
-                    {/* Type Icon */}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      call.type === 'video'
-                        ? 'bg-blue-100 dark:bg-blue-900/30'
-                        : 'bg-green-100 dark:bg-green-900/30'
-                    }`}>
-                      {call.type === 'video' ? (
-                        <Video className={`w-6 h-6 ${call.type === 'video' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`} />
-                      ) : (
-                        <Phone className="w-6 h-6 text-green-600 dark:text-green-400" />
-                      )}
-                    </div>
-
-                    {/* Call Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {getDirectionIcon(call)}
-                        <p className="font-medium text-gray-900 dark:text-white truncate">
-                          {call.participants.map(p => p.name).join(', ')}
-                        </p>
-                        <Lock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatTime(call.timestamp)}
-                        </span>
-                        {call.duration && (
-                          <span>{formatDuration(call.duration)}</span>
-                        )}
-                        {call.participants.length > 1 && (
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {call.participants.length}
-                          </span>
-                        )}
-                      </div>
-                      {call.aiSummary && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
-                          <Brain className="w-3 h-3 text-indigo-500" />
-                          {call.aiSummary}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      {call.hasRecording && (
-                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg" title="Play recording">
-                          <Play className="w-4 h-4 text-gray-400" />
-                        </button>
-                      )}
-                      {call.hasTranscript && (
-                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg" title="View transcript">
-                          <FileText className="w-4 h-4 text-gray-400" />
-                        </button>
-                      )}
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg">
-                        <MoreVertical className="w-4 h-4 text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-1 rounded-xl border border-peak-border bg-white/[0.02] p-1">
+          {(['all', 'video', 'audio', 'missed'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                filter === f
+                  ? 'bg-peak-primary/20 text-peak-primary-300'
+                  : 'text-peak-muted hover:text-peak'
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Calls List */}
+      <SectionLabel className="mb-3">Call History</SectionLabel>
+      <GlassPanel className="overflow-hidden p-0">
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-peak-primary border-t-transparent"></div>
+            <p className="text-peak-muted">Loading calls...</p>
+          </div>
+        ) : filteredCalls.length === 0 ? (
+          <div className="p-12 text-center">
+            <Phone className="mx-auto mb-4 h-16 w-16 text-peak-dim" />
+            <p className="text-lg font-medium text-peak">No calls found</p>
+            <p className="mt-2 text-sm text-peak-muted">
+              {searchQuery ? 'Try a different search' : 'Start a call to see it here'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-peak-border">
+            {filteredCalls.map(call => (
+              <div key={call.id} className="p-4 transition-colors hover:bg-white/[0.04]">
+                <div className="flex items-center gap-4">
+                  {/* Type Icon */}
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                    call.type === 'video'
+                      ? 'bg-peak-blue/15 text-peak-blue'
+                      : 'bg-peak-green/15 text-peak-green'
+                  }`}>
+                    {call.type === 'video' ? (
+                      <Video className="w-6 h-6" />
+                    ) : (
+                      <Phone className="w-6 h-6" />
+                    )}
+                  </div>
+
+                  {/* Call Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      {getDirectionIcon(call)}
+                      <p className="truncate font-medium text-peak">
+                        {call.participants.map(p => p.name).join(', ')}
+                      </p>
+                      <Lock className="w-3 h-3 shrink-0 text-peak-dim" />
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-peak-muted">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(call.timestamp)}
+                      </span>
+                      {call.duration && (
+                        <span>{formatDuration(call.duration)}</span>
+                      )}
+                      {call.participants.length > 1 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {call.participants.length}
+                        </span>
+                      )}
+                    </div>
+                    {call.aiSummary && (
+                      <p className="mt-2 flex items-center gap-2 text-sm text-peak-muted">
+                        <Brain className="w-3 h-3 text-peak-primary-300" />
+                        {call.aiSummary}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {call.hasRecording && (
+                      <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak" title="Play recording">
+                        <Play className="w-4 h-4" />
+                      </button>
+                    )}
+                    {call.hasTranscript && (
+                      <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak" title="View transcript">
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak">
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </GlassPanel>
     </div>
   )
 }
