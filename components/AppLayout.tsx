@@ -83,8 +83,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {usePeakShell ? (
             <div className="peak-os min-h-screen">
               <PeakSidebar />
-              <main className="min-h-screen pl-[248px]">{children}</main>
+              <main className="min-h-screen md:pl-[248px] pb-24 md:pb-0">{children}</main>
               <KeyboardShortcutsHint />
+              <MobileNav />
               <PeakAIAssistant />
             </div>
           ) : useSidebarLayout ? (

@@ -74,7 +74,7 @@ const APP_CATEGORIES: AppCategory[] = [
     },
     items: [
       { label: 'Workspaces', icon: Users, href: '/teams' },
-      { label: 'Contacts', icon: Contact, href: '/contacts' },
+      { label: 'Contacts', icon: Contact, href: '/people' },
       { label: 'Deck Builder', icon: Presentation, href: '/deck' },
     ],
   },

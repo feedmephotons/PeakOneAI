@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Sparkles,
   Search,
@@ -101,6 +102,16 @@ const SUGGESTED_QUESTIONS = [
 // ----------------------------------------------------------------------------
 
 export default function CompanyBrainPage() {
+  const router = useRouter()
+  const [search, setSearch] = useState('')
+  const [ask, setAsk] = useState('')
+
+  const askLisa = (value: string) => {
+    const q = value.trim()
+    if (!q) return
+    router.push('/lisa?q=' + encodeURIComponent(q))
+  }
+
   return (
     <div className="peak-os min-h-screen">
       <div className="mx-auto max-w-[1500px] px-6 py-8 sm:px-10">
@@ -129,6 +140,11 @@ export default function CompanyBrainPage() {
             <div className="flex items-center gap-2.5 rounded-xl border border-peak-border bg-white/[0.03] px-4 py-3 focus-within:border-peak-primary/40">
               <Search className="h-4 w-4 shrink-0 text-peak-muted" />
               <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') askLisa(search)
+                }}
                 placeholder="Search company knowledge..."
                 className="w-full bg-transparent text-sm text-peak placeholder:text-peak-muted focus:outline-none"
               />
@@ -138,7 +154,10 @@ export default function CompanyBrainPage() {
             </div>
           </div>
 
-          <button className="order-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 px-5 py-3 text-sm font-medium text-white shadow-[0_0_24px_-6px_var(--peak-glow)] transition-all hover:brightness-110 lg:order-3">
+          <button
+            onClick={() => router.push('/files')}
+            className="order-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 px-5 py-3 text-sm font-medium text-white shadow-[0_0_24px_-6px_var(--peak-glow)] transition-all hover:brightness-110 lg:order-3"
+          >
             <Plus className="h-4 w-4" />
             New Document
             <ChevronDown className="h-4 w-4 opacity-80" />
@@ -172,7 +191,10 @@ export default function CompanyBrainPage() {
             <div className="peak-glass p-6">
               <div className="mb-1 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-peak">Knowledge Categories</h2>
-                <button className="inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+                <button
+                  onClick={() => router.push('/memory')}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
+                >
                   View all categories
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -185,6 +207,7 @@ export default function CompanyBrainPage() {
                   return (
                     <button
                       key={c.title}
+                      onClick={() => router.push('/memory?category=' + encodeURIComponent(c.title))}
                       className="group flex flex-col rounded-2xl border border-peak-border bg-white/[0.02] p-4 text-left transition-all hover:border-peak-primary/30 hover:bg-white/[0.04]"
                     >
                       <span className={['mb-4 flex h-10 w-10 items-center justify-center rounded-xl', c.bg, c.tint].join(' ')}>
@@ -208,7 +231,10 @@ export default function CompanyBrainPage() {
                 <ul className="space-y-1">
                   {RECENTLY_UPDATED.map((it) => (
                     <li key={it.title}>
-                      <button className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]">
+                      <button
+                        onClick={() => router.push('/files')}
+                        className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
+                      >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-peak-primary-300">
                           <FileText className="h-4 w-4" />
                         </span>
@@ -224,7 +250,10 @@ export default function CompanyBrainPage() {
                     </li>
                   ))}
                 </ul>
-                <button className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+                <button
+                  onClick={() => router.push('/files')}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
+                >
                   View all updates
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -237,7 +266,10 @@ export default function CompanyBrainPage() {
                 <ul className="space-y-1">
                   {POPULAR.map((it) => (
                     <li key={it.title}>
-                      <button className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]">
+                      <button
+                        onClick={() => router.push('/files')}
+                        className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
+                      >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-peak-muted">
                           <FileBox className="h-4 w-4" />
                         </span>
@@ -253,7 +285,10 @@ export default function CompanyBrainPage() {
                     </li>
                   ))}
                 </ul>
-                <button className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+                <button
+                  onClick={() => router.push('/files')}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
+                >
                   View all popular
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -282,10 +317,19 @@ export default function CompanyBrainPage() {
                 <div className="mb-4 flex items-center gap-2 rounded-xl border border-peak-border bg-white/[0.04] px-3 py-2.5">
                   <Search className="h-4 w-4 shrink-0 text-peak-muted" />
                   <input
+                    value={ask}
+                    onChange={(e) => setAsk(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') askLisa(ask)
+                    }}
                     placeholder="Ask anything about your company..."
                     className="w-full bg-transparent text-sm text-peak placeholder:text-peak-muted focus:outline-none"
                   />
-                  <button className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-peak-primary text-white">
+                  <button
+                    onClick={() => askLisa(ask)}
+                    aria-label="Ask Lisa"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-peak-primary text-white transition-all hover:brightness-110"
+                  >
                     <Send className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -294,14 +338,22 @@ export default function CompanyBrainPage() {
                 <ul className="space-y-2">
                   {SUGGESTED_QUESTIONS.map((q) => (
                     <li key={q}>
-                      <button className="flex w-full items-center gap-2.5 rounded-lg border border-peak-border bg-white/[0.02] px-3 py-2 text-left text-sm text-peak-muted transition-colors hover:bg-white/[0.05] hover:text-peak">
+                      <button
+                        onClick={() => askLisa(q)}
+                        className="flex w-full items-center gap-2.5 rounded-lg border border-peak-border bg-white/[0.02] px-3 py-2 text-left text-sm text-peak-muted transition-colors hover:bg-white/[0.05] hover:text-peak"
+                      >
                         <FileText className="h-3.5 w-3.5 shrink-0 text-peak-dim" />
                         <span className="truncate">{q}</span>
                       </button>
                     </li>
                   ))}
                 </ul>
-                <button className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  disabled
+                  className="mt-3 inline-flex cursor-default items-center gap-1.5 text-sm font-medium text-peak-primary-300 opacity-50"
+                >
                   View more suggestions
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -315,7 +367,10 @@ export default function CompanyBrainPage() {
                 See how knowledge connects across your organization.
               </p>
               <KnowledgeGraph />
-              <button className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+              <button
+                onClick={() => router.push('/memory')}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
+              >
                 Explore graph
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
@@ -336,11 +391,22 @@ export default function CompanyBrainPage() {
                     {letter}
                   </span>
                 ))}
-                <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-peak-border text-peak-muted transition-colors hover:border-peak-primary/40 hover:text-peak">
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  disabled
+                  aria-label="Add integration (coming soon)"
+                  className="flex h-10 w-10 cursor-default items-center justify-center rounded-xl border border-dashed border-peak-border text-peak-muted opacity-50"
+                >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-              <button className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+              <button
+                type="button"
+                aria-disabled="true"
+                disabled
+                className="mt-4 inline-flex cursor-default items-center gap-1.5 text-sm font-medium text-peak-primary-300 opacity-50"
+              >
                 Manage integrations
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>

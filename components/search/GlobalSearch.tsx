@@ -261,7 +261,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           subtitle: `Contact • ${contact.email}`,
           icon: <User className="w-4 h-4" />,
           action: () => {
-            router.push(`/contacts?id=${contact.id}`)
+            router.push(`/people/${contact.id}`)
             onClose()
           }
         })

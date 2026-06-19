@@ -548,8 +548,12 @@ export default function LisaAIPage() {
               <Paperclip className="h-5 w-5" />
             </button>
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-peak-muted transition-colors hover:bg-white/[0.06] hover:text-peak"
-              aria-label="Voice"
+              type="button"
+              aria-disabled="true"
+              disabled
+              title="Voice input coming soon"
+              className="flex h-10 w-10 shrink-0 cursor-default items-center justify-center rounded-xl text-peak-muted opacity-50"
+              aria-label="Voice input (coming soon)"
             >
               <Mic className="h-5 w-5" />
             </button>

@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   serverExternalPackages: ['puppeteer'],
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'ui-avatars.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+    ],
+  },
   experimental: {
     cpus: 1,
     workerThreads: false,

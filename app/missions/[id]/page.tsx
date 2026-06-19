@@ -75,14 +75,16 @@ const RISK_META: Record<RiskLevel, { label: string; pill: string; iconBg: string
   LOW: { label: 'Low', pill: 'bg-peak-blue/15 text-peak-blue ring-1 ring-peak-blue/25', iconBg: 'bg-peak-blue/12', iconColor: 'text-peak-blue' },
 }
 
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
 function fmtDate(iso?: string | null, opts?: Intl.DateTimeFormatOptions): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', opts ?? { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', ...(opts ?? { month: 'short', day: 'numeric', year: 'numeric' }) })
 }
 
 function daysFromNow(iso?: string | null): number | null {
   if (!iso) return null
-  return Math.round((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  return Math.round((new Date(iso).getTime() - PEAK_NOW) / (1000 * 60 * 60 * 24))
 }
 
 function remainingLabel(iso?: string | null): string {
@@ -326,6 +328,9 @@ function TopRisksPanel({ risks }: { risks: MissionRisk[] }) {
             </div>
           )
         })}
+        {risks.length === 0 ? (
+          <div className="text-sm text-peak-muted">No risks identified.</div>
+        ) : null}
       </div>
     </GlassPanel>
   )
@@ -363,6 +368,9 @@ function MissionTeamPanel({ members }: { members: MissionMember[] }) {
             )}
           </div>
         ))}
+        {members.length === 0 ? (
+          <div className="text-sm text-peak-muted">No team members assigned.</div>
+        ) : null}
       </div>
       {overflow > 0 ? (
         <div className="mt-4 flex items-center gap-2 border-t border-white/[0.05] pt-3">
@@ -509,6 +517,9 @@ function RisksTab({ risks }: { risks: MissionRisk[] }) {
             </div>
           )
         })}
+        {risks.length === 0 ? (
+          <div className="py-6 text-center text-sm text-peak-muted">No risks identified.</div>
+        ) : null}
       </div>
     </GlassPanel>
   )
@@ -535,6 +546,9 @@ function TeamTab({ members }: { members: MissionMember[] }) {
             </div>
           </div>
         ))}
+        {members.length === 0 ? (
+          <div className="text-sm text-peak-muted">No team members assigned.</div>
+        ) : null}
       </div>
     </GlassPanel>
   )
@@ -573,8 +587,8 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
       ? Math.round((mission.budgetUsed / mission.budgetTotal) * 100)
       : null
   const objectives = mission.objectives ?? []
-  const risks = mission.risks ?? MOCK_MISSION.risks ?? []
-  const members = mission.members ?? MOCK_MISSION.members ?? []
+  const risks = mission.risks ?? []
+  const members = mission.members ?? []
 
   return (
     <PeakShell>

@@ -52,7 +52,7 @@ export default function PeakSidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-full w-[248px] flex-col bg-peak-2 border-r border-peak-border peak-scrollbar">
+    <aside className="fixed left-0 top-0 z-40 hidden md:flex h-full w-[248px] flex-col bg-peak-2 border-r border-peak-border peak-scrollbar">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 px-5 py-5">
         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 shadow-[0_0_16px_var(--peak-glow)]">

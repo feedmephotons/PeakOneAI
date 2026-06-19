@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Brain,
@@ -21,7 +21,6 @@ import {
   Star,
   MoreHorizontal,
   ChevronLeft,
-  ChevronDown,
   RefreshCw,
   CheckCircle2,
   Paperclip,
@@ -45,11 +44,15 @@ import {
   MOCK_NOTES,
   getMockNoteConnections,
 } from '@/lib/peak/mock'
-import type { Note, NoteBrain, NoteConnection, NoteEntityType } from '@/lib/peak/types'
+import type { Note, NoteBrain, NoteConnection, NoteEntityType, NoteType } from '@/lib/peak/types'
 
 // ----------------------------------------------------------------------------
 // Static config
 // ----------------------------------------------------------------------------
+
+// Frozen "now" so render-path time math is deterministic between SSR and the
+// first client render (avoids hydration mismatches). Mirrors app/page.tsx.
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
 
 const BRAINS: { id: NoteBrain; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'MY', label: 'My Brain', icon: Brain },
@@ -57,15 +60,21 @@ const BRAINS: { id: NoteBrain; label: string; icon: React.ComponentType<{ classN
   { id: 'COMPANY', label: 'Company Brain', icon: Building2 },
 ]
 
-const NAV_SECTIONS: { id: string; label: string; icon: React.ComponentType<{ className?: string }>; href?: string }[] = [
-  { id: 'notes', label: 'Notes', icon: FileText },
-  { id: 'journal', label: 'Journal', icon: BookOpen },
-  { id: 'voice', label: 'Voice Notes', icon: Mic },
-  { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
+// Library sections map to a note-type filter. `type: null` clears the filter.
+const NAV_SECTIONS: {
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  type: NoteType | null
+}[] = [
+  { id: 'notes', label: 'Notes', icon: FileText, type: 'NOTE' },
+  { id: 'journal', label: 'Journal', icon: BookOpen, type: 'JOURNAL' },
+  { id: 'voice', label: 'Voice Notes', icon: Mic, type: 'VOICE' },
+  { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark, type: 'BOOKMARK' },
 ]
 
 const NAV_ENTITIES: { id: string; label: string; icon: React.ComponentType<{ className?: string }>; href?: string }[] = [
-  { id: 'projects', label: 'Projects', icon: FolderKanban },
+  { id: 'projects', label: 'Projects', icon: FolderKanban, href: '/projects' },
   { id: 'people', label: 'People', icon: User, href: '/people' },
   { id: 'companies', label: 'Companies', icon: Building },
   { id: 'meetings', label: 'Meetings', icon: Calendar },
@@ -104,7 +113,7 @@ function noteIconTint(type: string): string {
 
 function formatNoteDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
   } catch {
     return iso
   }
@@ -112,7 +121,7 @@ function formatNoteDate(iso: string): string {
 
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
-  const diff = Date.now() - then
+  const diff = PEAK_NOW - then
   const mins = Math.round(diff / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`
@@ -188,35 +197,71 @@ export default function MemoryPage() {
   )
   const [query, setQuery] = useState('')
   const [source, setSource] = useState<'db' | 'mock'>('mock')
+  // Active Library note-type filter (null = all types).
+  const [typeFilter, setTypeFilter] = useState<NoteType | null>(null)
+  // Monotonic counter so locally-created notes get stable, unique ids.
+  const [noteCounter, setNoteCounter] = useState(0)
 
-  // --- Load all notes once (try API, fall back to mock) -------------------
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch('/api/memory/notes', { cache: 'no-store' })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        if (cancelled) return
-        if (Array.isArray(json?.data) && json.data.length > 0) {
-          setNotes(json.data as Note[])
-          setSource((json.source as 'db' | 'mock') || 'mock')
-        }
-      } catch {
-        // Graceful fallback — mock is already the initial state.
-        if (!cancelled) setSource('mock')
+  // --- Load all notes (try API, fall back to mock) ------------------------
+  // Exposed as a callback so the Refresh control can re-run it on demand.
+  const loadNotes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/memory/notes', { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (Array.isArray(json?.data) && json.data.length > 0) {
+        setNotes(json.data as Note[])
+        setSource((json.source as 'db' | 'mock') || 'mock')
       }
-    })()
-    return () => {
-      cancelled = true
+    } catch {
+      // Graceful fallback — mock is already the initial state.
+      setSource('mock')
     }
   }, [])
 
-  // --- Notes visible for the active brain + search ------------------------
+  useEffect(() => {
+    void loadNotes()
+  }, [loadNotes])
+
+  // --- Create a new note locally and select it ----------------------------
+  const handleNewNote = useCallback(() => {
+    const nextCounter = noteCounter + 1
+    setNoteCounter(nextCounter)
+    const id =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? `note-${crypto.randomUUID()}`
+        : `note-${PEAK_NOW}-${nextCounter}`
+    const now = new Date().toISOString()
+    const newNote: Note = {
+      id,
+      brain,
+      type: 'NOTE',
+      title: 'Untitled note',
+      body: '',
+      tags: [],
+      pinned: false,
+      starred: false,
+      createdAt: now,
+      updatedAt: now,
+    }
+    setNotes((prev) => [newNote, ...prev])
+    setTypeFilter(null)
+    setSelectedId(id)
+  }, [brain, noteCounter])
+
+  // --- Toggle the starred flag on a note (in local state) -----------------
+  const toggleStar = useCallback((id: string) => {
+    setNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, starred: !n.starred } : n)),
+    )
+  }, [])
+
+  // --- Notes visible for the active brain + search + type filter ----------
   const brainNotes = useMemo(() => {
     const q = query.trim().toLowerCase()
     return notes.filter((n) => {
       if (n.brain !== brain) return false
+      if (typeFilter && n.type !== typeFilter) return false
       if (!q) return true
       return (
         n.title.toLowerCase().includes(q) ||
@@ -224,7 +269,7 @@ export default function MemoryPage() {
         n.tags.some((t) => t.toLowerCase().includes(q))
       )
     })
-  }, [notes, brain, query])
+  }, [notes, brain, query, typeFilter])
 
   const pinnedNotes = useMemo(() => brainNotes.filter((n) => n.pinned), [brainNotes])
   const recentNotes = useMemo(
@@ -339,12 +384,25 @@ export default function MemoryPage() {
           <nav className="mb-6 space-y-0.5">
             {NAV_SECTIONS.map((item) => {
               const Icon = item.icon
+              const active = typeFilter === item.type
               return (
                 <button
                   key={item.id}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-peak-muted transition-colors hover:bg-white/[0.04] hover:text-peak"
+                  onClick={() => setTypeFilter((prev) => (prev === item.type ? null : item.type))}
+                  className={[
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                    active
+                      ? 'bg-peak-primary/10 font-medium text-peak ring-1 ring-peak-primary/20'
+                      : 'text-peak-muted hover:bg-white/[0.04] hover:text-peak',
+                  ].join(' ')}
+                  aria-pressed={active}
                 >
-                  <Icon className="h-[17px] w-[17px] shrink-0 text-peak-dim" />
+                  <Icon
+                    className={[
+                      'h-[17px] w-[17px] shrink-0',
+                      active ? 'text-peak-primary-300' : 'text-peak-dim',
+                    ].join(' ')}
+                  />
                   <span>{item.label}</span>
                 </button>
               )
@@ -358,20 +416,28 @@ export default function MemoryPage() {
           <nav className="space-y-0.5">
             {NAV_ENTITIES.map((item) => {
               const Icon = item.icon
-              const row = (
-                <span className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-peak-muted transition-colors hover:bg-white/[0.04] hover:text-peak">
+              if (item.href) {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-peak-muted transition-colors hover:bg-white/[0.04] hover:text-peak"
+                  >
+                    <Icon className="h-[17px] w-[17px] shrink-0 text-peak-dim" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              }
+              // No destination yet — render as honest, non-interactive.
+              return (
+                <div
+                  key={item.id}
+                  aria-disabled="true"
+                  className="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-sm text-peak-muted opacity-50"
+                >
                   <Icon className="h-[17px] w-[17px] shrink-0 text-peak-dim" />
                   <span>{item.label}</span>
-                </span>
-              )
-              return item.href ? (
-                <Link key={item.id} href={item.href} className="block">
-                  {row}
-                </Link>
-              ) : (
-                <button key={item.id} className="block w-full text-left">
-                  {row}
-                </button>
+                </div>
               )
             })}
           </nav>
@@ -401,7 +467,10 @@ export default function MemoryPage() {
                 </kbd>
               </div>
             </div>
-            <button className="order-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_24px_-6px_var(--peak-glow)] transition-all hover:brightness-110 sm:order-3">
+            <button
+              onClick={handleNewNote}
+              className="order-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_24px_-6px_var(--peak-glow)] transition-all hover:brightness-110 sm:order-3"
+            >
               <Plus className="h-4 w-4" />
               New Note
             </button>
@@ -412,11 +481,24 @@ export default function MemoryPage() {
             {/* Notes list */}
             <div className="peak-glass flex max-h-[calc(100vh-180px)] flex-col p-0">
               <div className="flex items-center justify-between border-b border-peak-border px-5 py-4">
-                <button className="flex items-center gap-1.5 text-sm font-semibold text-peak">
-                  Notes
-                  <ChevronDown className="h-4 w-4 text-peak-muted" />
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-peak">
+                  {typeFilter ? NOTE_TYPE_LABEL[typeFilter] || 'Notes' : 'Notes'}
+                  {typeFilter && (
+                    <button
+                      onClick={() => setTypeFilter(null)}
+                      className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] font-normal text-peak-muted transition-colors hover:text-peak"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </h2>
+                <button
+                  onClick={() => void loadNotes()}
+                  aria-label="Refresh notes"
+                  className="text-peak-muted transition-colors hover:text-peak"
+                >
+                  <RefreshCw className="h-4 w-4" />
                 </button>
-                <RefreshCw className="h-4 w-4 text-peak-muted" />
               </div>
 
               <div className="peak-scrollbar flex-1 overflow-y-auto px-3 py-3">
@@ -467,7 +549,13 @@ export default function MemoryPage() {
               </div>
 
               <div className="border-t border-peak-border px-5 py-3">
-                <button className="inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary">
+                <button
+                  onClick={() => {
+                    setTypeFilter(null)
+                    setQuery('')
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
+                >
                   View all notes
                   <ArrowUp className="h-3.5 w-3.5 rotate-90" />
                 </button>
@@ -477,7 +565,11 @@ export default function MemoryPage() {
             {/* Note view */}
             <div className="peak-glass min-h-[calc(100vh-180px)] p-0">
               {selectedNote ? (
-                <NoteView note={selectedNote} />
+                <NoteView
+                  note={selectedNote}
+                  onToggleStar={() => toggleStar(selectedNote.id)}
+                  onBack={() => setSelectedId('')}
+                />
               ) : (
                 <div className="flex h-full min-h-[400px] items-center justify-center text-sm text-peak-muted">
                   Select a note to view it.
@@ -598,25 +690,47 @@ const Q2_NEXT_STEPS = [
   { label: 'Launch paid campaigns', due: 'May 27' },
 ]
 
-function NoteView({ note }: { note: Note }) {
+function NoteView({
+  note,
+  onToggleStar,
+  onBack,
+}: {
+  note: Note
+  onToggleStar: () => void
+  onBack: () => void
+}) {
   const isQ2 = note.id === 'note-q2-marketing'
+  // Local comment draft. Send is intentionally a no-op stub (no comment
+  // backend yet); it stays disabled until there's text, then clears.
+  const [comment, setComment] = useState('')
 
   return (
     <div className="flex h-full flex-col">
       {/* Header bar */}
       <div className="flex items-start gap-3 px-7 pt-6">
-        <button className="mt-1 text-peak-muted transition-colors hover:text-peak">
+        <button
+          onClick={onBack}
+          aria-label="Back to notes list"
+          className="mt-1 text-peak-muted transition-colors hover:text-peak"
+        >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-2xl font-semibold tracking-tight text-peak">{note.title}</h2>
-            <Star
-              className={[
-                'h-5 w-5',
-                note.starred ? 'fill-peak-primary text-peak-primary' : 'text-peak-muted',
-              ].join(' ')}
-            />
+            <button
+              onClick={onToggleStar}
+              aria-label={note.starred ? 'Unstar note' : 'Star note'}
+              aria-pressed={note.starred}
+              className="text-peak-muted transition-colors hover:text-peak"
+            >
+              <Star
+                className={[
+                  'h-5 w-5',
+                  note.starred ? 'fill-peak-primary text-peak-primary' : 'text-peak-muted',
+                ].join(' ')}
+              />
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -624,9 +738,10 @@ function NoteView({ note }: { note: Note }) {
             Edited {relativeTime(note.updatedAt)}
           </span>
           <AvatarStack />
-          <button className="text-peak-muted transition-colors hover:text-peak">
+          {/* No note-actions menu yet — honest, non-interactive. */}
+          <span aria-disabled="true" className="cursor-default text-peak-muted opacity-50">
             <MoreHorizontal className="h-5 w-5" />
-          </button>
+          </span>
         </div>
       </div>
 
@@ -645,9 +760,13 @@ function NoteView({ note }: { note: Note }) {
             {i === 0 ? toTitle(t) : t}
           </span>
         ))}
-        <button className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.05] text-peak-muted transition-colors hover:bg-white/[0.08] hover:text-peak">
+        {/* Tag editing not wired yet — honest, non-interactive. */}
+        <span
+          aria-disabled="true"
+          className="flex h-6 w-6 cursor-default items-center justify-center rounded-md bg-white/[0.05] text-peak-muted opacity-50"
+        >
           <Plus className="h-3.5 w-3.5" />
-        </button>
+        </span>
       </div>
 
       {/* Body */}
@@ -671,16 +790,25 @@ function NoteView({ note }: { note: Note }) {
           </span>
           <div className="flex flex-1 items-center gap-2 rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5">
             <input
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               placeholder="Add a comment..."
               className="w-full bg-transparent text-sm text-peak placeholder:text-peak-muted focus:outline-none"
             />
-            <div className="flex items-center gap-2.5 text-peak-muted">
-              <Paperclip className="h-4 w-4 cursor-pointer transition-colors hover:text-peak" />
-              <AtSign className="h-4 w-4 cursor-pointer transition-colors hover:text-peak" />
-              <Smile className="h-4 w-4 cursor-pointer transition-colors hover:text-peak" />
+            {/* Attachment / mention / emoji affordances aren't wired yet. */}
+            <div aria-disabled="true" className="flex items-center gap-2.5 text-peak-muted opacity-50">
+              <Paperclip className="h-4 w-4" />
+              <AtSign className="h-4 w-4" />
+              <Smile className="h-4 w-4" />
             </div>
           </div>
-          <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-peak-primary text-white transition-colors hover:bg-peak-primary-600">
+          {/* No comment backend yet — Send clears the draft (no-op send). */}
+          <button
+            onClick={() => setComment('')}
+            disabled={!comment.trim()}
+            aria-label="Send comment"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-peak-primary text-white transition-colors hover:bg-peak-primary-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-peak-primary"
+          >
             <Send className="h-4 w-4" />
           </button>
         </div>

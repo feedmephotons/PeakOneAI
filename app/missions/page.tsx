@@ -25,6 +25,8 @@ import {
 // Status → tone mapping (green / amber / red, used across both pages)
 // ----------------------------------------------------------------------------
 
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
 type RingTone = 'primary' | 'green' | 'amber' | 'red' | 'blue' | 'neutral'
 
 const STATUS_META: Record<
@@ -63,12 +65,13 @@ function formatDate(iso?: string | null): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
 function daysRemaining(iso?: string | null): string | null {
   if (!iso) return null
-  const ms = new Date(iso).getTime() - Date.now()
+  const ms = new Date(iso).getTime() - PEAK_NOW
   const days = Math.round(ms / (1000 * 60 * 60 * 24))
   if (days < 0) return `${Math.abs(days)}d overdue`
   if (days === 0) return 'Due today'

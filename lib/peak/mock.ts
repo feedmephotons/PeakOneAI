@@ -383,7 +383,7 @@ export const MOCK_VOICE_NOTES: VoiceNote[] = [
 
 export const MOCK_STATS: StatTileData[] = [
   { id: 'stat-priorities', value: 3, label: 'Priorities', sublabel: 'Top focus today', icon: 'target', tone: 'primary' },
-  { id: 'stat-meetings', value: 2, label: 'Meetings', sublabel: 'Next at 11:00 AM', icon: 'calendar', tone: 'blue' },
+  { id: 'stat-meetings', value: 2, label: 'Meetings', sublabel: 'Next at 6:00 PM', icon: 'calendar', tone: 'blue' },
   { id: 'stat-tasks', value: 5, label: 'Tasks', sublabel: 'Due today', icon: 'check-square', tone: 'default' },
   { id: 'stat-at-risk', value: 1, label: 'At Risk', sublabel: 'Legal review', icon: 'alert-triangle', tone: 'red' },
 ]

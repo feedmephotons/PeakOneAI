@@ -22,6 +22,8 @@ import type { Person, RelationshipProfile } from '@/lib/peak/types'
 // Helpers
 // ---------------------------------------------------------------------------
 
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -46,7 +48,7 @@ function relativeTime(iso?: string | null): string {
   if (!iso) return 'No contact yet'
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return 'No contact yet'
-  const days = Math.floor((Date.now() - then) / 86_400_000)
+  const days = Math.floor((PEAK_NOW - then) / 86_400_000)
   if (days <= 0) return 'Today'
   if (days === 1) return 'Yesterday'
   if (days < 7) return `${days}d ago`

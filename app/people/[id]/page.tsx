@@ -33,7 +33,6 @@ import {
 } from '@/components/peak'
 import {
   MOCK_PEOPLE,
-  MOCK_RELATIONSHIP_PROFILES,
   getMockRelationshipProfile,
   getMockRelationshipBrief,
 } from '@/lib/peak/mock'
@@ -47,6 +46,10 @@ import type {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Stable reference time so render-path date math is deterministic between
+// server and client (avoids hydration mismatch). Matches app/page.tsx.
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
 
 function initials(name: string): string {
   return name
@@ -69,7 +72,7 @@ function relativeTime(iso?: string | null): string {
   if (!iso) return 'No contact yet'
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return 'No contact yet'
-  const days = Math.floor((Date.now() - then) / 86_400_000)
+  const days = Math.floor((PEAK_NOW - then) / 86_400_000)
   if (days <= 0) return 'Today'
   if (days === 1) return 'Yesterday'
   if (days < 7) return `${days}d ago`
@@ -82,7 +85,7 @@ function formatDate(iso?: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 function strengthMeta(strength: number): { label: string; tone: string; bar: string } {
@@ -115,18 +118,17 @@ function resolveProfile(id: string): RelationshipProfile {
       sharedNotes: [],
     }
   }
-  // Total fallback — sensible default person (Brian Miller, the key person).
-  return (
-    MOCK_RELATIONSHIP_PROFILES['contact-brian-miller'] ?? {
-      person: FALLBACK_PERSON,
-      strength: 50,
-      lastInteraction: null,
-      stats: { meetings: 0, messages: 0, calls: 0, notes: 0, tasks: 0, files: 0 },
-      recentInteractions: [],
-      openItems: [],
-      sharedNotes: [],
-    }
-  )
+  // Unknown id — build a neutral, empty profile around FALLBACK_PERSON so we
+  // never impersonate a real contact (e.g. Brian Miller) for a bogus id.
+  return {
+    person: FALLBACK_PERSON,
+    strength: 0,
+    lastInteraction: null,
+    stats: { meetings: 0, messages: 0, calls: 0, notes: 0, tasks: 0, files: 0 },
+    recentInteractions: [],
+    openItems: [],
+    sharedNotes: [],
+  }
 }
 
 // Interaction kind → icon + tone
@@ -233,13 +235,15 @@ function BriefSection({
   title,
   items,
   tone = 'muted',
+  emptyLabel,
 }: {
   icon: React.ReactNode
   title: string
   items: string[]
   tone?: 'muted' | 'red' | 'green'
+  emptyLabel?: string
 }) {
-  if (!items.length) return null
+  if (!items.length && !emptyLabel) return null
   const marker =
     tone === 'red' ? 'text-peak-red' : tone === 'green' ? 'text-peak-green' : 'text-peak-primary-300'
   return (
@@ -248,6 +252,9 @@ function BriefSection({
         <span className={marker}>{icon}</span>
         <h4 className="text-xs font-semibold uppercase tracking-wider text-peak-muted">{title}</h4>
       </div>
+      {!items.length ? (
+        <p className="text-sm text-peak-muted">{emptyLabel}</p>
+      ) : (
       <ul className="space-y-1.5">
         {items.map((it, i) => (
           <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-peak">
@@ -256,6 +263,7 @@ function BriefSection({
           </li>
         ))}
       </ul>
+      )}
     </div>
   )
 }
@@ -305,23 +313,27 @@ function RelationshipBriefPanel({
                 icon={<ListChecks className="h-4 w-4" />}
                 title="Open Items"
                 items={brief.openItems}
+                emptyLabel="None on file"
               />
               <BriefSection
                 icon={<Clock className="h-4 w-4" />}
                 title="Recent Interactions"
                 items={brief.recentInteractions}
+                emptyLabel="No recent interactions"
               />
               <BriefSection
                 icon={<AlertTriangle className="h-4 w-4" />}
                 title="Risks"
                 items={brief.risks}
                 tone="red"
+                emptyLabel="No risks noted"
               />
               <BriefSection
                 icon={<TrendingUp className="h-4 w-4" />}
                 title="Opportunities"
                 items={brief.opportunities}
                 tone="green"
+                emptyLabel="No opportunities noted"
               />
             </div>
 
