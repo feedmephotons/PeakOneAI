@@ -57,3 +57,7 @@ next-env.d.ts
 
 # build-cache variants
 .next*/
+
+# functional test artifacts
+test-results/
+PEAK-BUILD-SPEC.md
