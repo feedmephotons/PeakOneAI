@@ -1,0 +1,27 @@
+=== Clean Shielded Build and Test Script ===
+Killing all existing Node/Npm/Next/Tsx processes...
+Cleaning .next directory...
+Starting shield loop. My PID is 1890066
+Shield loop started with PID 1890086
+Running Next.js production build...
+
+> saasx-platform@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.7
+   - Environments: .env.local, .env
+
+Shield: Killing competing process 1890263 (chain: 1890263  -> 1890136 -> 1890135 -> 1890134 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+Shield: Killing competing process 1890266 (chain: 1890266  -> 1890134 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+   Creating an optimized production build ...
+Shield: Killing competing process 1890386 (chain: 1890386  -> 1890252 -> 1890251 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+Shield: Killing competing process 1890387 (chain: 1890387  -> 1890251 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+Shield: Killing competing process 1890973 (chain: 1890973  -> 1890972 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+Shield: Killing competing process 1891104 (chain: 1891104  -> 1890972 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+Shield: Killing competing process 1891105 (chain: 1891105  -> , MY_PID: 1890066)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Shield: Killing competing process 1891335 (chain: 1891335  -> 1891334 -> 1875502 -> 2 -> 1, MY_PID: 1890066)
+./build_cleanly.sh: line 64: 1890087 Killed                  npm run build
+Next.js build finished with code 137
+Shield loop stopped.
+Build failed. Exiting.

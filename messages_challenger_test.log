@@ -1,0 +1,90 @@
+[dotenv@17.2.2] injecting env (9) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+==================================================
+    Messages Challenger Test Suite (Network)       
+==================================================
+
+--- Seeding Database for Messages Challenger Tests ---
+Demo User: demo-user-id (sarah.chen@peakone.ai)
+Alex User: alex-id (alex.rivera@peakone.ai)
+Conversation 'conv-1' already exists
+Verified conversation participants for 'conv-1'
+Dev server already running on port 3003. Reusing instance.
+
+--- Scenario 1: Offline Buffering & local storage queue verification ---
+PAGE LOG: [E2E TEST] Blocked service worker registration
+PAGE LOG: [PWA] Service Worker registration failed: JSHandle@error
+PAGE LOG: [E2E TEST] Blocked service worker registration
+PAGE LOG: [PWA] Service Worker registration failed: JSHandle@error
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+Selecting Conversation...
+Simulating offline state...
+Verifying offline banner appearance...
+✅ Offline banner displayed successfully.
+Sending message: "Offline Buffered Msg - 1779657296376"
+PAGE LOG: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+Verifying "Sending..." status on bubble...
+✅ Message marked as "Sending..." in UI.
+Verifying localStorage buffering...
+✅ Message found in offline queue: {"id":"msg-1779657297277-udtex3p9y","conversationId":"conv-1","senderId":"demo-user-id","senderName":"You","content":"Offline Buffered Msg - 1779657296376","timestamp":"2026-05-24T21:14:57.277Z","type":"text","isRead":true,"pending":true}
+
+--- Scenario 2: Connection Restoration & Exponential Backoff Sync ---
+PAGE LOG: [E2E TEST] Blocked service worker registration
+PAGE LOG: [PWA] Service Worker registration failed: JSHandle@error
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+PAGE LOG: [E2E TEST] Blocked service worker registration
+PAGE LOG: [PWA] Service Worker registration failed: JSHandle@error
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+Selecting Conversation...
+Going offline...
+Sending message: "Backoff Msg - 1779657299209"
+✅ Message buffered successfully.
+Restoring online connection...
+Waiting for exponential backoff retries to fire...
+PAGE LOG: Syncing 1 offline messages...
+[HTTP Intercept] Request to POST /api/messages. Attempt #1
+[HTTP Intercept] Responding 500 to Attempt #1
+PAGE LOG: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+PAGE LOG: Attempt 1 to send message msg-1779657299959-791n5ycwm failed: JSHandle@error
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+[HTTP Intercept] Request to POST /api/messages. Attempt #2
+[HTTP Intercept] Responding 500 to Attempt #2
+PAGE LOG: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+PAGE LOG: Attempt 2 to send message msg-1779657299959-791n5ycwm failed: JSHandle@error
+[HTTP Intercept] Request to POST /api/messages. Attempt #3
+[HTTP Intercept] Responding 500 to Attempt #3
+PAGE LOG: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+PAGE LOG: Attempt 3 to send message msg-1779657299959-791n5ycwm failed: JSHandle@error
+PAGE LOG: Failed to load resource: net::ERR_CONNECTION_REFUSED
+[HTTP Intercept] Request to POST /api/messages. Attempt #4
+[HTTP Intercept] Responding 200 to Attempt #4
+Sync completed. Total attempts captured: 4
+Delay 1 (Attempt 1 -> 2): 1016ms (Expected: ~1000ms)
+Delay 2 (Attempt 2 -> 3): 2009ms (Expected: ~2000ms)
+Delay 3 (Attempt 3 -> 4): 4009ms (Expected: ~4000ms)
+✅ Exponential Backoff delays successfully verified!
+
+--- Scenario 3: UUID Idempotency & Duplicate Prevention ---
+Sending first message request with ID: msg-test-uuid-1779657307470
+First request status: 201 (Expected: 201)
+Returned message ID: msg-test-uuid-1779657307470
+Message count in DB: 1 (Expected: 1)
+Sending duplicate message request with ID: msg-test-uuid-1779657307470
+Duplicate request status: 200 (Expected: 200)
+Returned message ID: msg-test-uuid-1779657307470
+Message count in DB after duplicate: 1 (Expected: 1)
+✅ Server UUID idempotency check successfully prevented duplicate messaging!
+
+--- Scenario 4: Cross-Tenant Message ID Hijacking Vulnerability Check ---
+Seeded secret message in conv-1 with ID: msg-secret-1779657309015
+Registering attacker: attacker-1779657309123@example.com
+Logging in attacker...
+Created private conversation for Attacker with ID: cmpka0ggo0004ukcm5a2m6gdw
+Attacker sending POST /api/messages with hijacked message ID...
+Hijack Request Status: 403
+✅ SECURE: Server rejected cross-conversation message ID lookup.
+
+==================================================
+    ALL MESSAGING CHALLENGER TESTS COMPLETE       
+==================================================

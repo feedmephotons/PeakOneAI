@@ -142,7 +142,7 @@ export const tier2Tests = {
 
     // Verify all three show in selection queue
     await page.waitForFunction(() => {
-      const text = document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent || '';
+      const text = document.querySelector('div.rounded-2xl.p-8')?.textContent || '';
       return text.includes('mock_boundary_file.txt') &&
              text.includes('mock_empty_file.txt') &&
              text.includes('mock_!@#$%^&()_+.txt');
@@ -177,7 +177,8 @@ export const tier2Tests = {
 
     // Verify uploaded and processed successfully
     await page.waitForFunction(() => {
-      return document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent?.includes('mock_!@#$%^&()_+.txt');
+      const containers = Array.from(document.querySelectorAll('div.rounded-2xl.p-8'));
+      return containers.some(el => el.textContent?.includes('mock_!@#$%^&()_+.txt'));
     });
   },
 
@@ -194,7 +195,8 @@ export const tier2Tests = {
 
     // Verify processed successfully
     await page.waitForFunction(() => {
-      return document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent?.includes('mock_empty_file.txt');
+      const containers = Array.from(document.querySelectorAll('div.rounded-2xl.p-8'));
+      return containers.some(el => el.textContent?.includes('mock_empty_file.txt'));
     });
   },
 
@@ -221,7 +223,7 @@ export const tier2Tests = {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/tasks`);
     
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
 
     await page.waitForSelector('form');
@@ -243,7 +245,7 @@ export const tier2Tests = {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/tasks`);
     
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -325,7 +327,7 @@ export const tier2Tests = {
     await page.goto(`${baseUrl}/tasks`);
     
     // Create new task
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -424,5 +426,208 @@ export const tier2Tests = {
       });
       return row && row.querySelector('svg.text-red-500.lucide-x-circle') !== null;
     });
+  },
+
+  test_messages_char_limit: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/messages`);
+    await page.waitForSelector('input[placeholder="Type a message..."]');
+
+    // Type 1000 characters
+    const text1000 = 'A'.repeat(1000);
+    await page.type('input[placeholder="Type a message..."]', text1000);
+
+    // Verify character count indicator warning is visible
+    await page.waitForFunction(() => document.body.textContent?.includes('1000/1000'));
+
+    // Try to type one more character
+    await page.type('input[placeholder="Type a message..."]', 'B');
+
+    // Verify indicator count updates but send button is disabled
+    await page.waitForFunction(() => document.body.textContent?.includes('1001/1000'));
+
+    const isBtnDisabled = await page.$eval('button:has(svg.lucide-send)', btn => (btn as HTMLButtonElement).disabled);
+    if (!isBtnDisabled) {
+      throw new Error('Send button should be disabled when character limit is exceeded');
+    }
+  },
+
+  test_email_empty_params: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/email/outreach`);
+    await page.waitForSelector('input[placeholder="e.g., Founders/CTOs needing development tools"]');
+
+    // Check that Generate Email Sequence button is disabled when inputs are empty
+    const isBtnDisabled = await page.$eval('button:has(svg.lucide-mail)', btn => (btn as HTMLButtonElement).disabled);
+    if (!isBtnDisabled) {
+      throw new Error('Generate Email Sequence button should be disabled for empty fields');
+    }
+  },
+
+  test_automation_builder_validation: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/automation`);
+
+    // Click Create Automation button
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
+    await createBtn.click();
+
+    // Wait for canvas
+    await page.waitForSelector('input[placeholder="e.g. Sync Drive to Slack"]');
+
+    // Try to save empty flow
+    await page.evaluate(() => {
+      const saveBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Save Automation')) as HTMLButtonElement;
+      saveBtn?.click();
+    });
+
+    // Verify validation warning message is shown
+    await page.waitForSelector('#automation-validation-message');
+    const msg = await page.$eval('#automation-validation-message', el => el.textContent);
+    if (!msg?.includes('Automation name is required.')) {
+      throw new Error('Incomplete flow warning message not shown');
+    }
+
+    // Type a name
+    await page.type('input[placeholder="e.g. Sync Drive to Slack"]', 'Incompatible Block Flow');
+
+    // Select incompatible block combination: File Upload trigger -> Schedule Meeting action
+    await page.evaluate(() => {
+      const triggers = Array.from(document.querySelectorAll('button')).filter(btn => btn.textContent?.includes('File Upload'));
+      (triggers[0] as HTMLButtonElement)?.click();
+    });
+
+    await page.evaluate(() => {
+      const actions = Array.from(document.querySelectorAll('button')).filter(btn => btn.textContent?.includes('Schedule Meeting'));
+      (actions[0] as HTMLButtonElement)?.click();
+    });
+
+    // Verify incompatible block warning message is shown
+    await page.waitForSelector('#automation-validation-message');
+    const msg2 = await page.$eval('#automation-validation-message', el => el.textContent);
+    if (!msg2?.includes('File Upload trigger cannot be directly connected to Schedule Meeting action.')) {
+      throw new Error('Incompatible block combination error message not shown');
+    }
+  },
+
+  test_browser_agent_safety_checks: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/agent`);
+    await page.waitForSelector('input[placeholder="https://example.com"]');
+
+    // Type a localhost start URL
+    await page.type('input[placeholder="https://example.com"]', 'http://localhost:3000');
+    await page.type('input[placeholder="Describe what you want me to do..."]', 'Search locally');
+
+    // Click send
+    await page.click('button:has(svg.lucide-send)');
+
+    // Verify loopback URL block warning
+    await page.waitForSelector('#agent-error-banner');
+    const err = await page.$eval('#agent-error-banner', el => el.textContent);
+    if (!err?.includes('Loopback address block')) {
+      throw new Error('Loopback URL was not blocked');
+    }
+
+    // Reload and try local protocol
+    await page.reload();
+    await page.waitForSelector('input[placeholder="https://example.com"]');
+    await page.type('input[placeholder="https://example.com"]', 'file:///etc/passwd');
+    await page.type('input[placeholder="Describe what you want me to do..."]', 'Read local file');
+
+    // Click send
+    await page.click('button:has(svg.lucide-send)');
+
+    // Verify protocol block warning
+    await page.waitForSelector('#agent-error-banner');
+    const err2 = await page.$eval('#agent-error-banner', el => el.textContent);
+    if (!err2?.includes('Protocol block')) {
+      throw new Error('Blocked protocol was not rejected');
+    }
+  },
+
+  test_phone_empty_dial: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/phone`);
+    await page.waitForSelector('input[placeholder="Enter phone number..."]');
+
+    // Click Call directly on empty dial pad
+    await page.evaluate(() => {
+      const callBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Call')) as HTMLButtonElement;
+      callBtn?.click();
+    });
+
+    // Assert validation error displays
+    await page.waitForSelector('#phone-validation-message');
+    const err = await page.$eval('#phone-validation-message', el => el.textContent);
+    if (!err?.includes('Please enter a phone number')) {
+      throw new Error('Empty dial pad error message not shown');
+    }
+  },
+
+  test_calendar_double_booking: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/calendar`);
+    await page.waitForSelector('button');
+
+    // Click New Event button
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const btn = btns.find(b => b.textContent?.includes('New Event'));
+      btn?.click();
+    });
+
+    // Fill event details overlapping with default Team Standup (which is at 10:00 today)
+    await page.waitForSelector('input[type="text"]');
+    await page.type('input[type="text"]', 'Double Booked E2E');
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    await page.evaluate((val) => {
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      if (dateInput) {
+        dateInput.value = val;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, todayStr);
+
+    await page.evaluate(() => {
+      const timeInputs = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+      if (timeInputs[0]) {
+        timeInputs[0].value = '10:00';
+        timeInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (timeInputs[1]) {
+        timeInputs[1].value = '11:00';
+        timeInputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+
+    // Click Create Event
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const createBtn = btns.find(b => b.textContent?.trim() === 'Create Event');
+      createBtn?.click();
+    });
+
+    // Assert double booking warning banner is shown
+    await page.waitForSelector('#calendar-double-booking-warning');
+
+    // Click Create Event again to bypass warning and confirm double booking
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const createBtn = btns.find(b => b.textContent?.trim() === 'Create Event');
+      createBtn?.click();
+    });
+
+    // Switch to Week View
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const weekBtn = btns.find(b => b.textContent?.trim() === 'Week');
+      weekBtn?.click();
+    });
+
+    // Assert the double-booked event displays in the weekly view
+    await page.waitForFunction(() => document.body.textContent?.includes('Double Booked E2E'));
   }
 };

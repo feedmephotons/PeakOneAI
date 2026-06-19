@@ -50,9 +50,7 @@ interface Settings {
     compactMode: boolean
     sidebarCollapsed: boolean
     autoPlayVideos: boolean
-    dataS
-
-Quality: 'low' | 'medium' | 'high'
+    dataSaverQuality: 'low' | 'medium' | 'high'
   }
   security: {
     twoFactorEnabled: boolean

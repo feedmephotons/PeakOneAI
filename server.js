@@ -7,13 +7,15 @@ const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')
 const { Server } = require('socket.io')
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = parseInt(process.env.PORT || '3001', 10)
 
 // Initialize Next.js
-const app = next({ dev, hostname, port })
+const app = next({ dev })
 const handle = app.getRequestHandler()
 
 app.prepare().then(() => {
@@ -93,6 +95,58 @@ app.prepare().then(() => {
       socket.to(meetingId).emit('user-left', {
         userId,
         userName
+      })
+    })
+
+    // Join chat conversation room
+    socket.on('join-chat', async ({ conversationId, userId, userName }) => {
+      try {
+        const participant = await prisma.conversationParticipant.findFirst({
+          where: {
+            conversationId,
+            userId
+          }
+        })
+        if (!participant) {
+          console.warn(`[Chat ${conversationId}] Warning: User ${userId} (${userName}) is not a participant of this conversation. Blocked from joining room.`)
+          return
+        }
+        socket.join(conversationId)
+        console.log(`[Chat ${conversationId}] User ${userName} (${userId}) joined room`)
+      } catch (err) {
+        console.error(`[Chat ${conversationId}] Error verifying participation for user ${userId}:`, err)
+      }
+    })
+
+    // Leave chat conversation room
+    socket.on('leave-chat', ({ conversationId, userId }) => {
+      socket.leave(conversationId)
+      console.log(`[Chat ${conversationId}] User ${userId} left room`)
+    })
+
+    // Send chat message
+    socket.on('send-chat-message', ({ conversationId, message }) => {
+      console.log(`[Chat ${conversationId}] New message from ${message.senderName}: ${message.content}`)
+      // Broadcast message to others in the room
+      socket.to(conversationId).emit('new-chat-message', message)
+    })
+
+    // Typing indicator
+    socket.on('typing', ({ conversationId, userId, userName }) => {
+      socket.to(conversationId).emit('user-typing', { userId, userName })
+    })
+
+    // Stop typing indicator
+    socket.on('stop-typing', ({ conversationId, userId }) => {
+      socket.to(conversationId).emit('user-stop-typing', { userId })
+    })
+
+    // Read receipts
+    socket.on('read-receipt', ({ conversationId, userId }) => {
+      socket.to(conversationId).emit('read-status', {
+        conversationId,
+        userId,
+        lastReadAt: new Date().toISOString()
       })
     })
 

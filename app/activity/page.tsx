@@ -34,9 +34,7 @@ interface Stats {
   activeUsers: number
   tasksCompleted: number
   filesUploaded: number
-  messagesS
-
-: number
+  messagesSent: number
   trend: 'up' | 'down' | 'stable'
   percentChange: number
 }
@@ -62,9 +60,7 @@ export default function ActivityPage() {
     activeUsers: 0,
     tasksCompleted: 0,
     filesUploaded: 0,
-    messagesS
-
-: 0,
+    messagesSent: 0,
     trend: 'up',
     percentChange: 0
   })
@@ -310,9 +306,7 @@ export default function ActivityPage() {
       activeUsers: uniqueUsers,
       tasksCompleted,
       filesUploaded,
-      messagesS
-
-: messagesSent,
+      messagesSent,
       trend: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
       percentChange: Math.abs(percentChange)
     })
@@ -541,9 +535,7 @@ export default function ActivityPage() {
                 <MessageSquare className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.messagesS
-
-}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.messagesSent}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Messages Sent</p>
           </div>
         </div>

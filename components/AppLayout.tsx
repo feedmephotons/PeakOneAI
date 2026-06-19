@@ -9,9 +9,19 @@ import { KeyboardShortcutsProvider } from '@/components/KeyboardShortcuts'
 import KeyboardShortcutsHint from './KeyboardShortcutsHint'
 import MobileNav from '@/components/mobile/MobileNav'
 import PeakAIAssistant from '@/components/ai/PeakAIAssistant'
+import PeakSidebar from '@/components/peak/PeakSidebar'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
+
+// Routes that render inside the navy "operating system" shell (Phase 2 redesign).
+// Existing routes keep the legacy top-nav until their page agent migrates them.
+const PEAK_OS_ROUTES = ['/', '/missions', '/memory', '/people', '/lisa']
+
+function isPeakOsRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return PEAK_OS_ROUTES.some((r) => (r === '/' ? pathname === '/' : pathname === r || pathname.startsWith(r + '/')))
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -63,11 +73,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // DEMO MODE: Force top navigation for demo
   const useSidebarLayout = false // mounted && (navStyle === 'sidebar' || navStyle === 'megamenu')
 
+  // Phase 2: navy "operating system" shell for redesigned routes.
+  const usePeakShell = isPeakOsRoute(pathname)
+
   return (
     <ErrorBoundary>
       <NotificationProvider position="top-right" maxNotifications={5}>
         <KeyboardShortcutsProvider>
-          {useSidebarLayout ? (
+          {usePeakShell ? (
+            <div className="peak-os min-h-screen">
+              <PeakSidebar />
+              <main className="min-h-screen pl-[248px]">{children}</main>
+              <KeyboardShortcutsHint />
+              <PeakAIAssistant />
+            </div>
+          ) : useSidebarLayout ? (
             <ResponsiveLayout>
               {children}
               <KeyboardShortcutsHint />

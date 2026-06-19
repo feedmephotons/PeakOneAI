@@ -7,14 +7,15 @@ import {
   Search, Home, Users, Video, MessageSquare, FolderOpen, CheckSquare,
   Mail, Presentation, Phone, Settings, Sparkles, Brain, FileSearch,
   Languages, ArrowRightLeft, Plus, Calendar, Mic, Command as CommandIcon,
-  CornerDownLeft, ArrowUp, ArrowDown, Terminal, Activity,
+  CornerDownLeft, ArrowUp, ArrowDown, Terminal, Activity, Target, UserCog,
+  Sunrise,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type CommandCategory = 'Navigation' | 'Create' | 'AI Actions'
+type CommandCategory = 'Lisa' | 'Navigation' | 'Create' | 'AI Actions'
 
 interface CommandItem {
   id: string
@@ -63,6 +64,53 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   // ---- command definitions ----
 
   const commands: CommandItem[] = useMemo(() => [
+    // ── Lisa (Peak One) ─────────────────────────────────────────────────
+    {
+      id: 'peak-ask-lisa',
+      label: 'Ask Lisa…',
+      description: 'Open Lisa, your AI orchestrator',
+      category: 'Lisa',
+      icon: <Sparkles className="w-4 h-4" />,
+      keywords: ['ai', 'lisa', 'ask', 'assistant', 'chat', 'help'],
+      action: () => navigate('/lisa'),
+    },
+    {
+      id: 'peak-search-memory',
+      label: 'Search memory',
+      description: 'What do I know about…',
+      category: 'Lisa',
+      icon: <Brain className="w-4 h-4" />,
+      keywords: ['memory', 'brain', 'notes', 'recall', 'know', 'search'],
+      action: () => navigate('/memory'),
+    },
+    {
+      id: 'peak-new-mission',
+      label: 'New Mission',
+      description: 'Spin up a mission in Mission Control',
+      category: 'Lisa',
+      icon: <Target className="w-4 h-4" />,
+      keywords: ['mission', 'project', 'objective', 'initiative', 'new'],
+      action: () => navigate('/missions'),
+    },
+    {
+      id: 'peak-prepare-for',
+      label: 'Prepare me for…',
+      description: 'Lisa relationship brief for a person',
+      category: 'Lisa',
+      icon: <UserCog className="w-4 h-4" />,
+      keywords: ['prepare', 'relationship', 'brief', 'person', 'people', 'meeting prep'],
+      action: () => navigate('/people'),
+    },
+    {
+      id: 'peak-daily-brief',
+      label: 'Daily Brief',
+      description: 'Open your morning briefing',
+      category: 'Lisa',
+      icon: <Sunrise className="w-4 h-4" />,
+      keywords: ['daily', 'brief', 'briefing', 'morning', 'today', 'home'],
+      action: () => navigate('/'),
+    },
+
     // ── Navigation ──────────────────────────────────────────────────────
     {
       id: 'nav-home',
@@ -307,7 +355,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
   // Group filtered results by category, preserving order
   const grouped = useMemo(() => {
-    const categoryOrder: CommandCategory[] = ['Navigation', 'Create', 'AI Actions']
+    const categoryOrder: CommandCategory[] = ['Lisa', 'Navigation', 'Create', 'AI Actions']
     const map = new Map<CommandCategory, CommandItem[]>()
 
     for (const cat of categoryOrder) {
@@ -391,45 +439,48 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   let runningIndex = -1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4">
+    <div className="peak-os fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-[#05060c]/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
 
       {/* Palette */}
       <div
-        className="relative w-full max-w-xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden flex flex-col"
-        style={{ maxHeight: 'min(520px, 70vh)' }}
+        className="peak-glass peak-glass-glow peak-scrollbar relative w-full max-w-xl overflow-hidden flex flex-col p-0"
+        style={{ maxHeight: 'min(540px, 72vh)' }}
         role="dialog"
         aria-label="Command palette"
       >
+        {/* faint purple aurora at the top edge */}
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[120%] -translate-x-1/2 bg-[radial-gradient(50%_100%_at_50%_0%,rgba(139,92,246,0.18)_0%,transparent_70%)]" />
+
         {/* ── Search Input ─────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-          <Search className="w-4.5 h-4.5 text-gray-400 dark:text-gray-500 shrink-0" />
+        <div className="relative flex items-center gap-3 px-4 py-3.5 border-b border-peak-border">
+          <Sparkles className="w-4 h-4 text-peak-primary-300 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => { setQuery(e.target.value); setSelectedIndex(0) }}
-            placeholder="Type a command or search..."
-            className="flex-1 bg-transparent outline-none text-[15px] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="Ask Lisa anything…"
+            className="flex-1 bg-transparent outline-none text-[15px] text-peak placeholder:text-peak-muted"
             autoFocus
             spellCheck={false}
             autoComplete="off"
           />
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded font-mono">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-peak-dim bg-white/5 border border-peak-border rounded font-mono">
             ESC
           </kbd>
         </div>
 
         {/* ── Results ───────────────────────────────────────────────── */}
-        <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain py-1">
+        <div ref={listRef} className="peak-scrollbar relative flex-1 overflow-y-auto overscroll-contain py-1">
           {flatList.length === 0 ? (
             <div className="px-4 py-10 text-center">
-              <p className="text-sm text-gray-400 dark:text-gray-500">
+              <p className="text-sm text-peak-muted">
                 No results for &ldquo;{query}&rdquo;
               </p>
             </div>
@@ -438,7 +489,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
               <div key={category} className="px-2 mb-1">
                 {/* Category header */}
                 <div className="px-2 pt-2.5 pb-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-peak-muted">
                     {category}
                   </span>
                 </div>
@@ -456,20 +507,25 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
                       onClick={item.action}
                       onMouseEnter={() => setSelectedIndex(idx)}
                       className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors
+                        relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors
                         ${isSelected
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                          ? 'bg-peak-primary/15 text-peak'
+                          : 'text-peak-muted hover:bg-white/[0.04]'
                         }
                       `}
                     >
+                      {/* left accent on selection */}
+                      {isSelected && (
+                        <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-peak-primary shadow-[0_0_10px_var(--peak-glow)]" />
+                      )}
+
                       {/* Icon */}
                       <div
                         className={`
-                          flex items-center justify-center w-8 h-8 rounded-lg shrink-0
+                          flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors
                           ${isSelected
-                            ? 'bg-indigo-500/40'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                            ? 'bg-peak-primary/25 text-peak-primary-300'
+                            : 'bg-white/[0.04] text-peak-muted'
                           }
                         `}
                       >
@@ -478,14 +534,12 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
                       {/* Label + description */}
                       <div className="flex-1 min-w-0">
-                        <div className={`text-[13px] font-medium leading-tight ${isSelected ? '' : ''}`}>
+                        <div className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-peak' : 'text-peak'}`}>
                           {item.label}
                         </div>
                         <div
                           className={`text-[11px] leading-tight mt-0.5 truncate ${
-                            isSelected
-                              ? 'text-indigo-200'
-                              : 'text-gray-400 dark:text-gray-500'
+                            isSelected ? 'text-peak-primary-300' : 'text-peak-dim'
                           }`}
                         >
                           {item.description}
@@ -496,10 +550,10 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
                       {item.shortcut && (
                         <kbd
                           className={`
-                            hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded shrink-0
+                            hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded shrink-0 border border-peak-border
                             ${isSelected
-                              ? 'bg-indigo-500/40 text-indigo-100'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700'
+                              ? 'bg-peak-primary/20 text-peak-primary-300'
+                              : 'bg-white/5 text-peak-dim'
                             }
                           `}
                         >
@@ -515,33 +569,33 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         </div>
 
         {/* ── Footer ───────────────────────────────────────────────── */}
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
+        <div className="relative px-4 py-2 border-t border-peak-border bg-white/[0.02] flex items-center justify-between text-[11px] text-peak-dim">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1">
-              <kbd className="inline-flex items-center justify-center w-5 h-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[10px]">
+              <kbd className="inline-flex items-center justify-center w-5 h-5 bg-white/5 border border-peak-border rounded text-[10px]">
                 <ArrowUp className="w-2.5 h-2.5" />
               </kbd>
-              <kbd className="inline-flex items-center justify-center w-5 h-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[10px]">
+              <kbd className="inline-flex items-center justify-center w-5 h-5 bg-white/5 border border-peak-border rounded text-[10px]">
                 <ArrowDown className="w-2.5 h-2.5" />
               </kbd>
               <span className="ml-0.5">Navigate</span>
             </span>
             <span className="inline-flex items-center gap-1">
-              <kbd className="inline-flex items-center justify-center h-5 px-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[10px]">
+              <kbd className="inline-flex items-center justify-center h-5 px-1.5 bg-white/5 border border-peak-border rounded text-[10px]">
                 <CornerDownLeft className="w-2.5 h-2.5" />
               </kbd>
               <span className="ml-0.5">Select</span>
             </span>
             <span className="inline-flex items-center gap-1">
-              <kbd className="inline-flex items-center justify-center h-5 px-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[10px] font-mono">
+              <kbd className="inline-flex items-center justify-center h-5 px-1.5 bg-white/5 border border-peak-border rounded text-[10px] font-mono">
                 esc
               </kbd>
               <span className="ml-0.5">Close</span>
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-peak-primary-300">
             <CommandIcon className="w-3 h-3" />
-            <span>Peak One Command Bar</span>
+            <span>Ask Lisa</span>
           </div>
         </div>
       </div>

@@ -32,6 +32,20 @@ export default function EmailPage() {
   const [folder, setFolder] = useState<'inbox' | 'sent' | 'archive' | 'trash'>('inbox')
   const [isComposing, setIsComposing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [composerInitialTo, setComposerInitialTo] = useState<string>('')
+  const [composerInitialToTimestamp, setComposerInitialToTimestamp] = useState<number>(0)
+
+  const handleAddContactToComposer = (email: string) => {
+    setComposerInitialTo(email)
+    setComposerInitialToTimestamp(Date.now())
+    setIsComposing(true)
+  }
+
+  const handleCloseComposer = () => {
+    setIsComposing(false)
+    setComposerInitialTo('')
+    setComposerInitialToTimestamp(0)
+  }
 
   useEffect(() => {
     const savedEmails = localStorage.getItem('emails')
@@ -123,7 +137,7 @@ export default function EmailPage() {
       starred: false
     }
     setEmails([newEmail, ...emails])
-    setIsComposing(false)
+    handleCloseComposer()
   }
 
   const formatTime = (date: Date) => {
@@ -215,7 +229,7 @@ export default function EmailPage() {
         </nav>
 
         {/* Smart Contacts - Lusha-style */}
-        <SmartContactsSidebar />
+        <SmartContactsSidebar onAddContact={handleAddContactToComposer} />
       </div>
 
       {/* Email List */}
@@ -381,7 +395,9 @@ export default function EmailPage() {
       {isComposing && (
         <EmailComposer
           onSend={handleSendEmail}
-          onClose={() => setIsComposing(false)}
+          onClose={handleCloseComposer}
+          initialTo={composerInitialTo}
+          initialToTimestamp={composerInitialToTimestamp}
         />
       )}
     </div>
@@ -390,22 +406,39 @@ export default function EmailPage() {
 
 // ─── Smart Contacts Sidebar Component (Lusha-style) ───
 
-function SmartContactsSidebar() {
+interface SmartContactsSidebarProps {
+  onAddContact: (email: string) => void
+}
+
+function SmartContactsSidebar({ onAddContact }: SmartContactsSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
+  const [contacts, setContacts] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const mockContacts = [
-    { name: 'Jordan Mitchell', title: 'VP of Engineering', company: 'Acme Corp', email: 'jordan@acme.com', avatar: 'JM' },
-    { name: 'Casey Williams', title: 'Head of Product', company: 'TechCo', email: 'casey@techco.io', avatar: 'CW' },
-    { name: 'Alex Rivera', title: 'CTO', company: 'StartupHQ', email: 'alex@startuphq.com', avatar: 'AR' },
-  ]
+  useEffect(() => {
+    if (!isExpanded || !contactSearch) {
+      setContacts([])
+      return
+    }
 
-  const filtered = contactSearch.length > 0
-    ? mockContacts.filter(c =>
-        c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
-        c.company.toLowerCase().includes(contactSearch.toLowerCase())
-      )
-    : []
+    const handler = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/contacts?search=${encodeURIComponent(contactSearch)}`)
+        const data = await res.json()
+        if (data.success) {
+          setContacts(data.contacts || [])
+        }
+      } catch (err) {
+        console.error('[SmartContactsSidebar] Error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(handler)
+  }, [contactSearch, isExpanded])
 
   return (
     <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -435,26 +468,33 @@ function SmartContactsSidebar() {
 
           {contactSearch.length > 0 && (
             <div className="space-y-1.5">
-              {filtered.length > 0 ? filtered.map((contact, idx) => (
+              {contacts.length > 0 ? contacts.map((contact, idx) => (
                 <div key={idx} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                      {contact.avatar}
+                      {contact.avatar || contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-gray-900 dark:text-white truncate">{contact.name}</div>
-                      <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{contact.title}, {contact.company}</div>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        {contact.title || 'Contact'}{contact.company ? `, ${contact.company}` : ''}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-1.5 pl-8">
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{contact.email}</span>
-                    <button className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium whitespace-nowrap ml-1">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{contact.email || ''}</span>
+                    <button
+                      onClick={() => onAddContact(contact.email)}
+                      className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium whitespace-nowrap ml-1"
+                    >
                       + Add
                     </button>
                   </div>
                 </div>
               )) : (
-                <div className="text-xs text-gray-400 text-center py-2">No contacts found</div>
+                <div className="text-xs text-gray-400 text-center py-2">
+                  {loading ? 'Searching...' : 'No contacts found'}
+                </div>
               )}
             </div>
           )}
@@ -480,16 +520,43 @@ function SmartContactsSidebar() {
 interface EmailComposerProps {
   onSend: (email: Partial<Email>) => void
   onClose: () => void
+  initialTo?: string
+  initialToTimestamp?: number
 }
 
-function EmailComposer({ onSend, onClose }: EmailComposerProps) {
+function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0 }: EmailComposerProps) {
   const [to, setTo] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+
+  useEffect(() => {
+    if (!initialTo) return
+
+    setTo(prev => {
+      const currentEmails = prev
+        ? prev.split(',').map(e => e.trim()).filter(Boolean)
+        : []
+      
+      if (currentEmails.includes(initialTo)) {
+        return prev
+      }
+      
+      const newEmails = [...currentEmails, initialTo]
+      return newEmails.join(', ')
+    })
+  }, [initialTo, initialToTimestamp])
   const [selectedTone, setSelectedTone] = useState<string>('Professional')
   const [showTemplates, setShowTemplates] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
   const [showContactFinder, setShowContactFinder] = useState(false)
+
+  const [contacts, setContacts] = useState<any[]>([])
+  const [contactsLoading, setContactsLoading] = useState(false)
+
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [score, setScore] = useState<number>(92)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [rewriting, setRewriting] = useState(false)
 
   const tones = ['Professional', 'Friendly', 'Concise', 'Persuasive']
 
@@ -500,17 +567,108 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
     { name: 'Thank You Note', icon: '🙏' },
   ]
 
-  const mockContacts = [
-    { name: 'Jordan Mitchell', title: 'VP of Engineering', company: 'Acme Corp', email: 'jordan@acme.com', avatar: 'JM' },
-    { name: 'Casey Williams', title: 'Head of Product', company: 'TechCo', email: 'casey@techco.io', avatar: 'CW' },
-  ]
+  // Debounced Contact Search
+  useEffect(() => {
+    if (!showContactFinder) return
 
-  const filteredContacts = contactSearch.length > 0
-    ? mockContacts.filter(c =>
-        c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
-        c.company.toLowerCase().includes(contactSearch.toLowerCase())
-      )
-    : mockContacts
+    const handler = setTimeout(async () => {
+      setContactsLoading(true)
+      try {
+        const res = await fetch(`/api/contacts?search=${encodeURIComponent(contactSearch)}`)
+        const data = await res.json()
+        if (data.success) {
+          setContacts(data.contacts || [])
+        }
+      } catch (err) {
+        console.error('[EmailComposer Contacts] Error:', err)
+      } finally {
+        setContactsLoading(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(handler)
+  }, [contactSearch, showContactFinder])
+
+  // Debounced Lisa Brand Voice Analysis (1 second after typing stops)
+  useEffect(() => {
+    if (!body.trim() && !subject.trim()) {
+      setSuggestions([])
+      setScore(100)
+      return
+    }
+
+    const handler = setTimeout(async () => {
+      setAnalyzing(true)
+      try {
+        const textToAnalyze = `${subject}\n${body}`.trim()
+        const res = await fetch('/api/brand-voice/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: textToAnalyze,
+            workspaceId: 'default-workspace',
+            selectedTone: selectedTone,
+            fieldType: 'email',
+            enforcementLevel: 2
+          })
+        })
+        const data = await res.json()
+        if (data.overallScore !== undefined) {
+          setScore(data.overallScore)
+          setSuggestions(data.suggestions || [])
+        }
+      } catch (err) {
+        console.error('[EmailComposer Analyze] Error:', err)
+      } finally {
+        setAnalyzing(false)
+      }
+    }, 1000)
+
+    return () => clearTimeout(handler)
+  }, [body, subject, selectedTone])
+
+  const handleApplySuggestion = (suggestion: any) => {
+    const orig = suggestion.originalText
+    const repl = suggestion.suggestedText
+    if (!orig || !repl) return
+
+    const replaceText = (source: string, target: string, replacement: string) => {
+      const idx = source.toLowerCase().indexOf(target.toLowerCase())
+      if (idx === -1) return source
+      return source.substring(0, idx) + replacement + source.substring(idx + target.length)
+    }
+
+    if (body.toLowerCase().includes(orig.toLowerCase())) {
+      setBody(prev => replaceText(prev, orig, repl))
+    } else if (subject.toLowerCase().includes(orig.toLowerCase())) {
+      setSubject(prev => replaceText(prev, orig, repl))
+    }
+  }
+
+  const handleRewrite = async () => {
+    if (!body.trim()) return
+    setRewriting(true)
+    try {
+      const res = await fetch('/api/brand-voice/rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: body,
+          workspaceId: 'default-workspace',
+          selectedTone: selectedTone,
+          preserveIntent: true
+        })
+      })
+      const data = await res.json()
+      if (data.rewrittenText) {
+        setBody(data.rewrittenText)
+      }
+    } catch (err) {
+      console.error('[EmailComposer Rewrite] Error:', err)
+    } finally {
+      setRewriting(false)
+    }
+  }
 
   const handleSend = () => {
     onSend({
@@ -549,7 +707,19 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
   }
 
   const handleAddContact = (email: string) => {
-    setTo(prev => prev ? `${prev}, ${email}` : email)
+    setTo(prev => {
+      const currentEmails = prev
+        ? prev.split(',').map(e => e.trim()).filter(Boolean)
+        : []
+      
+      const exists = currentEmails.some(e => e.toLowerCase() === email.toLowerCase())
+      if (exists) {
+        return prev
+      }
+      
+      const newEmails = [...currentEmails, email]
+      return newEmails.join(', ')
+    })
     setShowContactFinder(false)
     setContactSearch('')
   }
@@ -563,7 +733,9 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
               <Brain className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Lisa AI Active</span>
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                {analyzing ? 'Lisa analyzing...' : 'Lisa AI Active'}
+              </span>
             </div>
             <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition">
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -643,15 +815,19 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
                       />
                     </div>
                     <div className="max-h-48 overflow-auto">
-                      {filteredContacts.map((contact, idx) => (
+                      {contactsLoading ? (
+                        <div className="text-xs text-gray-400 text-center py-4">Searching...</div>
+                      ) : contacts.map((contact, idx) => (
                         <div key={idx} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                           <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                            {contact.avatar}
+                            {contact.avatar || contact.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium text-gray-900 dark:text-white">{contact.name}</div>
-                            <div className="text-[10px] text-gray-500 dark:text-gray-400">{contact.title}, {contact.company}</div>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{contact.email}</div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                              {contact.title || 'Contact'}{contact.company ? `, ${contact.company}` : ''}
+                            </div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{contact.email || ''}</div>
                           </div>
                           <button
                             onClick={() => handleAddContact(contact.email)}
@@ -661,6 +837,9 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
                           </button>
                         </div>
                       ))}
+                      {!contactsLoading && contacts.length === 0 && (
+                        <div className="text-xs text-gray-400 text-center py-4">No contacts found</div>
+                      )}
                     </div>
                     <div className="flex items-center justify-center gap-1 p-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                       <Zap className="w-2.5 h-2.5 text-indigo-400" />
@@ -745,12 +924,16 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
             <div className="p-4 border-b border-indigo-100/60 dark:border-indigo-900/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">On-Brand Score</span>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">92%</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{score}%</span>
               </div>
               <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all" style={{ width: '92%' }} />
+                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all" style={{ width: `${score}%` }} />
               </div>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">Your message aligns well with your brand voice</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
+                {score >= 90 ? 'Your message aligns well with your brand voice' :
+                 score >= 70 ? 'Some tone adjustments could improve alignment' :
+                 'Message deviates significantly from brand voice'}
+              </p>
             </div>
 
             {/* AI Suggestions */}
@@ -761,55 +944,48 @@ function EmailComposer({ onSend, onClose }: EmailComposerProps) {
               </div>
 
               <div className="space-y-3">
-                {/* Suggestion 1 */}
-                <div className="p-2.5 bg-white dark:bg-gray-700/60 rounded-lg border border-gray-100 dark:border-gray-600/50">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">Consider a more direct subject line</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Try: <span className="text-indigo-600 dark:text-indigo-400 font-medium">&quot;Q4 Budget: Action Items & Next Steps&quot;</span></p>
-                      <button className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-1.5 hover:text-indigo-800 dark:hover:text-indigo-300 transition">
-                        Apply suggestion
-                      </button>
+                {analyzing ? (
+                  <div className="text-xs text-gray-400 text-center py-4">Analyzing message...</div>
+                ) : suggestions.map((suggestion) => (
+                  <div key={suggestion.id} className="p-2.5 bg-white dark:bg-gray-700/60 rounded-lg border border-gray-100 dark:border-gray-600/50">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${
+                        suggestion.severity === 'error' ? 'text-red-500' :
+                        suggestion.severity === 'warning' ? 'text-amber-500' : 'text-blue-500'
+                      }`} />
+                      <div>
+                        <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">{suggestion.reason}</p>
+                        {suggestion.suggestedText && (
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                            {suggestion.originalText ? `Instead of "${suggestion.originalText}", try:` : 'Try:'}{' '}
+                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">&quot;{suggestion.suggestedText}&quot;</span>
+                          </p>
+                        )}
+                        <button
+                          onClick={() => handleApplySuggestion(suggestion)}
+                          className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-1.5 hover:text-indigo-800 dark:hover:text-indigo-300 transition"
+                        >
+                          Apply suggestion
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Suggestion 2 */}
-                <div className="p-2.5 bg-white dark:bg-gray-700/60 rounded-lg border border-gray-100 dark:border-gray-600/50">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">Your opening could be more personalized</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Instead of &quot;Hi team&quot;, try: <span className="text-indigo-600 dark:text-indigo-400 font-medium">&quot;Hi Sarah, great catching up at yesterday&apos;s standup&quot;</span></p>
-                      <button className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-1.5 hover:text-indigo-800 dark:hover:text-indigo-300 transition">
-                        Apply suggestion
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Suggestion 3 */}
-                <div className="p-2.5 bg-white dark:bg-gray-700/60 rounded-lg border border-gray-100 dark:border-gray-600/50">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">Add a clear call-to-action in the closing</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">End with a specific ask like: <span className="text-indigo-600 dark:text-indigo-400 font-medium">&quot;Please confirm your availability by Friday&quot;</span></p>
-                      <button className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-1.5 hover:text-indigo-800 dark:hover:text-indigo-300 transition">
-                        Apply suggestion
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                ))}
+                {!analyzing && suggestions.length === 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">No suggestions. Your content looks great!</p>
+                )}
               </div>
             </div>
 
             {/* Rewrite Button */}
             <div className="p-4 border-t border-indigo-100/60 dark:border-indigo-900/30">
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+              <button
+                onClick={handleRewrite}
+                disabled={rewriting || !body.trim()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition shadow-sm"
+              >
                 <Sparkles className="w-4 h-4" />
-                Rewrite with AI
+                {rewriting ? 'Rewriting...' : 'Rewrite with AI'}
               </button>
             </div>
           </div>

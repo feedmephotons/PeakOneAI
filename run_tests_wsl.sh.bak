@@ -1,0 +1,34 @@
+#!/bin/bash
+
+echo "=== WSL Test execution helper ===" > test_run_wsl.log
+echo "Working directory: $(pwd)" >> test_run_wsl.log
+echo "Checking active ports..." >> test_run_wsl.log
+fuser -k 3001/tcp >> test_run_wsl.log 2>&1 || true
+fuser -k 3002/tcp >> test_run_wsl.log 2>&1 || true
+
+echo "Cleaning .next directory..." >> test_run_wsl.log
+rm -rf .next >> test_run_wsl.log 2>&1
+sleep 2
+
+echo "Running Next.js production build..." >> test_run_wsl.log
+export NODE_OPTIONS='--max-old-space-size=2048'
+export SENTRY_DISABLE=1
+export NEXT_DISABLE_SENTRY=1
+npm run build >> test_run_wsl.log 2>&1
+BUILD_STATUS=$?
+echo "Next.js build finished with code $BUILD_STATUS" >> test_run_wsl.log
+
+if [ $BUILD_STATUS -ne 0 ]; then
+  echo "Next.js build failed. Exiting." >> test_run_wsl.log
+  echo $BUILD_STATUS > test_exit_code.txt
+  exit $BUILD_STATUS
+fi
+
+echo "Starting E2E Puppeteer tests on port 3002..." >> test_run_wsl.log
+export PORT=3002
+export PUPPETEER_EXECUTABLE_PATH="/usr/bin/google-chrome"
+npx tsx tests/run-all.ts >> test_run_wsl.log 2>&1
+TEST_STATUS=$?
+echo "Tests execution finished with code $TEST_STATUS" >> test_run_wsl.log
+echo $TEST_STATUS > test_exit_code.txt
+exit $TEST_STATUS

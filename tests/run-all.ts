@@ -5,7 +5,8 @@ import { tier2Tests, deleteBoundaryFiles } from './tier2';
 import { tier3Tests } from './tier3';
 import { tier4Tests } from './tier4';
 
-const BASE_URL = 'http://localhost:3001';
+const PORT = parseInt(process.env.PORT || '3001', 10);
+const BASE_URL = `http://localhost:${PORT}`;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -15,24 +16,37 @@ async function main() {
   console.log('          SaasX E2E Test Suite Runner             ');
   console.log('==================================================\n');
 
-  // Check if port 3001 is active
-  const isPortActive = await checkPortActive(3001);
+  // Check if port is active
+  const isPortActive = await checkPortActive(PORT);
   let serverProcess: any = null;
   if (!isPortActive) {
-    console.log('Port 3001 is not active. Starting dev server...');
+    console.log(`Port ${PORT} is not active. Starting dev server...`);
     serverProcess = await startServer();
   } else {
-    console.log('Dev server already running on port 3001. Reusing instance.');
+    console.log(`Dev server already running on port ${PORT}. Reusing instance.`);
   }
 
-  // Launch Puppeteer
-  console.log('Launching headless browser...');
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security']
-  });
+  // Launch Puppeteer helper function
+  async function launchBrowser() {
+    return await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote'],
+      timeout: 120000
+    });
+  }
 
-  const page = await setupPage(browser, BASE_URL);
+  console.log('Launching headless browser...');
+  let browser = await launchBrowser();
+  let page = await setupPage(browser, BASE_URL);
+
+  console.log('Warming up Next.js server (this might take up to 90s)...');
+  try {
+    await page.goto(BASE_URL, { waitUntil: 'networkidle0', timeout: 90000 });
+    console.log('Server warmed up successfully.');
+  } catch (err: any) {
+    console.warn(`Warmup warning: ${err.message}`);
+  }
 
   const suite: Record<string, Record<string, (page: any, baseUrl: string) => Promise<void>>> = {
     tier1: tier1Tests,
@@ -48,6 +62,8 @@ async function main() {
 
   const tiersToRun = targetTier ? [targetTier] : ['tier1', 'tier2', 'tier3', 'tier4'];
 
+  let testsSinceLastRestart = 0;
+
   for (const tier of tiersToRun) {
     if (!suite[tier]) {
       console.error(`Unknown tier specified: ${tier}. Available: tier1, tier2, tier3, tier4`);
@@ -61,6 +77,23 @@ async function main() {
     const tests = suite[tier];
     for (const [testName, testFn] of Object.entries(tests)) {
       totalTests++;
+
+      // Periodically restart browser to prevent memory bloat
+      if (testsSinceLastRestart >= 10) {
+        console.log('Recycling browser to clear memory...');
+        try {
+          await page.close().catch(() => {});
+          await browser.close().catch(() => {});
+        } catch (err) {}
+        try {
+          browser = await launchBrowser();
+          page = await setupPage(browser, BASE_URL);
+        } catch (err: any) {
+          console.error(`Failed to relaunch browser: ${err.message}`);
+        }
+        testsSinceLastRestart = 0;
+      }
+
       console.log(`⏳ [RUNNING] [${tier.toUpperCase()}] ${testName}...`);
       const start = Date.now();
       try {
@@ -74,7 +107,21 @@ async function main() {
         console.error(`   Error: ${err.message || err}`);
         failedTests++;
         failures.push({ testName, tier, error: err });
+
+        // Re-initialize page sandbox on failure to prevent contamination
+        try {
+          await page.close().catch(() => {});
+          await browser.close().catch(() => {});
+        } catch (cleanupErr: any) {}
+        try {
+          browser = await launchBrowser();
+          page = await setupPage(browser, BASE_URL);
+        } catch (cleanupErr: any) {
+          console.error(`Failed to re-initialize browser/page sandbox: ${cleanupErr.message}`);
+        }
+        testsSinceLastRestart = 0;
       }
+      testsSinceLastRestart++;
     }
   }
 

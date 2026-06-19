@@ -4,6 +4,29 @@
 
 @layer base {
   :root {
+    /* ===================================================================== */
+    /* PEAK ONE — "Operating System" design tokens (navy / electric purple)  */
+    /* Locked from mockups. Owned by the design-system agent.                */
+    /* ===================================================================== */
+    --peak-bg: #090A12;            /* app background, deep navy-black */
+    --peak-bg-2: #0D0E1A;          /* sidebar / slightly raised */
+    --peak-panel: #13141F;         /* solid panel base */
+    --peak-glass: rgba(255, 255, 255, 0.035);     /* glass panel fill */
+    --peak-glass-hover: rgba(255, 255, 255, 0.06);
+    --peak-border: rgba(255, 255, 255, 0.07);     /* hairline borders */
+    --peak-primary: #8B5CF6;       /* electric purple (violet-500) */
+    --peak-primary-600: #7C3AED;
+    --peak-primary-300: #C4B5FD;   /* light purple text/accents */
+    --peak-glow: rgba(139, 92, 246, 0.45);        /* purple glow for halos */
+    --peak-text: #F4F5FA;          /* soft white */
+    --peak-text-muted: #9498AD;    /* muted gray-violet */
+    --peak-text-dim: #6B6F85;
+    /* status accents — use sparingly */
+    --peak-green: #34D399;         /* on track */
+    --peak-amber: #FBBF24;         /* slightly behind / warning */
+    --peak-red: #F87171;           /* at risk / no response */
+    --peak-blue: #60A5FA;          /* info, some icons */
+
     /* Brand Colors */
     --brand-primary: 99 102 241; /* Indigo */
     --brand-secondary: 139 92 246; /* Purple */
@@ -245,5 +268,121 @@
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgb(var(--border-primary));
+  }
+}
+
+/* ===================================================================== */
+/* PEAK ONE — base utility classes for the navy "operating system" look  */
+/* These are additive; existing classes above are untouched.             */
+/* ===================================================================== */
+@layer components {
+  /* Page wrapper background: deep navy + faint purple aurora bloom. */
+  .peak-os {
+    background-color: var(--peak-bg);
+    color: var(--peak-text);
+    background-image:
+      radial-gradient(120% 80% at 80% -10%, rgba(139, 92, 246, 0.10) 0%, transparent 55%),
+      radial-gradient(90% 70% at 0% 100%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Standard floating glass panel. */
+  .peak-glass {
+    background-color: var(--peak-glass);
+    border: 1px solid var(--peak-border);
+    border-radius: 1rem;
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+                0 20px 50px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .peak-glass-hover:hover {
+    background-color: var(--peak-glass-hover);
+    border-color: rgba(255, 255, 255, 0.10);
+  }
+
+  /* Glass panel with a purple glow halo (hero / Lisa cards). */
+  .peak-glass-glow {
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+                0 0 0 1px rgba(139, 92, 246, 0.15),
+                0 24px 70px -24px rgba(139, 92, 246, 0.35),
+                0 20px 50px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Aurora bloom helper — drop behind hero/Lisa content. */
+  .peak-aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 120% at 75% 50%, rgba(139, 92, 246, 0.22) 0%, transparent 60%),
+      radial-gradient(40% 80% at 90% 40%, rgba(124, 58, 237, 0.18) 0%, transparent 60%);
+    filter: blur(8px);
+  }
+}
+
+@layer utilities {
+  /* Token-backed color utilities (Tailwind also exposes these via theme). */
+  .text-peak { color: var(--peak-text); }
+  .text-peak-muted { color: var(--peak-text-muted); }
+  .text-peak-dim { color: var(--peak-text-dim); }
+  .text-peak-primary { color: var(--peak-primary); }
+  .text-peak-primary-300 { color: var(--peak-primary-300); }
+  .bg-peak { background-color: var(--peak-bg); }
+  .bg-peak-2 { background-color: var(--peak-bg-2); }
+  .bg-peak-panel { background-color: var(--peak-panel); }
+  .border-peak { border-color: var(--peak-border); }
+
+  /* The cosmic purple orb — pure CSS, no images. */
+  .peak-orb {
+    position: relative;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(196, 181, 253, 0.6) 8%, transparent 22%),
+      radial-gradient(circle at 50% 50%, #a78bfa 0%, #7c3aed 45%, #4c1d95 80%, #1e1b4b 100%);
+    box-shadow:
+      0 0 60px 10px var(--peak-glow),
+      0 0 120px 30px rgba(139, 92, 246, 0.25),
+      inset 0 0 40px rgba(255, 255, 255, 0.15);
+  }
+
+  /* Orbital ring around the orb. */
+  .peak-orb-ring {
+    position: absolute;
+    border-radius: 9999px;
+    border: 1px solid rgba(196, 181, 253, 0.35);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Animations */
+  .animate-peak-float { animation: peak-float 6s ease-in-out infinite; }
+  .animate-peak-pulse-glow { animation: peak-pulse-glow 4s ease-in-out infinite; }
+  .animate-peak-fade-up { animation: peak-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  @keyframes peak-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes peak-pulse-glow {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    50% { opacity: 0.85; filter: brightness(1.25); }
+  }
+
+  @keyframes peak-fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Slim purple scrollbar for navy surfaces. */
+  .peak-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .peak-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .peak-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.25);
+    border-radius: 9999px;
+  }
+  .peak-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.45);
   }
 }

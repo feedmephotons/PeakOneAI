@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import {
   Search, Plus, Send, Paperclip, Phone, Video, MoreVertical,
   Hash, Users, Star, Smile, Image as ImageIcon,
-  File, Mic, BellOff, Lock
+  File, Mic, BellOff, Lock, MessageSquare
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { io } from 'socket.io-client'
 
 interface Message {
   id: string
@@ -21,6 +24,7 @@ interface Message {
   isRead: boolean
   isEdited?: boolean
   reactions?: { emoji: string; users: string[] }[]
+  pending?: boolean
 }
 
 interface Conversation {
@@ -37,134 +41,6 @@ interface Conversation {
   isMuted?: boolean
 }
 
-const SAMPLE_CONVERSATIONS: Conversation[] = [
-  {
-    id: '1',
-    type: 'direct',
-    name: 'Sarah Johnson',
-    lastMessage: 'Sounds good! Let me know when you\'re ready.',
-    lastMessageTime: new Date(Date.now() - 300000),
-    unreadCount: 2,
-    participants: ['user', 'sarah'],
-    isOnline: true,
-    isPinned: true
-  },
-  {
-    id: '2',
-    type: 'channel',
-    name: 'general',
-    lastMessage: 'Welcome to the team!',
-    lastMessageTime: new Date(Date.now() - 3600000),
-    unreadCount: 0,
-    participants: ['user', 'sarah', 'john', 'emily'],
-  },
-  {
-    id: '3',
-    type: 'channel',
-    name: 'development',
-    lastMessage: 'PR #234 has been merged',
-    lastMessageTime: new Date(Date.now() - 7200000),
-    unreadCount: 5,
-    participants: ['user', 'john', 'mike'],
-  },
-  {
-    id: '4',
-    type: 'group',
-    name: 'Project Alpha Team',
-    lastMessage: 'Meeting tomorrow at 2 PM',
-    lastMessageTime: new Date(Date.now() - 86400000),
-    unreadCount: 0,
-    participants: ['user', 'sarah', 'john', 'emily', 'mike'],
-    isMuted: true
-  },
-  {
-    id: '5',
-    type: 'direct',
-    name: 'John Doe',
-    lastMessage: 'Can you review my code?',
-    lastMessageTime: new Date(Date.now() - 172800000),
-    unreadCount: 1,
-    participants: ['user', 'john'],
-    isOnline: false
-  }
-]
-
-const SAMPLE_MESSAGES: Message[] = [
-  {
-    id: '1',
-    conversationId: '1',
-    senderId: 'sarah',
-    senderName: 'Sarah Johnson',
-    content: 'Hey! How\'s the new feature coming along?',
-    timestamp: new Date(Date.now() - 3600000),
-    type: 'text',
-    isRead: true
-  },
-  {
-    id: '2',
-    conversationId: '1',
-    senderId: 'user',
-    senderName: 'You',
-    content: 'Making great progress! Just finished the UI components.',
-    timestamp: new Date(Date.now() - 3000000),
-    type: 'text',
-    isRead: true
-  },
-  {
-    id: '3',
-    conversationId: '1',
-    senderId: 'sarah',
-    senderName: 'Sarah Johnson',
-    content: 'That\'s awesome! Can you share a screenshot?',
-    timestamp: new Date(Date.now() - 600000),
-    type: 'text',
-    isRead: true
-  },
-  {
-    id: '4',
-    conversationId: '1',
-    senderId: 'user',
-    senderName: 'You',
-    content: 'Sure, here it is:',
-    timestamp: new Date(Date.now() - 500000),
-    type: 'text',
-    isRead: true
-  },
-  {
-    id: '5',
-    conversationId: '1',
-    senderId: 'user',
-    senderName: 'You',
-    content: '',
-    timestamp: new Date(Date.now() - 480000),
-    type: 'image',
-    fileUrl: '/screenshot.png',
-    fileName: 'Feature_Screenshot.png',
-    isRead: true
-  },
-  {
-    id: '6',
-    conversationId: '1',
-    senderId: 'sarah',
-    senderName: 'Sarah Johnson',
-    content: 'Looks amazing! 🎉',
-    timestamp: new Date(Date.now() - 400000),
-    type: 'text',
-    isRead: true,
-    reactions: [{ emoji: '👍', users: ['user'] }]
-  },
-  {
-    id: '7',
-    conversationId: '1',
-    senderId: 'sarah',
-    senderName: 'Sarah Johnson',
-    content: 'Sounds good! Let me know when you\'re ready.',
-    timestamp: new Date(Date.now() - 300000),
-    type: 'text',
-    isRead: false
-  }
-]
-
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -173,156 +49,523 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showChannels, setShowChannels] = useState(true)
   const [showDirectMessages, setShowDirectMessages] = useState(true)
-  const [isTyping, setIsTyping] = useState(false)
+  const [typingUsers, setTypingUsers] = useState<{ [userId: string]: string }>({})
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [isOffline, setIsOffline] = useState(false)
+  const [socketConnected, setSocketConnected] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const socketRef = useRef<any>(null)
+  const prevConversationIdRef = useRef<string | null>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isSyncingRef = useRef(false)
 
-  // Load data from localStorage
+  // 1. Detect browser online/offline status using window event listeners and socket connection status
   useEffect(() => {
-    const savedConversations = localStorage.getItem('conversations')
-    const savedMessages = localStorage.getItem('messages')
-
-    if (savedConversations) {
-      setConversations(JSON.parse(savedConversations))
-    } else {
-      setConversations(SAMPLE_CONVERSATIONS)
-      localStorage.setItem('conversations', JSON.stringify(SAMPLE_CONVERSATIONS))
+    const updateOnlineStatus = () => {
+      setIsOffline(!navigator.onLine)
     }
 
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages))
-    } else {
-      setMessages(SAMPLE_MESSAGES)
-      localStorage.setItem('messages', JSON.stringify(SAMPLE_MESSAGES))
-    }
+    window.addEventListener('online', updateOnlineStatus)
+    window.addEventListener('offline', updateOnlineStatus)
+    updateOnlineStatus()
 
-    // Select first conversation by default
-    if (SAMPLE_CONVERSATIONS.length > 0) {
-      setSelectedConversation(SAMPLE_CONVERSATIONS[0])
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus)
+      window.removeEventListener('offline', updateOnlineStatus)
     }
   }, [])
 
-  // Auto-scroll to bottom when new messages arrive
+  const offlineActive = isOffline || !socketConnected
+
+  // 2. Fetch authenticated user profile using Supabase client, falling back to demo user profile
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    const fetchUserAndConversations = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+        
+        let profile = null
+        if (supabaseUser) {
+          profile = {
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            name: supabaseUser.user_metadata?.first_name 
+              ? `${supabaseUser.user_metadata.first_name} ${supabaseUser.user_metadata.last_name || ''}`.trim()
+              : supabaseUser.email?.split('@')[0] || 'User',
+            avatarUrl: supabaseUser.user_metadata?.avatar_url || null
+          }
+        } else {
+          profile = {
+            id: 'demo-user-id',
+            email: 'sarah.chen@peakone.ai',
+            name: 'Sarah Chen',
+            avatarUrl: null
+          }
+        }
+        setCurrentUser(profile)
+
+        // Fetch conversations
+        const response = await fetch('/api/conversations')
+        if (response.ok) {
+          const data = await response.json()
+          setConversations(data.conversations || [])
+          
+          if (data.conversations && data.conversations.length > 0) {
+            setSelectedConversation(data.conversations[0])
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user/conversations:', err)
+      }
+    }
+
+    fetchUserAndConversations()
+  }, [])
+
+  // 3. Fetch messages when conversation changes
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedConversation) return
+      try {
+        const response = await fetch(`/api/messages?conversationId=${selectedConversation.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setMessages((data.messages || []).map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          })))
+        }
+      } catch (err) {
+        console.error('Error fetching messages:', err)
+      }
+    }
+
+    fetchMessages()
+  }, [selectedConversation])
+
+  // 4. Initialize and handle socket.io-client connection on port 3001
+  useEffect(() => {
+    const socket = io('http://localhost:3001')
+    socketRef.current = socket
+
+    socket.on('connect', () => {
+      console.log('Connected to socket server')
+      setSocketConnected(true)
+    })
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from socket server')
+      setSocketConnected(false)
+    })
+
+    return () => {
+      socket.disconnect()
+    }
+  }, [])
+
+  // 5. Integrate room joining/leaving on conversation selection (using join-chat)
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!currentUser || !socket) return
+
+    // Leave previous room if any
+    if (prevConversationIdRef.current && prevConversationIdRef.current !== selectedConversation?.id) {
+      socket.emit('leave-chat', {
+        conversationId: prevConversationIdRef.current,
+        userId: currentUser.id
+      })
+    }
+
+    if (selectedConversation) {
+      // Join new room
+      socket.emit('join-chat', {
+        conversationId: selectedConversation.id,
+        userId: currentUser.id,
+        userName: currentUser.name || currentUser.email
+      })
+
+      prevConversationIdRef.current = selectedConversation.id
+
+      // Emit read-receipt via socket
+      socket.emit('read-receipt', {
+        conversationId: selectedConversation.id,
+        userId: currentUser.id
+      })
+
+      // Mark messages in the conversation as read via API PUT
+      markAsReadAPI(selectedConversation.id)
+    } else {
+      prevConversationIdRef.current = null
+    }
+  }, [selectedConversation, currentUser, socketConnected])
+
+  // Clear typing users when conversation changes
+  useEffect(() => {
+    setTypingUsers({})
+  }, [selectedConversation])
+
+  // 6. Listen to incoming socket events
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!socket) return
+
+    const handleNewChatMessage = (msg: Message) => {
+      if (selectedConversation && msg.conversationId === selectedConversation.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, { ...msg, timestamp: new Date(msg.timestamp) }]
+        })
+
+        // Mark as read in DB and emit read receipt
+        markAsReadAPI(selectedConversation.id)
+        socket.emit('read-receipt', {
+          conversationId: selectedConversation.id,
+          userId: currentUser?.id
+        })
+      }
+
+      // Update last message & unread count
+      setConversations(prev => prev.map(conv => {
+        if (conv.id === msg.conversationId) {
+          const isCurrent = selectedConversation?.id === msg.conversationId
+          return {
+            ...conv,
+            lastMessage: msg.content || (msg.type === 'image' ? 'Sent an image' : 'Sent a file'),
+            lastMessageTime: new Date(msg.timestamp),
+            unreadCount: isCurrent ? 0 : conv.unreadCount + 1
+          }
+        }
+        return conv
+      }))
+    }
+
+    const handleUserTyping = ({ userId, userName }: { userId: string, userName: string }) => {
+      setTypingUsers(prev => ({ ...prev, [userId]: userName }))
+    }
+
+    const handleUserStopTyping = ({ userId }: { userId: string }) => {
+      setTypingUsers(prev => {
+        const next = { ...prev }
+        delete next[userId]
+        return next
+      })
+    }
+
+    const handleReadStatus = ({ conversationId, userId, lastReadAt }: { conversationId: string, userId: string, lastReadAt: string }) => {
+      if (selectedConversation && conversationId === selectedConversation.id) {
+        setMessages(prev => prev.map(msg => {
+          if ((msg.senderId === 'user' || msg.senderId === currentUser?.id) && new Date(msg.timestamp) <= new Date(lastReadAt)) {
+            return { ...msg, isRead: true }
+          }
+          return msg
+        }))
+      }
+    }
+
+    socket.on('new-chat-message', handleNewChatMessage)
+    socket.on('user-typing', handleUserTyping)
+    socket.on('user-stop-typing', handleUserStopTyping)
+    socket.on('read-status', handleReadStatus)
+
+    return () => {
+      socket.off('new-chat-message', handleNewChatMessage)
+      socket.off('user-typing', handleUserTyping)
+      socket.off('user-stop-typing', handleUserStopTyping)
+      socket.off('read-status', handleReadStatus)
+    }
+  }, [selectedConversation, currentUser])
+
+  // 7. Sync offline queue when coming back online using exponential backoff retry loop
+  useEffect(() => {
+    if (!offlineActive) {
+      syncOfflineQueue()
+    }
+  }, [offlineActive])
+
+  const syncOfflineQueue = async () => {
+    if (isSyncingRef.current) return
+    isSyncingRef.current = true
+
+    try {
+      // Check multi-tab sync lock
+      const lock = localStorage.getItem('offline_messages_queue_lock')
+      const now = Date.now()
+      if (lock && now - parseInt(lock) < 10000) {
+        isSyncingRef.current = false
+        return
+      }
+      // Acquire lock
+      localStorage.setItem('offline_messages_queue_lock', now.toString())
+
+      // Stabilization delay to allow browser network stack to settle
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      const queueJson = localStorage.getItem('offline_messages_queue')
+      if (!queueJson) {
+        localStorage.removeItem('offline_messages_queue_lock')
+        return
+      }
+      const queue: Message[] = JSON.parse(queueJson)
+      if (queue.length === 0) {
+        localStorage.removeItem('offline_messages_queue_lock')
+        return
+      }
+
+      console.log(`Syncing ${queue.length} offline messages...`)
+      const remainingQueue: Message[] = []
+      
+      for (const msg of queue) {
+        let success = false
+        let retries = 0
+        let delay = 1000
+
+        while (!success && retries < 5) {
+          // Renew lock
+          localStorage.setItem('offline_messages_queue_lock', Date.now().toString())
+          try {
+            const response = await fetch('/api/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: msg.id,
+                type: msg.type,
+                fileUrl: msg.fileUrl,
+                fileName: msg.fileName,
+                content: msg.content,
+                conversationId: msg.conversationId
+              })
+            })
+
+            if (response.ok) {
+              success = true
+              const data = await response.json()
+              const savedMsg = data.message
+
+              setMessages(prev => prev.map(m => m.id === msg.id ? { ...savedMsg, pending: false, timestamp: new Date(savedMsg.timestamp) } : m))
+
+              if (socketRef.current) {
+                socketRef.current.emit('send-chat-message', {
+                  conversationId: msg.conversationId,
+                  message: savedMsg
+                })
+              }
+            } else {
+              throw new Error('Server error: ' + response.status)
+            }
+          } catch (error) {
+            console.error(`Attempt ${retries + 1} to send message ${msg.id} failed:`, error)
+            retries++
+            if (retries < 5) {
+              await new Promise(resolve => setTimeout(resolve, delay))
+              delay *= 2
+            }
+          }
+        }
+
+        if (!success) {
+          remainingQueue.push(msg)
+        }
+      }
+
+      localStorage.setItem('offline_messages_queue', JSON.stringify(remainingQueue))
+    } finally {
+      localStorage.removeItem('offline_messages_queue_lock')
+      isSyncingRef.current = false
+    }
+  }
+
+  const queueOfflineMessage = (msg: Message) => {
+    const queueJson = localStorage.getItem('offline_messages_queue')
+    const queue: Message[] = queueJson ? JSON.parse(queueJson) : []
+    queue.push(msg)
+    localStorage.setItem('offline_messages_queue', JSON.stringify(queue))
+  }
+
+  // 8. PUT api to mark conversation as read
+  const markAsReadAPI = async (convId: string) => {
+    try {
+      await fetch('/api/messages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: convId })
+      })
+
+      setConversations(prev => prev.map(conv =>
+        conv.id === convId ? { ...conv, unreadCount: 0 } : conv
+      ))
+
+      setMessages(prev => prev.map(msg =>
+        msg.conversationId === convId ? { ...msg, isRead: true } : msg
+      ))
+    } catch (err) {
+      console.error('Failed to mark conversation as read:', err)
+    }
+  }
+
+  // 9. Send messaging action
+  const sendMessage = async (content: string, type: 'text' | 'image' | 'file' = 'text', fileUrl?: string, fileName?: string) => {
+    if (!selectedConversation || !currentUser) return
+
+    const clientMsgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+    const newMsg: Message = {
+      id: clientMsgId,
+      conversationId: selectedConversation.id,
+      senderId: currentUser?.id || 'user',
+      senderName: 'You',
+      senderAvatar: currentUser.avatarUrl || undefined,
+      content,
+      timestamp: new Date(),
+      type,
+      fileUrl,
+      fileName,
+      isRead: true,
+      pending: true
+    }
+
+    setMessages(prev => [...prev, newMsg])
+
+    setConversations(prev => prev.map(conv =>
+      conv.id === selectedConversation.id
+        ? { ...conv, lastMessage: content || (type === 'image' ? 'Sent an image' : 'Sent a file'), lastMessageTime: new Date() }
+        : conv
+    ))
+
+    if (offlineActive) {
+      queueOfflineMessage(newMsg)
+    } else {
+      try {
+        const response = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: clientMsgId,
+            type,
+            fileUrl,
+            fileName,
+            content,
+            conversationId: selectedConversation.id
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to send message')
+        }
+
+        const data = await response.json()
+        const savedMsg = data.message
+
+        setMessages(prev => prev.map(m => m.id === clientMsgId ? { ...savedMsg, pending: false, timestamp: new Date(savedMsg.timestamp) } : m))
+
+        if (socketRef.current) {
+          socketRef.current.emit('send-chat-message', {
+            conversationId: selectedConversation.id,
+            message: savedMsg
+          })
+        }
+      } catch (err) {
+        console.error('Error sending message, queueing instead:', err)
+        queueOfflineMessage(newMsg)
+      }
+    }
+  }
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return
 
-    const message: Message = {
-      id: Date.now().toString(),
-      conversationId: selectedConversation.id,
-      senderId: 'user',
-      senderName: 'You',
-      content: newMessage,
-      timestamp: new Date(),
-      type: 'text',
-      isRead: true
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    if (socketRef.current && currentUser) {
+      socketRef.current.emit('stop-typing', {
+        conversationId: selectedConversation.id,
+        userId: currentUser.id
+      })
     }
 
-    const updatedMessages = [...messages, message]
-    setMessages(updatedMessages)
-    localStorage.setItem('messages', JSON.stringify(updatedMessages))
-
-    // Update conversation's last message
-    const updatedConversations = conversations.map(conv =>
-      conv.id === selectedConversation.id
-        ? { ...conv, lastMessage: newMessage, lastMessageTime: new Date() }
-        : conv
-    )
-    setConversations(updatedConversations)
-    localStorage.setItem('conversations', JSON.stringify(updatedConversations))
-
+    sendMessage(newMessage)
     setNewMessage('')
+  }
 
-    // Simulate typing indicator and response
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      if (selectedConversation.type === 'direct') {
-        const responseMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          conversationId: selectedConversation.id,
-          senderId: selectedConversation.participants.find(p => p !== 'user') || 'other',
-          senderName: selectedConversation.name,
-          content: getRandomResponse(),
-          timestamp: new Date(),
-          type: 'text',
-          isRead: false
-        }
-        const newUpdatedMessages = [...updatedMessages, responseMessage]
-        setMessages(newUpdatedMessages)
-        localStorage.setItem('messages', JSON.stringify(newUpdatedMessages))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value)
+
+    if (!selectedConversation || !currentUser) return
+
+    const socket = socketRef.current
+    if (socket) {
+      socket.emit('typing', {
+        conversationId: selectedConversation.id,
+        userId: currentUser.id,
+        userName: currentUser.name || currentUser.email
+      })
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
       }
-    }, 2000)
+
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stop-typing', {
+          conversationId: selectedConversation.id,
+          userId: currentUser.id
+        })
+      }, 2000)
+    }
   }
 
-  const getRandomResponse = () => {
-    const responses = [
-      'That sounds great!',
-      'I\'ll look into it right away.',
-      'Thanks for the update!',
-      'Let me check and get back to you.',
-      'Excellent work! 👏',
-      'Could you provide more details?',
-      'I agree with your approach.',
-      'Let\'s discuss this in our next meeting.'
-    ]
-    return responses[Math.floor(Math.random() * responses.length)]
-  }
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (offlineActive) {
+      alert('You cannot upload attachments while offline.')
+      return
+    }
     const file = event.target.files?.[0]
-    if (!file || !selectedConversation) return
+    if (!file || !selectedConversation || !currentUser) return
 
-    const message: Message = {
-      id: Date.now().toString(),
-      conversationId: selectedConversation.id,
-      senderId: 'user',
-      senderName: 'You',
-      content: '',
-      timestamp: new Date(),
-      type: file.type.startsWith('image/') ? 'image' : 'file',
-      fileName: file.name,
-      fileUrl: URL.createObjectURL(file),
-      isRead: true
+    const isImg = file.type.startsWith('image/')
+    const type: 'image' | 'file' = isImg ? 'image' : 'file'
+    const fileName = file.name
+    const localUrl = URL.createObjectURL(file)
+
+    let fileUrl = localUrl
+
+    try {
+      if (currentUser.id !== 'demo-user-id') {
+        const supabase = createClient()
+        const fileExt = file.name.split('.').pop()
+        const storagePath = `${currentUser.id}/${Date.now()}.${fileExt}`
+
+        const { data, error } = await supabase.storage
+          .from('files')
+          .upload(storagePath, file)
+
+        if (!error && data) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('files')
+            .getPublicUrl(storagePath)
+          fileUrl = publicUrl
+        } else {
+          console.warn('Supabase upload failed, using local blob URL:', error)
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err)
     }
 
-    const updatedMessages = [...messages, message]
-    setMessages(updatedMessages)
-    localStorage.setItem('messages', JSON.stringify(updatedMessages))
+    await sendMessage('', type, fileUrl, fileName)
   }
 
   const togglePinConversation = (convId: string) => {
-    const updatedConversations = conversations.map(conv =>
+    setConversations(prev => prev.map(conv =>
       conv.id === convId ? { ...conv, isPinned: !conv.isPinned } : conv
-    )
-    setConversations(updatedConversations)
-    localStorage.setItem('conversations', JSON.stringify(updatedConversations))
+    ))
   }
 
   const toggleMuteConversation = (convId: string) => {
-    const updatedConversations = conversations.map(conv =>
+    setConversations(prev => prev.map(conv =>
       conv.id === convId ? { ...conv, isMuted: !conv.isMuted } : conv
-    )
-    setConversations(updatedConversations)
-    localStorage.setItem('conversations', JSON.stringify(updatedConversations))
-  }
-
-  const markAsRead = (convId: string) => {
-    const updatedConversations = conversations.map(conv =>
-      conv.id === convId ? { ...conv, unreadCount: 0 } : conv
-    )
-    setConversations(updatedConversations)
-    localStorage.setItem('conversations', JSON.stringify(updatedConversations))
-
-    const updatedMessages = messages.map(msg =>
-      msg.conversationId === convId ? { ...msg, isRead: true } : msg
-    )
-    setMessages(updatedMessages)
-    localStorage.setItem('messages', JSON.stringify(updatedMessages))
+    ))
   }
 
   const filteredConversations = conversations.filter(conv =>
@@ -332,6 +575,11 @@ export default function MessagesPage() {
   const conversationMessages = selectedConversation
     ? messages.filter(msg => msg.conversationId === selectedConversation.id)
     : []
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const emojis = ['😀', '😂', '❤️', '👍', '🎉', '🚀', '💯', '🔥']
 
@@ -372,7 +620,6 @@ export default function MessagesPage() {
               isSelected={selectedConversation?.id === conversation.id}
               onClick={() => {
                 setSelectedConversation(conversation)
-                markAsRead(conversation.id)
               }}
               onPin={() => togglePinConversation(conversation.id)}
               onMute={() => toggleMuteConversation(conversation.id)}
@@ -396,7 +643,6 @@ export default function MessagesPage() {
               isSelected={selectedConversation?.id === conversation.id}
               onClick={() => {
                 setSelectedConversation(conversation)
-                markAsRead(conversation.id)
               }}
               onPin={() => togglePinConversation(conversation.id)}
               onMute={() => toggleMuteConversation(conversation.id)}
@@ -420,7 +666,6 @@ export default function MessagesPage() {
               isSelected={selectedConversation?.id === conversation.id}
               onClick={() => {
                 setSelectedConversation(conversation)
-                markAsRead(conversation.id)
               }}
               onPin={() => togglePinConversation(conversation.id)}
               onMute={() => toggleMuteConversation(conversation.id)}
@@ -431,7 +676,7 @@ export default function MessagesPage() {
 
       {/* Chat Area */}
       {selectedConversation ? (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-full relative">
           {/* Chat Header */}
           <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div className="flex items-center justify-between">
@@ -472,12 +717,19 @@ export default function MessagesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                {/* Route call buttons appropriately */}
+                <Link
+                  href={`/phone?contact=${encodeURIComponent(selectedConversation.name)}&autoDial=true`}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                >
                   <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                </Link>
+                <Link
+                  href={`/video?roomId=${encodeURIComponent(selectedConversation.id)}&startCall=true`}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                >
                   <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
+                </Link>
                 <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
                   <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
@@ -485,28 +737,39 @@ export default function MessagesPage() {
             </div>
           </div>
 
+          {/* Reconnect Banner */}
+          {offlineActive && (
+            <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2 z-10 shadow-md">
+              <span className="w-2.5 h-2.5 bg-white rounded-full animate-ping" />
+              <span>You are offline. Reconnecting... Messages will be synced when back online.</span>
+            </div>
+          )}
+
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {conversationMessages.map((message, index) => (
               <MessageBubble
                 key={message.id}
                 message={message}
-                isOwn={message.senderId === 'user'}
+                isOwn={message.senderId === 'user' || message.senderId === currentUser?.id}
                 showAvatar={index === 0 || conversationMessages[index - 1]?.senderId !== message.senderId}
               />
             ))}
-            {isTyping && (
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            {Object.keys(typingUsers).length > 0 && Object.entries(typingUsers).map(([userId, userName]) => (
+              <div key={userId} className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                  {selectedConversation.name.charAt(0)}
+                  {userName.charAt(0)}
                 </div>
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400">{userName} is typing...</span>
+                  <div className="flex gap-1 mt-1">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
             <div ref={messagesEndRef} />
           </div>
 
@@ -530,26 +793,41 @@ export default function MessagesPage() {
                 className="hidden"
                 accept="image/*,.pdf,.doc,.docx,.txt"
               />
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
                 <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex-1 relative">
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onChange={handleInputChange}
+                  onKeyPress={(e) => e.key === 'Enter' && newMessage.length <= 1000 && handleSendMessage()}
                   placeholder="Type a message..."
-                  className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={`w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    newMessage.length > 1000 ? 'border-red-500 ring-2 ring-red-500' : ''
+                  }`}
                 />
-                <button
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
-                >
-                  <Smile className="w-5 h-5 text-gray-400" />
-                </button>
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <span className={`text-[10px] ${newMessage.length > 1000 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {newMessage.length}/1000
+                  </span>
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
+                  >
+                    <Smile className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                {newMessage.length > 1000 && (
+                  <div className="text-red-500 text-xs mt-1 absolute left-0 top-full">
+                    Message exceeds 1000 character limit
+                  </div>
+                )}
                 {showEmojiPicker && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1">
+                  <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 z-10">
                     {emojis.map(emoji => (
                       <button
                         key={emoji}
@@ -570,7 +848,8 @@ export default function MessagesPage() {
               </button>
               <button
                 onClick={handleSendMessage}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                disabled={newMessage.length > 1000}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
                 <span>Send</span>
@@ -665,7 +944,7 @@ function ConversationItem({
             )}
           </div>
         </div>
-        <div className="opacity-0 group-hover:opacity-100 transition">
+        <div className="opacity-0 group-hover:opacity-100 transition flex items-center">
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -700,7 +979,7 @@ function MessageBubble({
         </div>
       )}
       {!isOwn && !showAvatar && <div className="w-8" />}
-      <div className={`max-w-md ${isOwn ? 'items-end' : ''}`}>
+      <div className={`max-w-md ${isOwn ? 'items-end flex flex-col' : ''}`}>
         {!isOwn && showAvatar && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{message.senderName}</p>
         )}
@@ -722,26 +1001,49 @@ function MessageBubble({
             )}
           </div>
         ) : message.type === 'image' ? (
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-            <div className="w-64 h-48 bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-              <ImageIcon className="w-12 h-12 text-gray-400" />
-            </div>
-            <div className="px-3 py-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">{message.fileName}</p>
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 max-w-sm">
+            {message.fileUrl ? (
+              <img
+                src={message.fileUrl}
+                alt={message.fileName || 'Uploaded image'}
+                className="max-w-full max-h-60 object-contain"
+              />
+            ) : (
+              <div className="w-64 h-48 bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                <ImageIcon className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
+            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-black/20">
+              <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{message.fileName}</p>
             </div>
           </div>
         ) : (
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 flex items-center gap-3 border border-gray-200 dark:border-gray-600">
             <File className="w-8 h-8 text-gray-400" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{message.fileName}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Click to download</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs">{message.fileName}</p>
+              {message.fileUrl ? (
+                <a
+                  href={message.fileUrl}
+                  download={message.fileName}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Download file
+                </a>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Processing file...</p>
+              )}
             </div>
           </div>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {formatTime(message.timestamp)}
-          {message.isEdited && ' • Edited'}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+          <span>{formatTime(message.timestamp)}</span>
+          {message.isEdited && <span>• Edited</span>}
+          {isOwn && (
+            <span className="font-semibold text-[10px]">
+              {message.pending ? '• Sending...' : message.isRead ? '• Read' : '• Delivered'}
+            </span>
+          )}
         </p>
       </div>
     </div>
@@ -762,6 +1064,3 @@ function formatTime(date: Date) {
   if (days < 7) return `${days}d`
   return new Date(date).toLocaleDateString()
 }
-
-// Add this import at the top
-import { MessageSquare } from 'lucide-react'

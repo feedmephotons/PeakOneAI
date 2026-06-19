@@ -42,24 +42,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check workspace membership (skip for default-workspace in development)
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    const isDefaultWorkspace = workspaceId === 'default-workspace'
+    let resolvedWorkspaceId = workspaceId
 
-    if (!isDevelopment || !isDefaultWorkspace) {
-      const workspaceMembership = await prisma.userWorkspace.findFirst({
-        where: {
-          userId: user.id,
-          workspaceId
+    if (workspaceId === 'default-workspace') {
+      const slug = `default-workspace-${user.id}`
+      let workspace
+      try {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) {
+          workspace = await prisma.workspace.create({
+            data: {
+              name: 'Default Workspace',
+              slug,
+              clerkOrgId: slug,
+            },
+          })
         }
-      })
-
-      if (!workspaceMembership) {
-        return NextResponse.json(
-          { error: 'Forbidden: You do not have access to this workspace' },
-          { status: 403 }
-        )
+      } catch (e) {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) throw e
       }
+
+      try {
+        const mappingExists = await prisma.userWorkspace.findFirst({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+        if (!mappingExists) {
+          await prisma.userWorkspace.create({
+            data: {
+              userId: user.id,
+              workspaceId: workspace.id,
+              role: 'OWNER',
+            },
+          })
+        }
+      } catch (e) {
+        // Ignore concurrent inserts
+      }
+
+      resolvedWorkspaceId = workspace.id
+    }
+
+    // Verify workspace membership unconditionally
+    const workspaceMembership = await prisma.userWorkspace.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId: resolvedWorkspaceId
+      }
+    })
+
+    if (!workspaceMembership) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have access to this workspace' },
+        { status: 403 }
+      )
     }
 
     // Get the brand guideline
@@ -69,7 +109,7 @@ export async function POST(request: Request) {
       guideline = await prisma.brandGuideline.findFirst({
         where: {
           id: guidelineId,
-          workspaceId,
+          workspaceId: resolvedWorkspaceId,
           isActive: true
         },
         include: {
@@ -82,7 +122,7 @@ export async function POST(request: Request) {
       // Get default guideline for workspace
       guideline = await prisma.brandGuideline.findFirst({
         where: {
-          workspaceId,
+          workspaceId: resolvedWorkspaceId,
           isActive: true,
           isDefault: true
         },
@@ -94,53 +134,46 @@ export async function POST(request: Request) {
       })
     }
 
-    if (!guideline) {
-      // No guidelines - return empty analysis
-      return NextResponse.json({
-        suggestions: [],
-        overallScore: 100,
-        toneAnalysis: {
-          detected: 'neutral',
-          target: 'professional',
-          alignment: 100
-        },
-        stats: {
-          totalIssues: 0,
-          spellingErrors: 0,
-          grammarErrors: 0,
-          toneIssues: 0,
-          wordIssues: 0,
-          structureIssues: 0
-        },
-        hasGuidelines: false
-      })
-    }
+    let guidelines: ExtractedGuidelines
 
-    // Build guidelines object for analyzer
-    const guidelines: ExtractedGuidelines = {
-      voiceTone: guideline.voiceTone as ExtractedGuidelines['voiceTone'],
-      personality: guideline.personality,
-      approvedTerms: guideline.approvedTerms.map(t => ({
-        term: t.term,
-        context: t.context || undefined,
-        category: t.category || undefined,
-        alternatives: t.alternatives
-      })),
-      forbiddenTerms: guideline.forbiddenTerms.map(t => ({
-        term: t.term,
-        reason: t.reason || undefined,
-        replacement: t.replacement || undefined,
-        severity: t.severity as 'info' | 'warning' | 'error'
-      })),
-      messagingRules: guideline.messagingRules.map(r => ({
-        name: r.name,
-        description: r.description,
-        category: r.category,
-        pattern: r.pattern || undefined,
-        template: r.template || undefined,
-        examples: r.examples as { good: string[]; bad: string[] } | undefined
-      })),
-      values: (guideline.extractedRules as { values?: string[] } | null)?.values || []
+    if (!guideline) {
+      const selectedTone = (body as any).selectedTone || (body as any).tone
+      const defaultTone = (selectedTone || 'professional').toLowerCase()
+      guidelines = {
+        voiceTone: defaultTone as ExtractedGuidelines['voiceTone'],
+        personality: ['clear', 'helpful', 'concise'],
+        approvedTerms: [],
+        forbiddenTerms: [],
+        messagingRules: [],
+        values: []
+      }
+    } else {
+      // Build guidelines object for analyzer
+      guidelines = {
+        voiceTone: guideline.voiceTone as ExtractedGuidelines['voiceTone'],
+        personality: guideline.personality,
+        approvedTerms: guideline.approvedTerms.map(t => ({
+          term: t.term,
+          context: t.context || undefined,
+          category: t.category || undefined,
+          alternatives: t.alternatives
+        })),
+        forbiddenTerms: guideline.forbiddenTerms.map(t => ({
+          term: t.term,
+          reason: t.reason || undefined,
+          replacement: t.replacement || undefined,
+          severity: t.severity as 'info' | 'warning' | 'error'
+        })),
+        messagingRules: guideline.messagingRules.map(r => ({
+          name: r.name,
+          description: r.description,
+          category: r.category,
+          pattern: r.pattern || undefined,
+          template: r.template || undefined,
+          examples: r.examples as { good: string[]; bad: string[] } | undefined
+        })),
+        values: (guideline.extractedRules as { values?: string[] } | null)?.values || []
+      }
     }
 
     // Quick forbidden term check (fast, no AI)
@@ -184,9 +217,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ...result,
-      hasGuidelines: true,
-      guidelineId: guideline.id,
-      guidelineName: guideline.name
+      hasGuidelines: !!guideline,
+      guidelineId: guideline?.id || null,
+      guidelineName: guideline?.name || 'Default Tone fallback'
     })
 
   } catch (error) {

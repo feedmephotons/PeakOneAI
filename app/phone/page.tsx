@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Call {
   id: string;
@@ -13,6 +13,9 @@ interface Call {
   transcribed: boolean;
   aiSummary: boolean;
   status?: 'active' | 'ended';
+  transcriptText?: string;
+  summaryText?: string;
+  actionItems?: { text: string; severity?: string }[];
 }
 
 interface Contact {
@@ -30,63 +33,139 @@ export default function PhonePage() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [dialNumber, setDialNumber] = useState('');
   const [showNewContactModal, setShowNewContactModal] = useState(false);
+  const [callError, setCallError] = useState<string | null>(null);
 
-  const recentCalls: Call[] = [
-    {
-      id: '1',
-      type: 'incoming',
-      contact: 'Sarah Johnson',
-      phoneNumber: '+1 (555) 123-4567',
-      time: '10 min ago',
-      duration: '5:23',
-      recorded: true,
-      transcribed: true,
-      aiSummary: true,
-      status: 'ended'
-    },
-    {
-      id: '2',
-      type: 'outgoing',
-      contact: 'Michael Chen',
-      phoneNumber: '+1 (555) 987-6543',
-      time: '2 hours ago',
-      duration: '12:45',
-      recorded: true,
-      transcribed: true,
-      aiSummary: false,
-      status: 'ended'
-    },
-    {
-      id: '3',
-      type: 'missed',
-      contact: 'Emily Davis',
-      phoneNumber: '+1 (555) 456-7890',
-      time: '3 hours ago',
-      recorded: false,
-      transcribed: false,
-      aiSummary: false,
-      status: 'ended'
-    },
-    {
-      id: '4',
-      type: 'incoming',
-      contact: 'David Wilson',
-      phoneNumber: '+1 (555) 321-6547',
-      time: 'Yesterday',
-      duration: '25:10',
-      recorded: true,
-      transcribed: true,
-      aiSummary: true,
-      status: 'ended'
-    },
-  ];
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [transcribingCallId, setTranscribingCallId] = useState<string | null>(null);
+  const [summarizingCallId, setSummarizingCallId] = useState<string | null>(null);
 
-  const contacts: Contact[] = [
-    { id: '1', name: 'Sarah Johnson', phoneNumber: '+1 (555) 123-4567', email: 'sarah@company.com', company: 'Acme Corp', lastCalled: '10 min ago', favorite: true },
-    { id: '2', name: 'Michael Chen', phoneNumber: '+1 (555) 987-6543', email: 'michael@tech.com', company: 'Tech Solutions', lastCalled: '2 hours ago' },
-    { id: '3', name: 'Emily Davis', phoneNumber: '+1 (555) 456-7890', email: 'emily@design.com', company: 'Design Studio', lastCalled: '3 hours ago' },
-    { id: '4', name: 'David Wilson', phoneNumber: '+1 (555) 321-6547', email: 'david@finance.com', company: 'Finance Inc', lastCalled: 'Yesterday', favorite: true },
-  ];
+  // New Contact form state
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [newContactCompany, setNewContactCompany] = useState('');
+
+  useEffect(() => {
+    const fetchCalls = async () => {
+      try {
+        const res = await fetch('/api/calls');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setCalls(data.calls);
+        }
+      } catch (e) {
+        console.error('Error fetching calls:', e);
+      }
+    };
+
+    const fetchContacts = async () => {
+      try {
+        const res = await fetch('/api/contacts');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setContacts(data.contacts);
+        }
+      } catch (e) {
+        console.error('Error fetching contacts:', e);
+      }
+    };
+
+    fetchCalls();
+    fetchContacts();
+  }, []);
+
+  const handleTranscribe = async (callId: string) => {
+    setTranscribingCallId(callId);
+    try {
+      const res = await fetch('/api/calls/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCalls(prev => prev.map(c => {
+          if (c.id === callId) {
+            return {
+              ...c,
+              transcribed: true,
+              transcriptText: data.transcript
+            };
+          }
+          return c;
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTranscribingCallId(null);
+    }
+  };
+
+  const handleGenerateSummary = async (callId: string) => {
+    setSummarizingCallId(callId);
+    try {
+      const res = await fetch('/api/calls/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCalls(prev => prev.map(c => {
+          if (c.id === callId) {
+            return {
+              ...c,
+              aiSummary: true,
+              summaryText: data.summary,
+              actionItems: data.actionItems
+            };
+          }
+          return c;
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSummarizingCallId(null);
+    }
+  };
+
+  const handleAddContact = async () => {
+    if (!newContactName.trim() || !newContactPhone.trim()) {
+      alert('Name and Phone Number are required.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newContactName,
+          phoneNumber: newContactPhone,
+          email: newContactEmail || undefined,
+          company: newContactCompany || undefined,
+          favorite: false
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setContacts(prev => [...prev, data.contact]);
+        setNewContactName('');
+        setNewContactPhone('');
+        setNewContactEmail('');
+        setNewContactCompany('');
+        setShowNewContactModal(false);
+      } else {
+        alert(data.error || 'Failed to add contact');
+      }
+    } catch (e) {
+      console.error('Error adding contact:', e);
+    }
+  };
+
+  const recentCalls = calls;
 
   const CallIcon = ({ type }: { type: 'incoming' | 'outgoing' | 'missed' }) => {
     if (type === 'incoming') {
@@ -174,7 +253,7 @@ export default function PhonePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white font-medium">
-            {contact.name.split(' ').map(n => n[0]).join('')}
+            {contact.name ? contact.name.split(' ').map(n => n ? n[0] : '').join('') : 'U'}
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -204,7 +283,13 @@ export default function PhonePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
           </button>
-          <button className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+          <button
+            onClick={() => {
+              setDialNumber(contact.phoneNumber);
+              setCallError(null);
+            }}
+            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
@@ -246,11 +331,20 @@ export default function PhonePage() {
           <div className="max-w-md mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6">Quick Dial</h2>
 
+            {callError && (
+              <div className="mb-4 p-3 bg-red-500/20 backdrop-blur-sm border border-red-500 text-red-100 rounded-lg text-center text-sm font-semibold" id="phone-validation-message">
+                {callError}
+              </div>
+            )}
+
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6">
               <input
                 type="tel"
                 value={dialNumber}
-                onChange={(e) => setDialNumber(e.target.value)}
+                onChange={(e) => {
+                  setDialNumber(e.target.value);
+                  if (e.target.value.trim()) setCallError(null);
+                }}
                 placeholder="Enter phone number..."
                 className="w-full bg-transparent text-2xl text-center placeholder-white/50 focus:outline-none"
               />
@@ -261,7 +355,10 @@ export default function PhonePage() {
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((digit) => (
                 <button
                   key={digit}
-                  onClick={() => setDialNumber(prev => prev + digit)}
+                  onClick={() => {
+                    setDialNumber(prev => prev + digit);
+                    setCallError(null);
+                  }}
                   className="bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg p-4 text-xl font-medium transition-colors"
                 >
                   {digit}
@@ -272,7 +369,31 @@ export default function PhonePage() {
             <div className="flex space-x-3">
               {isCallActive ? (
                 <button
-                  onClick={() => setIsCallActive(false)}
+                  onClick={async () => {
+                    setIsCallActive(false);
+                    setCallError(null);
+                    try {
+                      const contactName = contacts.find(c => c.phoneNumber === dialNumber)?.name || dialNumber || 'Unknown Number';
+                      const res = await fetch('/api/calls', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          type: 'outgoing',
+                          phoneNumber: dialNumber || 'Unknown Number',
+                          contactName,
+                          duration: '0:15',
+                          recorded: true,
+                          status: 'ended'
+                        })
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setCalls(prev => [data.call, ...prev]);
+                      }
+                    } catch (e) {
+                      console.error('Failed to log outgoing call:', e);
+                    }
+                  }}
                   className="flex-1 bg-red-500 hover:bg-red-600 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,7 +403,14 @@ export default function PhonePage() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setIsCallActive(true)}
+                  onClick={() => {
+                    if (!dialNumber.trim()) {
+                      setCallError('Please enter a phone number before calling.');
+                      return;
+                    }
+                    setCallError(null);
+                    setIsCallActive(true);
+                  }}
                   className="flex-1 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,7 +420,10 @@ export default function PhonePage() {
                 </button>
               )}
               <button
-                onClick={() => setDialNumber('')}
+                onClick={() => {
+                  setDialNumber('');
+                  setCallError(null);
+                }}
                 className="px-6 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-colors"
               >
                 Clear
@@ -361,9 +492,9 @@ export default function PhonePage() {
 
         {/* Recordings */}
         {activeTab === 'recordings' && (
-          <div className="space-y-3">
+          <div className="space-y-3" id="recordings-list-container">
             {recentCalls.filter(call => call.recorded).map((call) => (
-              <div key={call.id} className="bg-white rounded-xl border border-gray-200 p-6">
+              <div key={call.id} className="bg-white rounded-xl border border-gray-200 p-6 recording-item-card text-gray-950 dark:text-gray-50">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{call.contact}</h3>
@@ -374,9 +505,13 @@ export default function PhonePage() {
                     </div>
 
                     <div className="flex items-center space-x-3 mt-4">
-                      {call.transcribed && (
+                      {call.transcribed ? (
                         <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
                           ✓ Transcribed
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+                          Not Transcribed
                         </span>
                       )}
                       {call.aiSummary && (
@@ -388,34 +523,56 @@ export default function PhonePage() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors">
+                    {!call.transcribed && (
+                      <button
+                        onClick={() => handleTranscribe(call.id)}
+                        disabled={transcribingCallId === call.id}
+                        className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors transcribe-btn"
+                      >
+                        {transcribingCallId === call.id ? 'Transcribing...' : 'Transcribe'}
+                      </button>
+                    )}
+                    {call.transcribed && !call.aiSummary && (
+                      <button
+                        onClick={() => handleGenerateSummary(call.id)}
+                        disabled={summarizingCallId === call.id}
+                        className="px-3 py-1.5 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 transition-colors summary-btn"
+                      >
+                        {summarizingCallId === call.id ? 'Generating...' : 'Request Summary'}
+                      </button>
+                    )}
+                    <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
                       Play
                     </button>
-                    <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
-                      Download
-                    </button>
-                    {call.transcribed && (
-                      <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
-                        View Transcript
-                      </button>
-                    )}
-                    {call.aiSummary && (
-                      <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
-                        Insights
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {call.aiSummary && (
-                  <div className="mt-4 p-4 bg-violet-50 rounded-lg">
-                    <div className="flex items-center text-sm text-violet-700 mb-2">
+                {call.transcribed && call.transcriptText && (
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="text-xs font-semibold text-gray-500 mb-2">TRANSCRIPT:</div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 transcript-content-text">{call.transcriptText}</p>
+                  </div>
+                )}
+
+                {call.aiSummary && call.summaryText && (
+                  <div className="mt-4 p-4 bg-violet-50 dark:bg-violet-950/20 rounded-lg">
+                    <div className="flex items-center text-sm text-violet-700 dark:text-violet-300 mb-2">
                       <span className="mr-2">🤖</span>
                       <span className="font-medium">Lisa&apos;s Summary:</span>
                     </div>
-                    <p className="text-sm text-gray-700">
-                      Discussed project timeline and deliverables. Action items: 1) Send updated proposal by Friday, 2) Schedule follow-up meeting next week, 3) Review budget allocation.
-                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 summary-content-text">{call.summaryText}</p>
+                    {call.actionItems && call.actionItems.length > 0 && (
+                      <div className="mt-3 border-t border-violet-100 dark:border-violet-900 pt-2">
+                        <div className="text-xs font-bold text-violet-700 dark:text-violet-300 mb-1">Extracted Action Items (Auto-Synced to Tasks):</div>
+                        <ul className="list-disc pl-5 text-xs text-gray-600 dark:text-gray-400 space-y-1 action-items-list">
+                          {call.actionItems.map((item: { text: string; severity?: string }, idx: number) => (
+                            <li key={idx} className="action-item-text-row">
+                              {item.text} <span className="text-[10px] font-semibold uppercase px-1 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded ml-1">{item.severity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -482,7 +639,13 @@ export default function PhonePage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Add New Contact</h2>
               <button
-                onClick={() => setShowNewContactModal(false)}
+                onClick={() => {
+                  setShowNewContactModal(false);
+                  setNewContactName('');
+                  setNewContactPhone('');
+                  setNewContactEmail('');
+                  setNewContactCompany('');
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -496,6 +659,8 @@ export default function PhonePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input
                   type="text"
+                  value={newContactName}
+                  onChange={(e) => setNewContactName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
                   placeholder="Enter contact name..."
                 />
@@ -505,6 +670,8 @@ export default function PhonePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <input
                   type="tel"
+                  value={newContactPhone}
+                  onChange={(e) => setNewContactPhone(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
                   placeholder="Enter phone number..."
                 />
@@ -514,6 +681,8 @@ export default function PhonePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
+                  value={newContactEmail}
+                  onChange={(e) => setNewContactEmail(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
                   placeholder="Enter email address..."
                 />
@@ -523,6 +692,8 @@ export default function PhonePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
                 <input
                   type="text"
+                  value={newContactCompany}
+                  onChange={(e) => setNewContactCompany(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-violet-500"
                   placeholder="Enter company name..."
                 />
@@ -531,12 +702,21 @@ export default function PhonePage() {
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setShowNewContactModal(false)}
+                onClick={() => {
+                  setShowNewContactModal(false);
+                  setNewContactName('');
+                  setNewContactPhone('');
+                  setNewContactEmail('');
+                  setNewContactCompany('');
+                }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm"
               >
                 Cancel
               </button>
-              <button className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium">
+              <button
+                onClick={handleAddContact}
+                className="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg hover:from-violet-600 hover:to-purple-700 transition-all text-sm font-medium"
+              >
                 Add Contact
               </button>
             </div>

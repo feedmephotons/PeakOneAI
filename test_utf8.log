@@ -1,0 +1,24 @@
+[dotenv@17.2.2] injecting env (9) from .env.local -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+==================================================
+    Messages Challenger Test Suite (Network)       
+==================================================
+
+--- Seeding Database for Messages Challenger Tests ---
+Demo User: demo-user-id (sarah.chen@peakone.ai)
+Alex User: alex-id (alex.rivera@peakone.ai)
+Conversation 'conv-1' already exists
+Verified conversation participants for 'conv-1'
+Port 3001 is not active. Starting server...
+Starting Next.js production server...
+Server is ready on port 3001.
+
+--- Scenario 1: Offline Buffering & local storage queue verification ---
+
+❌ Test Failure occurred:
+TimeoutError: Waiting for selector `input[placeholder="Type a message..."]` failed
+    at Function.waitFor (/home/wfowlkes/Claude Main Projects/SaasX/saasx-platform/node_modules/puppeteer-core/src/common/QueryHandler.ts:213:36)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at CdpFrame.waitForSelector (/home/wfowlkes/Claude Main Projects/SaasX/saasx-platform/node_modules/puppeteer-core/src/api/Frame.ts:743:13)
+    at CdpPage.waitForSelector (/home/wfowlkes/Claude Main Projects/SaasX/saasx-platform/node_modules/puppeteer-core/src/api/Page.ts:3053:12)
+    at runScenario1OfflineBuffering (/home/wfowlkes/Claude Main Projects/SaasX/saasx-platform/tests/messages-challenger.ts:101:3)
+    at main (/home/wfowlkes/Claude Main Projects/SaasX/saasx-platform/tests/messages-challenger.ts:495:5)

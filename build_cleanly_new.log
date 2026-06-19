@@ -1,0 +1,6 @@
+   ▲ Next.js 15.5.7
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     · cpus: 1
+
+   Creating an optimized production build ...

@@ -1,0 +1,182 @@
+   ▲ Next.js 15.5.7
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ Compiled with warnings in 6.2s
+
+./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+A Node.js API is used (process.versions at line: 35) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+./node_modules/@supabase/realtime-js/dist/module/index.js
+./node_modules/@supabase/supabase-js/dist/module/index.js
+./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
+./node_modules/@supabase/ssr/dist/module/index.js
+
+./node_modules/@supabase/supabase-js/dist/module/index.js
+A Node.js API is used (process.version at line: 24) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/@supabase/supabase-js/dist/module/index.js
+./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
+./node_modules/@supabase/ssr/dist/module/index.js
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully in 105s
+   Skipping validation of types
+   Skipping linting
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+   	- include was updated to add '.next_gen8/types/**/*.ts'
+
+   Collecting page data ...
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+   Generating static pages (0/95) ...
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+   Generating static pages (23/95) 
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217
+   Generating static pages (47/95) 
+   Generating static pages (71/95) 
+ ✓ Generating static pages (95/95)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    9.74 kB         155 kB
+├ ○ /_not-found                             1 kB         103 kB
+├ ○ /activity                            6.52 kB         108 kB
+├ ○ /agent                               5.44 kB         107 kB
+├ ○ /ai/analytics                        1.45 kB         107 kB
+├ ○ /ai/assistant                        3.27 kB         105 kB
+├ ○ /ai/automation                       1.03 kB         107 kB
+├ ○ /ai/documents                        3.72 kB         106 kB
+├ ○ /ai/insights                         2.93 kB         109 kB
+├ ○ /ai/meetings                         2.69 kB         129 kB
+├ ○ /ai/productivity                     2.03 kB         104 kB
+├ ○ /ai/reports                          2.24 kB         104 kB
+├ ○ /ai/suggestions                      2.16 kB         104 kB
+├ ○ /ai/team                             2.06 kB         104 kB
+├ ○ /ai/time                             2.17 kB         104 kB
+├ ○ /analytics                           5.33 kB         107 kB
+├ ƒ /api/agent/sessions                    216 B         102 kB
+├ ƒ /api/agent/sessions/[id]               216 B         102 kB
+├ ƒ /api/agent/sessions/[id]/live          216 B         102 kB
+├ ƒ /api/ai/chat                           216 B         102 kB
+├ ƒ /api/ai/email-outreach                 216 B         102 kB
+├ ƒ /api/auth/login                        216 B         102 kB
+├ ƒ /api/auth/register                     216 B         102 kB
+├ ƒ /api/auth/signin                       216 B         102 kB
+├ ƒ /api/auth/signout                      216 B         102 kB
+├ ƒ /api/auth/signup                       216 B         102 kB
+├ ƒ /api/brand-voice/analyze               216 B         102 kB
+├ ƒ /api/brand-voice/guidelines            216 B         102 kB
+├ ƒ /api/brand-voice/rewrite               216 B         102 kB
+├ ƒ /api/calls                             216 B         102 kB
+├ ƒ /api/calls/summary                     216 B         102 kB
+├ ƒ /api/calls/transcribe                  216 B         102 kB
+├ ƒ /api/contacts                          216 B         102 kB
+├ ƒ /api/conversations                     216 B         102 kB
+├ ƒ /api/email/send                        216 B         102 kB
+├ ƒ /api/files/upload                      216 B         102 kB
+├ ƒ /api/files/upload-with-ai              216 B         102 kB
+├ ƒ /api/meetings/analyze                  216 B         102 kB
+├ ƒ /api/meetings/summary                  216 B         102 kB
+├ ƒ /api/messages                          216 B         102 kB
+├ ƒ /api/tasks                             216 B         102 kB
+├ ƒ /api/tasks/create                      216 B         102 kB
+├ ƒ /api/test/ai                           216 B         102 kB
+├ ƒ /api/test/db                           216 B         102 kB
+├ ƒ /api/test/storage                      216 B         102 kB
+├ ƒ /api/transcribe                        216 B         102 kB
+├ ƒ /api/video/create-room                 216 B         102 kB
+├ ƒ /api/webhooks/clerk                    216 B         102 kB
+├ ○ /apple-icon.png                          0 B            0 B
+├ ƒ /auth/callback                         216 B         102 kB
+├ ○ /auth/login                          1.84 kB         108 kB
+├ ○ /auth/register                       2.07 kB         108 kB
+├ ○ /automation                          6.45 kB         108 kB
+├ ○ /calendar                            6.04 kB         108 kB
+├ ○ /calls                               3.86 kB         110 kB
+├ ƒ /calls/summary/[id]                  4.46 kB         106 kB
+├ ○ /deck                                  490 B         102 kB
+├ ○ /demo                                3.61 kB         105 kB
+├ ○ /devops                              3.73 kB         106 kB
+├ ○ /docs                                3.19 kB         109 kB
+├ ○ /email                               8.86 kB         115 kB
+├ ○ /email/outreach                      6.07 kB         112 kB
+├ ○ /favorites                           3.49 kB         109 kB
+├ ○ /features                            6.35 kB         108 kB
+├ ○ /files                               26.9 kB         139 kB
+├ ○ /files/upload                        5.08 kB         107 kB
+├ ○ /help                                2.85 kB         109 kB
+├ ○ /icon.png                                0 B            0 B
+├ ○ /inventory                           12.5 kB         114 kB
+├ ○ /landing                             12.8 kB         124 kB
+├ ○ /lisa                                9.43 kB         111 kB
+├ ƒ /meeting/[id]                          11 kB         159 kB
+├ ○ /messages                            7.49 kB         170 kB
+├ ○ /mockups                             11.2 kB         117 kB
+├ ○ /notifications                       4.64 kB         106 kB
+├ ○ /offline                             1.43 kB         103 kB
+├ ○ /onboarding                          3.28 kB         105 kB
+├ ○ /org-selection                         921 B         103 kB
+├ ○ /phone                                4.3 kB         106 kB
+├ ○ /projects/tasks                      3.89 kB         106 kB
+├ ○ /search                              3.66 kB         109 kB
+├ ○ /settings                            9.58 kB         117 kB
+├ ○ /settings/billing                    2.23 kB         104 kB
+├ ○ /settings/brand-voice                4.96 kB         119 kB
+├ ○ /settings/integrations               2.19 kB         104 kB
+├ ○ /settings/notifications              2.26 kB         104 kB
+├ ○ /settings/org                         2.2 kB         104 kB
+├ ○ /settings/security                   2.38 kB         104 kB
+├ ○ /settings/shortcuts                  2.14 kB         104 kB
+├ ƒ /sign-in/[[...sign-in]]              3.27 kB         158 kB
+├ ƒ /sign-up/[[...sign-up]]              2.81 kB         158 kB
+├ ○ /storage/files                        3.6 kB         105 kB
+├ ○ /support                             3.23 kB         109 kB
+├ ○ /tasks                               23.9 kB         175 kB
+├ ○ /teams                               4.75 kB         107 kB
+├ ○ /templates                           4.29 kB         106 kB
+├ ○ /test                                2.59 kB         104 kB
+├ ○ /video                               4.63 kB         173 kB
+├ ○ /video/demo                          1.76 kB         170 kB
+└ ƒ /video/room/[id]                       68 kB         233 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/1255-642c76f13c20a3ec.js      45.6 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js  54.2 kB
+  └ other shared chunks (total)          1.94 kB
+
+
+ƒ Middleware                             69.3 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

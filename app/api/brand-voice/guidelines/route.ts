@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { extractGuidelinesFromDocument, extractGuidelinesFromText } from '@/lib/brand-voice/guideline-extractor'
 
+export const dynamic = 'force-dynamic'
+
 // GET - List all guidelines for a workspace
 export async function GET(request: Request) {
   try {
@@ -30,28 +32,68 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check workspace membership (skip for default-workspace in development)
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    const isDefaultWorkspace = workspaceId === 'default-workspace'
+    let resolvedWorkspaceId = workspaceId
 
-    if (!isDevelopment || !isDefaultWorkspace) {
-      const workspaceMembership = await prisma.userWorkspace.findFirst({
-        where: {
-          userId: user.id,
-          workspaceId
+    if (workspaceId === 'default-workspace') {
+      const slug = `default-workspace-${user.id}`
+      let workspace
+      try {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) {
+          workspace = await prisma.workspace.create({
+            data: {
+              name: 'Default Workspace',
+              slug,
+              clerkOrgId: slug,
+            },
+          })
         }
-      })
-
-      if (!workspaceMembership) {
-        return NextResponse.json(
-          { error: 'Forbidden: You do not have access to this workspace' },
-          { status: 403 }
-        )
+      } catch (e) {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) throw e
       }
+
+      try {
+        const mappingExists = await prisma.userWorkspace.findFirst({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+        if (!mappingExists) {
+          await prisma.userWorkspace.create({
+            data: {
+              userId: user.id,
+              workspaceId: workspace.id,
+              role: 'OWNER',
+            },
+          })
+        }
+      } catch (e) {
+        // Ignore concurrent inserts
+      }
+
+      resolvedWorkspaceId = workspace.id
+    }
+
+    // Verify workspace membership unconditionally
+    const workspaceMembership = await prisma.userWorkspace.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId: resolvedWorkspaceId
+      }
+    })
+
+    if (!workspaceMembership) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have access to this workspace' },
+        { status: 403 }
+      )
     }
 
     const guidelines = await prisma.brandGuideline.findMany({
-      where: { workspaceId },
+      where: { workspaceId: resolvedWorkspaceId },
       include: {
         approvedTerms: { take: 10 },
         forbiddenTerms: { take: 10 },
@@ -120,29 +162,69 @@ export async function POST(request: Request) {
       )
     }
 
-    // Security: Verify user has access to this workspace (skip for default-workspace in development)
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    const isDefaultWorkspace = workspaceId === 'default-workspace'
+    let resolvedWorkspaceId = workspaceId
 
-    if (!isDevelopment || !isDefaultWorkspace) {
-      const workspaceMembership = await prisma.userWorkspace.findFirst({
-        where: {
-          userId: user.id,
-          workspaceId
+    if (workspaceId === 'default-workspace') {
+      const slug = `default-workspace-${user.id}`
+      let workspace
+      try {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) {
+          workspace = await prisma.workspace.create({
+            data: {
+              name: 'Default Workspace',
+              slug,
+              clerkOrgId: slug,
+            },
+          })
         }
-      })
-
-      if (!workspaceMembership) {
-        return NextResponse.json(
-          { error: 'Forbidden: You do not have access to this workspace' },
-          { status: 403 }
-        )
+      } catch (e) {
+        workspace = await prisma.workspace.findUnique({
+          where: { slug },
+        })
+        if (!workspace) throw e
       }
+
+      try {
+        const mappingExists = await prisma.userWorkspace.findFirst({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+        if (!mappingExists) {
+          await prisma.userWorkspace.create({
+            data: {
+              userId: user.id,
+              workspaceId: workspace.id,
+              role: 'OWNER',
+            },
+          })
+        }
+      } catch (e) {
+        // Ignore concurrent inserts
+      }
+
+      resolvedWorkspaceId = workspace.id
+    }
+
+    // Verify workspace membership unconditionally
+    const workspaceMembership = await prisma.userWorkspace.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId: resolvedWorkspaceId
+      }
+    })
+
+    if (!workspaceMembership) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have access to this workspace' },
+        { status: 403 }
+      )
     }
 
     // Check if name already exists
     const existing = await prisma.brandGuideline.findFirst({
-      where: { workspaceId, name }
+      where: { workspaceId: resolvedWorkspaceId, name }
     })
 
     if (existing) {
@@ -173,7 +255,7 @@ export async function POST(request: Request) {
     // If setting as default, unset other defaults
     if (isDefault) {
       await prisma.brandGuideline.updateMany({
-        where: { workspaceId, isDefault: true },
+        where: { workspaceId: resolvedWorkspaceId, isDefault: true },
         data: { isDefault: false }
       })
     }
@@ -183,7 +265,7 @@ export async function POST(request: Request) {
       data: {
         name,
         description,
-        workspaceId,
+        workspaceId: resolvedWorkspaceId,
         voiceTone: extractedRules?.voiceTone || voiceTone,
         personality: extractedRules?.personality || personality,
         extractedRules: extractedRules || undefined,

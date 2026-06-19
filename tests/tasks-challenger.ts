@@ -99,7 +99,7 @@ async function runE2ETests() {
 
     // Verify Demo Mode Task Creation
     console.log('Creating a task in Demo Mode...');
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -377,7 +377,7 @@ async function runE2ETests() {
 
     // Verify task creation sync (POST)
     console.log('Creating a task in Cloud Synced Mode...');
-    const syncCreateBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const syncCreateBtn = await page.waitForSelector('button.bg-indigo-600');
     await syncCreateBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -406,7 +406,7 @@ async function runE2ETests() {
     console.log(`- Previous tasks count in UI: ${prevTasksCount}`);
 
     // Create a task that should fail to sync
-    const failCreateBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const failCreateBtn = await page.waitForSelector('button.bg-indigo-600');
     await failCreateBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');

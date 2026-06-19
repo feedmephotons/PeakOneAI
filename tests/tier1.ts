@@ -142,7 +142,7 @@ export const tier1Tests = {
 
     // Verify listed under Selected Files
     await page.waitForFunction(() => {
-      const selFiles = document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8');
+      const selFiles = document.querySelector('div.rounded-2xl.p-8');
       return selFiles && selFiles.textContent?.includes('mock_file.txt');
     });
   },
@@ -168,7 +168,7 @@ export const tier1Tests = {
 
     // Verify file added to list
     await page.waitForFunction(() => {
-      const list = document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8');
+      const list = document.querySelector('div.rounded-2xl.p-8');
       return list && list.textContent?.includes('dragged_file.txt');
     });
   },
@@ -187,8 +187,8 @@ export const tier1Tests = {
 
     // Verify summary block is rendered
     await page.waitForFunction(() => {
-      const summary = document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8');
-      return summary && summary.textContent?.includes('This is a mocked file analysis summary.');
+      const summaries = Array.from(document.querySelectorAll('div.rounded-2xl.p-8'));
+      return summaries.some(el => el.textContent?.includes('This is a mocked file analysis summary.'));
     });
   },
 
@@ -225,16 +225,20 @@ export const tier1Tests = {
 
     // Verify file added
     await page.waitForFunction(() => {
-      return document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent?.includes('mock_file.txt');
+      return document.querySelector('div.rounded-2xl.p-8')?.textContent?.includes('mock_file.txt');
     });
 
     // Click remove button
-    const removeBtn = await page.waitForSelector('button.text-gray-400.hover\\:text-red-500');
-    await removeBtn.click();
+    await page.waitForSelector('button.text-gray-400.hover\\:text-red-500');
+    await page.evaluate(() => {
+      const removeBtn = document.querySelector('button.text-gray-400.hover\\:text-red-500') as HTMLButtonElement;
+      removeBtn?.click();
+    });
 
     // Verify removed
     await page.waitForFunction(() => {
-      return !document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent?.includes('mock_file.txt');
+      const queue = document.querySelector('div.rounded-2xl.p-8');
+      return !queue || !queue.textContent?.includes('mock_file.txt');
     });
   },
 
@@ -242,11 +246,14 @@ export const tier1Tests = {
   test_tasks_create_task: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/tasks`);
-    await page.waitForSelector('button:has(svg.lucide-plus)');
+    await page.waitForSelector('button.bg-indigo-600');
 
     // Open Modal
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
-    await createBtn.click();
+    await page.waitForSelector('button.bg-indigo-600');
+    await page.evaluate(() => {
+      const createBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Create Task')) as HTMLButtonElement;
+      createBtn?.click();
+    });
 
     // Fill Form
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -275,6 +282,11 @@ export const tier1Tests = {
   test_tasks_drag_drop_transition: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/tasks`);
+    await page.waitForSelector('h4');
+    await page.waitForFunction(() => {
+      const t = localStorage.getItem('tasks');
+      return t && JSON.parse(t).length > 0;
+    });
     
     // Get default task "Fix authentication bug" (starts in TODO column)
     const tasks = await getTasksFromLocalStorage(page);
@@ -283,20 +295,41 @@ export const tier1Tests = {
 
     // Drag to "In Progress"
     await page.evaluate((taskId) => {
+      const h4 = Array.from(document.querySelectorAll('h4')).find(h => h.textContent?.includes('Fix authentication bug'));
+      if (!h4) throw new Error('Card title not found');
+      const card = h4.closest('.group');
+      if (!card) throw new Error('Card container not found');
+
+      const dt = new DataTransfer();
+      dt.setData('taskId', taskId);
+
+      const dragStartEvent = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true
+      });
+      Object.defineProperty(dragStartEvent, 'dataTransfer', {
+        value: dt,
+        writable: true,
+        configurable: true
+      });
+      card.dispatchEvent(dragStartEvent);
+
       const inProgressCol = Array.from(document.querySelectorAll('div')).find(div => {
         const h3 = div.querySelector('h3');
         return h3 && h3.textContent.trim() === 'In Progress';
       });
       if (!inProgressCol) throw new Error('In Progress column not found');
 
-      const dt = new DataTransfer();
-      dt.setData('taskId', taskId);
-      const event = new DragEvent('drop', {
+      const dropEvent = new DragEvent('drop', {
         bubbles: true,
-        cancelable: true,
-        dataTransfer: dt
+        cancelable: true
       });
-      inProgressCol.dispatchEvent(event);
+      Object.defineProperty(dropEvent, 'dataTransfer', {
+        value: dt,
+        writable: true,
+        configurable: true
+      });
+      inProgressCol.dispatchEvent(dropEvent);
     }, authBugTask.id);
 
     // Verify task moved to In Progress
@@ -351,6 +384,10 @@ export const tier1Tests = {
     
     // Find task "Fix authentication bug" card and hover/click menu
     await page.waitForSelector('h4');
+    await page.waitForFunction(() => {
+      const t = localStorage.getItem('tasks');
+      return t && JSON.parse(t).length > 0;
+    });
     
     // We can evaluate directly to click the delete option
     const tasks = await getTasksFromLocalStorage(page);
@@ -358,13 +395,15 @@ export const tier1Tests = {
     if (!taskToDelete) throw new Error('Task to delete not found');
 
     // Open menu on card
-    await page.evaluate((taskId) => {
-      const card = Array.from(document.querySelectorAll('div')).find(div => {
-        return div.textContent?.includes('Fix authentication bug') && div.querySelector('button');
-      });
-      const menuBtn = card?.querySelector('button');
-      menuBtn?.click();
-    }, taskToDelete.id);
+    await page.evaluate((title) => {
+      const h4 = Array.from(document.querySelectorAll('h4')).find(h => h.textContent?.includes(title));
+      if (!h4) throw new Error(`h4 title containing ${title} not found`);
+      const card = h4.closest('.group');
+      if (!card) throw new Error('Card container not found');
+      const menuBtn = card.querySelector('button');
+      if (!menuBtn) throw new Error('Menu button not found');
+      menuBtn.click();
+    }, 'Fix authentication bug');
 
     // Click delete option
     const deleteBtn = await page.waitForSelector('button.text-red-600');
@@ -381,10 +420,10 @@ export const tier1Tests = {
   test_integration_initial_state: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/test`);
-    await page.waitForSelector('button');
+    await page.waitForSelector('main button');
 
     // Verify button text
-    const btnText = await page.$eval('button', el => el.textContent?.trim());
+    const btnText = await page.$eval('main button', el => el.textContent?.trim());
     if (btnText !== 'Run All Tests') {
       throw new Error(`Unexpected button text: ${btnText}`);
     }
@@ -402,7 +441,7 @@ export const tier1Tests = {
   test_integration_trigger_tests: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/test`);
-    const runBtn = await page.waitForSelector('button');
+    const runBtn = await page.waitForSelector('main button');
     await runBtn.click();
 
     // Verify loader animations are shown
@@ -412,7 +451,7 @@ export const tier1Tests = {
   test_integration_database_check: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/test`);
-    const runBtn = await page.waitForSelector('button');
+    const runBtn = await page.waitForSelector('main button');
     await runBtn.click();
 
     // Verify DB Connection success check displays
@@ -427,7 +466,7 @@ export const tier1Tests = {
   test_integration_storage_check: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/test`);
-    const runBtn = await page.waitForSelector('button');
+    const runBtn = await page.waitForSelector('main button');
     await runBtn.click();
 
     // Verify Storage Bucket success check displays
@@ -443,7 +482,7 @@ export const tier1Tests = {
     await clearState(page, baseUrl);
     setMockConfig({ aiResponseText: 'AI integration test successful response' });
     await page.goto(`${baseUrl}/test`);
-    const runBtn = await page.waitForSelector('button');
+    const runBtn = await page.waitForSelector('main button');
     await runBtn.click();
 
     // Verify AI check success and response printed
@@ -455,5 +494,233 @@ export const tier1Tests = {
       const hasResponse = document.body.textContent?.includes('AI integration test successful response');
       return checkIcon && hasResponse;
     });
+  },
+
+  test_messages_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/messages`);
+    await page.waitForSelector('input[placeholder="Type a message..."]');
+
+    // Type a message
+    await page.type('input[placeholder="Type a message..."]', 'Hello Alex, nice to meet you!');
+
+    // Check character count indicator shows correct value
+    await page.waitForFunction(() => document.body.textContent?.includes('29/1000'));
+
+    // Click Send Button
+    await page.evaluate(() => {
+      const sendBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.querySelector('svg.lucide-send') !== null) as HTMLButtonElement;
+      sendBtn?.click();
+    });
+
+    // Verify sent message appears in the list
+    await page.waitForFunction(() => document.body.textContent?.includes('Hello Alex, nice to meet you!'));
+  },
+
+  test_email_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    setMockConfig({
+      emailOutreachCampaign: {
+        emails: [
+          { subject: 'Outreach 1: Quick Question', body: 'Hey, do you have 5 minutes to connect?' },
+          { subject: 'Outreach 2: Follow Up', body: 'Just following up on my previous email.' },
+          { subject: 'Outreach 3: Final Try', body: 'Last attempt to connect.' }
+        ]
+      }
+    });
+
+    await page.goto(`${baseUrl}/email/outreach`);
+    await page.waitForSelector('input[placeholder="e.g., Founders/CTOs needing development tools"]');
+
+    // Fill inputs
+    await page.type('input[placeholder="e.g., Founders/CTOs needing development tools"]', 'Founders needing SaaS tooling');
+    await page.type('input[placeholder="e.g., Book demo calls, Get feedback on product"]', 'Book product demo');
+
+    // Click generate sequence button
+    await page.evaluate(() => {
+      const genBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Generate Email Sequence')) as HTMLButtonElement;
+      genBtn?.click();
+    });
+
+    // Verify sequence shows up
+    await page.waitForFunction(() => document.body.textContent?.includes('Outreach 1: Quick Question'));
+
+    // Click Send Test Email to trigger the modal
+    await page.evaluate(() => {
+      const sendTestBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Send Test Email')) as HTMLButtonElement;
+      sendTestBtn?.click();
+    });
+
+    // In the Modal, enter email and send
+    await page.waitForSelector('input[placeholder="test@example.com"]');
+    await page.type('input[placeholder="test@example.com"]', 'customer@example.com');
+
+    await page.evaluate(() => {
+      const sendBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Send Email')) as HTMLButtonElement;
+      sendBtn?.click();
+    });
+
+    // Verify success banner is shown
+    await page.waitForFunction(() => document.body.textContent?.includes('Email sent successfully!'));
+  },
+
+  test_automation_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/automation`);
+
+    // Click Create Automation button
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
+    await createBtn.click();
+
+    // Fill name
+    await page.waitForSelector('input[placeholder="e.g. Sync Drive to Slack"]');
+    await page.type('input[placeholder="e.g. Sync Drive to Slack"]', 'New Happy Flow');
+
+    // Select trigger (On a Schedule)
+    await page.evaluate(() => {
+      const triggers = Array.from(document.querySelectorAll('button')).filter(btn => btn.textContent?.includes('On a Schedule'));
+      (triggers[0] as HTMLButtonElement)?.click();
+    });
+
+    // Select action (AI Action)
+    await page.evaluate(() => {
+      const actions = Array.from(document.querySelectorAll('button')).filter(btn => btn.textContent?.includes('AI Action'));
+      (actions[0] as HTMLButtonElement)?.click();
+    });
+
+    // Click Save
+    await page.evaluate(() => {
+      const saveBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Save Automation')) as HTMLButtonElement;
+      saveBtn?.click();
+    });
+
+    // Verify persistence on list page
+    await page.waitForSelector('#automations-list-container');
+    await page.waitForFunction(() => document.body.textContent?.includes('New Happy Flow'));
+  },
+
+  test_browser_agent_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    setMockConfig({
+      agentSuccess: true,
+      agentSessionId: 'session-happy-id',
+      agentSessionStatus: 'awaiting_confirmation',
+      agentLiveScreenshot: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+    });
+
+    await page.goto(`${baseUrl}/agent`);
+    await page.waitForSelector('input[placeholder="Describe what you want me to do..."]');
+
+    // Fill objective
+    await page.type('input[placeholder="Describe what you want me to do..."]', 'Search for SaaS tools');
+
+    // Click send
+    await page.click('button:has(svg.lucide-send)');
+
+    // Verify Live View screenshot is visible
+    await page.waitForSelector('img[alt="Browser view"]');
+
+    // Verify confirmation popup buttons are visible
+    await page.waitForFunction(() => document.body.textContent?.includes('Confirm') && document.body.textContent?.includes('Deny'));
+
+    // Click Confirm
+    const confirmBtn = await page.waitForSelector('button:has(svg.lucide-check-circle)');
+    await confirmBtn.click();
+  },
+
+  test_phone_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/phone`);
+    await page.waitForSelector('input[placeholder="Enter phone number..."]');
+
+    // Click digits 5, 5, 5, 1, 2, 3, 4
+    await page.evaluate(() => {
+      const digitButtons = Array.from(document.querySelectorAll('button'));
+      const digits = ['5', '5', '5', '1', '2', '3', '4'];
+      for (const d of digits) {
+        const btn = digitButtons.find(b => b.textContent?.trim() === d);
+        btn?.click();
+      }
+    });
+
+    // Check dial pad input contains number
+    const val = await page.$eval('input[placeholder="Enter phone number..."]', el => (el as HTMLInputElement).value);
+    if (val !== '5551234') {
+      throw new Error(`Expected dial number to be 5551234, but got: ${val}`);
+    }
+
+    // Click Call
+    await page.evaluate(() => {
+      const callBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Call')) as HTMLButtonElement;
+      callBtn?.click();
+    });
+
+    // Verify active call state
+    await page.waitForFunction(() => document.body.textContent?.includes('End Call'));
+
+    // Click End Call
+    await page.evaluate(() => {
+      const endBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('End Call')) as HTMLButtonElement;
+      endBtn?.click();
+    });
+
+    // Verify call ended state
+    await page.waitForFunction(() => document.body.textContent?.includes('Call') && !document.body.textContent?.includes('End Call'));
+  },
+
+  test_calendar_happy_path: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    await page.goto(`${baseUrl}/calendar`);
+    await page.waitForSelector('button');
+
+    // Click New Event button
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const btn = btns.find(b => b.textContent?.includes('New Event'));
+      btn?.click();
+    });
+
+    // Fill the event details in modal
+    await page.waitForSelector('input[type="text"]');
+    await page.type('input[type="text"]', 'E2E Meeting');
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    await page.evaluate((val) => {
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      if (dateInput) {
+        dateInput.value = val;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, todayStr);
+
+    await page.evaluate(() => {
+      const timeInputs = Array.from(document.querySelectorAll('input[type="time"]')) as HTMLInputElement[];
+      if (timeInputs[0]) {
+        timeInputs[0].value = '10:00';
+        timeInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (timeInputs[1]) {
+        timeInputs[1].value = '11:00';
+        timeInputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+
+    // Click Create Event
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const createBtn = btns.find(b => b.textContent?.trim() === 'Create Event');
+      createBtn?.click();
+    });
+
+    // Switch to Week View
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const weekBtn = btns.find(b => b.textContent?.trim() === 'Week');
+      weekBtn?.click();
+    });
+
+    // Assert event displays in week view
+    await page.waitForFunction(() => document.body.textContent?.includes('E2E Meeting'));
   }
 };

@@ -24,7 +24,7 @@ import {
 interface AgentSession {
   id: string
   objective: string
-  status: 'idle' | 'planning' | 'executing' | 'paused' | 'completed' | 'failed'
+  status: 'idle' | 'planning' | 'executing' | 'paused' | 'completed' | 'failed' | 'awaiting_confirmation' | 'cancelled'
   startUrl?: string
   createdAt: string
 }
@@ -71,6 +71,7 @@ export default function AgentPage() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showLogs, setShowLogs] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorText, setErrorText] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
@@ -86,7 +87,7 @@ export default function AgentPage() {
 
   // Poll for live state when session is active
   const pollLiveState = useCallback(async () => {
-    if (!activeSession || !['executing', 'planning', 'paused'].includes(activeSession.status)) {
+    if (!activeSession || !['executing', 'planning', 'paused', 'awaiting_confirmation'].includes(activeSession.status)) {
       return
     }
 
@@ -105,7 +106,7 @@ export default function AgentPage() {
   }, [activeSession])
 
   useEffect(() => {
-    if (activeSession && ['executing', 'planning', 'paused'].includes(activeSession.status)) {
+    if (activeSession && ['executing', 'planning', 'paused', 'awaiting_confirmation'].includes(activeSession.status)) {
       // Start polling
       pollingRef.current = setInterval(pollLiveState, 2000)
     }
@@ -136,6 +137,7 @@ export default function AgentPage() {
   // Create new session
   const createSession = async (objective: string) => {
     setIsCreating(true)
+    setErrorText(null)
     try {
       const response = await fetch('/api/agent/sessions', {
         method: 'POST',
@@ -148,6 +150,7 @@ export default function AgentPage() {
       })
 
       if (response.ok) {
+        setErrorText(null)
         const data = await response.json()
         setActiveSession(data.session)
         setMessages([{
@@ -166,16 +169,20 @@ export default function AgentPage() {
 
         setInputValue('')
         setStartUrl('')
+      } else {
+        const errData = await response.json().catch(() => ({}))
+        setErrorText(errData.error || 'Failed to create session')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create session error:', error)
+      setErrorText(error.message || 'Failed to create session due to a network or server error')
     } finally {
       setIsCreating(false)
     }
   }
 
   // Session control actions
-  const sessionAction = async (action: 'pause' | 'resume' | 'cancel') => {
+  const sessionAction = async (action: 'pause' | 'resume' | 'cancel' | 'confirm' | 'deny') => {
     if (!activeSession) return
 
     setIsLoading(true)
@@ -277,6 +284,28 @@ export default function AgentPage() {
 
           {activeSession && (
             <div className="flex items-center gap-2">
+              {liveState?.status === 'awaiting_confirmation' && (
+                <>
+                  <button
+                    onClick={() => sessionAction('confirm')}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg
+                      hover:bg-green-700 transition disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => sessionAction('deny')}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg
+                      hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Deny
+                  </button>
+                </>
+              )}
               {activeSession.status === 'executing' && (
                 <button
                   onClick={() => sessionAction('pause')}
@@ -288,7 +317,7 @@ export default function AgentPage() {
                   Pause
                 </button>
               )}
-              {activeSession.status === 'paused' && (
+              {activeSession.status === 'paused' && liveState?.status !== 'awaiting_confirmation' && (
                 <button
                   onClick={() => sessionAction('resume')}
                   disabled={isLoading}
@@ -299,7 +328,7 @@ export default function AgentPage() {
                   Resume
                 </button>
               )}
-              {['executing', 'paused', 'planning'].includes(activeSession.status) && (
+              {['executing', 'paused', 'planning', 'awaiting_confirmation'].includes(activeSession.status) && (
                 <button
                   onClick={() => sessionAction('cancel')}
                   disabled={isLoading}
@@ -359,6 +388,12 @@ export default function AgentPage() {
 
           {/* Input Area */}
           <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            {errorText && (
+              <div className="mb-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2 text-xs font-semibold" id="agent-error-banner">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorText}</span>
+              </div>
+            )}
             {!activeSession && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2">

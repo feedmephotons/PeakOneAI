@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users,
-  Video, Calendar, Bell, X, Trash2
+  Video, Calendar, Bell, X, Trash2, RefreshCw
 } from 'lucide-react'
 
 interface Event {
@@ -28,6 +28,32 @@ export default function CalendarPage() {
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [showEventDetails, setShowEventDetails] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [showDoubleBookingWarning, setShowDoubleBookingWarning] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'conflict' | 'error'>('idle')
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
+
+  const handleSyncCalendar = async () => {
+    setSyncStatus('syncing')
+    setSyncMessage(null)
+    try {
+      const res = await fetch('/api/calendar/sync', { method: 'POST' })
+      const data = await res.json()
+      if (res.status === 409) {
+        setSyncStatus('conflict')
+        setSyncMessage(data.error || 'Conflict detected')
+      } else if (res.ok) {
+        setSyncStatus('success')
+        setSyncMessage('Google Calendar synced successfully.')
+      } else {
+        setSyncStatus('error')
+        setSyncMessage(data.error || 'Failed to sync')
+      }
+    } catch {
+      setSyncStatus('error')
+      setSyncMessage('Sync failed due to network error.')
+    }
+  }
 
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
     title: '',
@@ -85,14 +111,15 @@ export default function CalendarPage() {
       ]
       setEvents(sampleEvents)
     }
+    setIsLoaded(true)
   }, [])
 
   // Save events to localStorage
   useEffect(() => {
-    if (events.length > 0) {
+    if (isLoaded) {
       localStorage.setItem('calendar-events', JSON.stringify(events))
     }
-  }, [events])
+  }, [events, isLoaded])
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -153,6 +180,22 @@ export default function CalendarPage() {
   const handleCreateEvent = () => {
     if (!newEvent.title || !newEvent.date || !newEvent.startTime) return
 
+    // Check overlap for double booking
+    const isDoubleBooked = events.some(e => {
+      if (e.date !== newEvent.date) return false;
+      if (e.isAllDay || newEvent.isAllDay) return false;
+      const start1 = e.startTime;
+      const end1 = e.endTime || e.startTime;
+      const start2 = newEvent.startTime!;
+      const end2 = newEvent.endTime || newEvent.startTime!;
+      return (start2 >= start1 && start2 < end1) || (end2 > start1 && end2 <= end1) || (start2 <= start1 && end2 >= end1);
+    });
+
+    if (isDoubleBooked && !showDoubleBookingWarning) {
+      setShowDoubleBookingWarning(true);
+      return;
+    }
+
     const event: Event = {
       id: Date.now().toString(),
       title: newEvent.title || '',
@@ -170,6 +213,7 @@ export default function CalendarPage() {
 
     setEvents([...events, event])
     setShowEventModal(false)
+    setShowDoubleBookingWarning(false)
     setNewEvent({
       title: '',
       description: '',
@@ -225,6 +269,24 @@ export default function CalendarPage() {
             </div>
 
             <div className="flex items-center space-x-3">
+              {syncMessage && (
+                <div className={`text-xs px-3 py-1.5 rounded-lg border ${
+                  syncStatus === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                  syncStatus === 'conflict' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                  'bg-red-50 border-red-200 text-red-800'
+                }`} id="calendar-sync-message">
+                  {syncMessage}
+                </div>
+              )}
+              <button
+                onClick={handleSyncCalendar}
+                disabled={syncStatus === 'syncing'}
+                className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                id="calendar-sync-btn"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                Sync Calendar
+              </button>
               <button
                 onClick={goToToday}
                 className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -521,7 +583,10 @@ export default function CalendarPage() {
                 Create New Event
               </h2>
               <button
-                onClick={() => setShowEventModal(false)}
+                onClick={() => {
+                  setShowEventModal(false)
+                  setShowDoubleBookingWarning(false)
+                }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
@@ -529,6 +594,11 @@ export default function CalendarPage() {
             </div>
 
             <div className="space-y-4">
+              {showDoubleBookingWarning && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-lg text-xs" id="calendar-double-booking-warning">
+                  ⚠️ This slot is already booked. Click &quot;Create Event&quot; again to double book, or choose another time.
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Title
@@ -637,7 +707,10 @@ export default function CalendarPage() {
 
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
-                onClick={() => setShowEventModal(false)}
+                onClick={() => {
+                  setShowEventModal(false)
+                  setShowDoubleBookingWarning(false)
+                }}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition"
               >
                 Cancel

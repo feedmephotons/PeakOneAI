@@ -1,0 +1,47 @@
+﻿
+> saasx-platform@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.7
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+wsl : [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, 
+please update: `npm i baseline-browser-mapping@latest -D`
+At line:1 char:1
++ wsl npm run build > build_output.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([baseline-brows...ping@latest -D`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ ⚠ Compiled with warnings in 39.0s
+
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentat
+ion.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentat
+ion.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@prisma/instrumentation/dist/index.js
+./node_modules/@sentry/node/build/cjs/integrations/tracing/prisma.js
+./node_modules/@sentry/node/build/cjs/index.js
+./node_modules/@sentry/nextjs/build/cjs/index.server.js
+./app/global-error.tsx
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please 
+update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully in 63s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+unhandledRejection [Error [PageNotFoundError]: Cannot find module for page: /_document] {
+  type: 'PageNotFoundError',
+  code: 'ENOENT'
+}

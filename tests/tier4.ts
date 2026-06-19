@@ -6,10 +6,10 @@ export const tier4Tests = {
   test_scenario_task_lifecycle: async (page: Page, baseUrl: string) => {
     await clearState(page, baseUrl);
     await page.goto(`${baseUrl}/tasks`);
-    await page.waitForSelector('button:has(svg.lucide-plus)');
+    await page.waitForSelector('button.bg-indigo-600');
 
     // 1. Create Task
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
 
     await page.waitForSelector('input[placeholder="Enter task title..."]');
@@ -165,7 +165,7 @@ export const tier4Tests = {
 
     // Wait for and extract summary text
     await page.waitForFunction((expected) => {
-      return document.querySelector('div.bg-white.rounded-2xl.shadow-lg.p-8')?.textContent?.includes(expected);
+      return Array.from(document.querySelectorAll('div.rounded-2xl.p-8')).some(el => el.textContent?.includes(expected));
     }, docSummaryText);
 
     // 2. Go to Lisa and ask to refine it
@@ -293,7 +293,7 @@ export const tier4Tests = {
     await page.waitForFunction(() => window.location.pathname === '/tasks');
 
     // Create task
-    const createBtn = await page.waitForSelector('button:has(svg.lucide-plus)');
+    const createBtn = await page.waitForSelector('button.bg-indigo-600');
     await createBtn.click();
     await page.waitForSelector('input[placeholder="Enter task title..."]');
     await page.type('input[placeholder="Enter task title..."]', 'Stress Navigation Task');
@@ -340,5 +340,231 @@ export const tier4Tests = {
     if (!isTestHighlighted) {
       console.log('Warning: Navbar active highlighting selector did not match typical classes, but navigation finished.');
     }
+  },
+
+  test_scenario_lead_acquisition_pipeline: async (page: Page, baseUrl: string) => {
+    await clearState(page, baseUrl);
+    setMockConfig({
+      agentSuccess: true,
+      agentSessionId: 'session-lead-pipeline',
+      agentSessionStatus: 'awaiting_confirmation',
+      agentCurrentAction: 'Scan LinkedIn for leads',
+      agentLiveScreenshot: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      emailOutreachSuccess: true,
+      emailOutreachCampaign: [
+        { subject: 'Lead Outreach: Quick Question', body: 'Hey, do you have 5 minutes to connect? Book here: {{calendar_link}}' }
+      ],
+      emailSendSuccess: true,
+      callTranscribeSuccess: true,
+      callTranscribeText: 'Transcript: Next step is scheduling a deep dive.',
+      callSummarySuccess: true,
+      callSummaryText: 'Call Summary: Agreed to schedule a deep dive.',
+      callSummaryActionItems: [
+        { text: 'Schedule deep dive call', severity: 'high' }
+      ]
+    });
+
+    // 1. Trigger Browser Agent to scan for leads
+    await page.goto(`${baseUrl}/agent`);
+    await page.waitForSelector('input[placeholder="Describe what you want me to do..."]');
+    await page.type('input[placeholder="Describe what you want me to do..."]', 'Scan LinkedIn for leads');
+    await page.click('button:has(svg.lucide-send)');
+
+    await page.waitForSelector('img[alt="Browser view"]');
+    await page.waitForFunction(() => document.body.textContent?.includes('Scan LinkedIn for leads'));
+
+    const confirmBtn = await page.waitForSelector('button:has(svg.lucide-check-circle)');
+    await confirmBtn.click();
+    await page.waitForFunction(() => !document.body.textContent?.includes('Awaiting confirmation'));
+
+    // 2. Create an automation rule based on "File Upload" trigger and compatibility checks
+    await page.goto(`${baseUrl}/automation`);
+    await page.waitForSelector('button.bg-indigo-600');
+    
+    await page.evaluate(() => {
+      const createBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Create Automation')) as HTMLButtonElement;
+      createBtn?.click();
+    });
+
+    await page.waitForSelector('input[placeholder="e.g. Sync Drive to Slack"]');
+    await page.type('input[placeholder="e.g. Sync Drive to Slack"]', 'Lead Outreach Flow');
+    await page.type('input[placeholder="Short description of this workflow"]', 'Outreach automation trigger');
+
+    // Select trigger "File Upload"
+    await page.evaluate(() => {
+      const trigButtons = Array.from(document.querySelectorAll('button'));
+      const fileTrig = trigButtons.find(b => b.textContent?.includes('File Upload')) as HTMLButtonElement;
+      fileTrig?.click();
+    });
+
+    // Select action "Schedule Meeting" (incompatible, should trigger validation error)
+    await page.evaluate(() => {
+      const actButtons = Array.from(document.querySelectorAll('button'));
+      const scheduleMeetingAct = actButtons.find(b => b.textContent?.includes('Schedule Meeting')) as HTMLButtonElement;
+      scheduleMeetingAct?.click();
+    });
+
+    // Verify compatibility check error
+    await page.waitForFunction(() => document.body.textContent?.includes('File Upload trigger cannot be directly connected to Schedule Meeting action.'));
+
+    // Select action "Send Email" (compatible, should clear the error)
+    await page.evaluate(() => {
+      const actButtons = Array.from(document.querySelectorAll('button'));
+      const sendEmailAct = actButtons.find(b => b.textContent?.includes('Send Email')) as HTMLButtonElement;
+      sendEmailAct?.click();
+    });
+
+    await page.waitForFunction(() => !document.body.textContent?.includes('File Upload trigger cannot be directly connected to Schedule Meeting action.'));
+
+    // Save Automation
+    await page.evaluate(() => {
+      const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Save Automation')) as HTMLButtonElement;
+      saveBtn?.click();
+    });
+
+    await page.waitForSelector('#automations-list-container');
+    await page.waitForFunction(() => document.body.textContent?.includes('Lead Outreach Flow'));
+
+    // 3. Generate and send email outreach with calendar personalization
+    await page.goto(`${baseUrl}/email/outreach`);
+    await page.waitForSelector('input[placeholder="e.g., Founders/CTOs needing development tools"]');
+    await page.type('input[placeholder="e.g., Founders/CTOs needing development tools"]', 'Tech Leads');
+    await page.type('input[placeholder="e.g., Book demo calls, Get feedback on product"]', 'Product demo');
+
+    await page.evaluate(() => {
+      const genBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Generate Email Sequence')) as HTMLButtonElement;
+      genBtn?.click();
+    });
+
+    await page.waitForFunction(() => document.body.textContent?.includes('Lead Outreach: Quick Question'));
+
+    // Send Test Email
+    await page.evaluate(() => {
+      const sendTestBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Send Test Email')) as HTMLButtonElement;
+      sendTestBtn?.click();
+    });
+
+    await page.waitForSelector('input[placeholder="test@example.com"]');
+    await page.type('input[placeholder="test@example.com"]', 'lead@example.com');
+
+    // Fill personalization variable Calendar Link input
+    await page.waitForSelector('input[placeholder="https://calendly.com/your-link"]');
+    await page.evaluate(() => {
+      const input = document.querySelector('input[placeholder="https://calendly.com/your-link"]') as HTMLInputElement;
+      if (input) input.value = '';
+    });
+    await page.type('input[placeholder="https://calendly.com/your-link"]', `${baseUrl}/calendar`);
+
+    // Click Send Email
+    await page.evaluate(() => {
+      const sendBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.includes('Send Email')) as HTMLButtonElement;
+      sendBtn?.click();
+    });
+
+    await page.waitForFunction(() => document.body.textContent?.includes('Email sent successfully!'));
+
+    // 4. Book calendar event (with double-booking validation)
+    await page.goto(`${baseUrl}/calendar`);
+    await page.waitForSelector('#calendar-sync-btn');
+
+    await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('New Event')) as HTMLButtonElement;
+      btn?.click();
+    });
+
+    await page.waitForSelector('input[value=""]');
+    await page.evaluate(() => {
+      const inputs = Array.from(document.querySelectorAll('input'));
+      const titleInput = inputs.find(i => i.type === 'text' && !i.placeholder.includes('location')) as HTMLInputElement;
+      if (titleInput) {
+        titleInput.value = 'Lead Kickoff Meeting';
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      
+      const dateInput = inputs.find(i => i.type === 'date') as HTMLInputElement;
+      if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      // Enter 14:00 to 15:00 (which clashes with the mock event "Client Presentation")
+      const timeInputs = inputs.filter(i => i.type === 'time') as HTMLInputElement[];
+      if (timeInputs[0]) {
+        timeInputs[0].value = '14:00';
+        timeInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (timeInputs[1]) {
+        timeInputs[1].value = '15:00';
+        timeInputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+
+    // Click "Create Event" the first time
+    await page.evaluate(() => {
+      const createBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Create Event')) as HTMLButtonElement;
+      createBtn?.click();
+    });
+
+    // Verify double-booking warning shows up
+    await page.waitForSelector('#calendar-double-booking-warning');
+
+    // Click "Create Event" again to override double-booking and successfully save
+    await page.evaluate(() => {
+      const createBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Create Event')) as HTMLButtonElement;
+      createBtn?.click();
+    });
+
+    await page.waitForFunction(() => document.body.textContent?.includes('Lead Kickoff Meeting'));
+
+    // 5. Log and complete a call on phone dialer, transcribing and summarizing insights to create follow-up task
+    await page.goto(`${baseUrl}/phone`);
+    await page.waitForSelector('input[placeholder="Enter phone number..."]');
+    await page.type('input[placeholder="Enter phone number..."]', '5559876');
+    
+    // Click Call
+    await page.evaluate(() => {
+      const callBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Call')) as HTMLButtonElement;
+      callBtn?.click();
+    });
+    await page.waitForFunction(() => document.body.textContent?.includes('End Call'));
+
+    // Click End Call
+    await page.evaluate(() => {
+      const endBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('End Call')) as HTMLButtonElement;
+      endBtn?.click();
+    });
+    await page.waitForFunction(() => document.body.textContent?.includes('Call') && !document.body.textContent?.includes('End Call'));
+
+    // Switch to Recordings tab
+    await page.evaluate(() => {
+      const recTab = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Recordings')) as HTMLButtonElement;
+      recTab?.click();
+    });
+    await page.waitForSelector('#recordings-list-container');
+
+    // Trigger transcription
+    const transcribeBtn = await page.waitForSelector('.transcribe-btn');
+    await transcribeBtn.click();
+
+    await page.waitForSelector('.transcript-content-text');
+    const transcriptVal = await page.$eval('.transcript-content-text', el => el.textContent?.trim());
+    if (!transcriptVal || (!transcriptVal.includes('deep dive') && !transcriptVal.toLowerCase().includes('deep dive'))) {
+      throw new Error(`Expected transcription text to match, got: ${transcriptVal}`);
+    }
+
+    // Request summary & verify Action Items
+    const summaryBtn = await page.waitForSelector('.summary-btn');
+    await summaryBtn.click();
+
+    await page.waitForSelector('.action-items-list');
+    const actionItemsVal = await page.$eval('.action-items-list', el => el.textContent?.trim());
+    if (!actionItemsVal || !actionItemsVal.includes('Schedule deep dive call')) {
+      throw new Error(`Expected action items list to contain synced item, got: ${actionItemsVal}`);
+    }
+
+    // Go to Tasks page and verify the action item was auto-synced/appended to TODO column
+    await page.goto(`${baseUrl}/tasks`);
+    await page.waitForSelector('main');
+    await page.waitForFunction(() => document.body.textContent?.includes('Schedule deep dive call'));
   }
 };

@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
-  Send, User, Bot, Mic, Paperclip, Settings, X, FileText,
-  Image as ImageIcon, Calendar, CheckSquare, FileSearch, Brain,
-  TrendingUp, Mail, Phone, Globe, Code, Database, Shield,
-  Zap, BookOpen, Heart
+  Send, User, Mic, Paperclip, X, FileText,
+  Image as ImageIcon, Sparkles, ArrowUp, Boxes, CheckCircle2, Clock,
 } from 'lucide-react'
+import { LisaOrchestrator, type OperatorInfo } from '@/lib/peak/lisa-orchestrator'
 
 interface Message {
   id?: string;
@@ -17,207 +16,52 @@ interface Message {
   suggestions?: string[];
 }
 
-// Simulated AI responses based on keywords and context
+// Simulated AI responses (fallback only — used when /api/ai/chat is unreachable)
 const getAIResponse = (input: string): { response: string; suggestions?: string[] } => {
   const lowerInput = input.toLowerCase()
 
-  // Task management
   if (lowerInput.includes('task') || lowerInput.includes('todo') || lowerInput.includes('organize')) {
     return {
-      response: `I can help you organize your tasks! Here's what I suggest:
+      response: `I can help you organize your tasks. Here's what I'd prioritize:
 
-📋 **Current Priority Tasks:**
-1. Review pending pull requests
-2. Update project documentation
-3. Prepare for tomorrow's standup meeting
-4. Complete code review for the authentication module
+1. Finalize the Product Launch Plan — due today
+2. Review the Investor Update — due today
+3. Approve the Marketing Budget — due tomorrow
 
-Would you like me to:
-- Create a new task list
-- Set priorities for existing tasks
-- Schedule reminders for deadlines
-- Analyze your productivity patterns?`,
+Want me to create a task list, set priorities, or schedule reminders?`,
       suggestions: ['Create a new task', 'View all tasks', 'Set priorities', 'Schedule reminder']
     }
   }
 
-  // Document analysis
-  if (lowerInput.includes('document') || lowerInput.includes('analyze') || lowerInput.includes('file')) {
+  if (lowerInput.includes('summar') || lowerInput.includes('yesterday')) {
     return {
-      response: `I can analyze documents and files for you!
+      response: `Here's a recap of yesterday:
 
-📄 **Document Analysis Capabilities:**
-- Extract key information and summaries
-- Identify important dates and deadlines
-- Find patterns and insights
-- Generate reports and visualizations
+- 3 customer conversations mentioned pricing concerns
+- The Q2 campaign is trending 18% above target
+- The investor follow-up to Brian still has no response
 
-To analyze a document, simply upload it using the paperclip icon. I support:
-- PDF files
-- Word documents (.doc, .docx)
-- Text files
-- Spreadsheets
-- Images with text
-
-What type of document would you like to analyze?`,
-      suggestions: ['Upload document', 'Recent analyses', 'Generate report', 'Extract data']
+Want the full briefing or a draft follow-up for Brian?`,
+      suggestions: ['View full briefing', 'Draft follow-up for Brian', 'Show pricing mentions']
     }
   }
 
-  // Meeting/Calendar
-  if (lowerInput.includes('meeting') || lowerInput.includes('schedule') || lowerInput.includes('calendar')) {
+  if (lowerInput.includes('prepare') || lowerInput.includes('brian')) {
     return {
-      response: `Let me help you with scheduling! 📅
+      response: `Preparing your relationship brief for Brian.
 
-**Your Upcoming Schedule:**
-- 10:00 AM - Team standup (in 2 hours)
-- 2:00 PM - Client presentation
-- 3:30 PM - Code review session
-- Tomorrow 9:00 AM - Sprint planning
+- Last interaction: investor update email (no response, 5 days)
+- Open items: Q3 revenue model, follow-up call
+- Sentiment: positive but cooling on response time
 
-**Available time slots today:**
-- 11:00 AM - 12:00 PM
-- 12:30 PM - 1:30 PM
-- 4:00 PM - 5:30 PM
-
-Would you like to:
-- Schedule a new meeting
-- Send calendar invites
-- Find common availability
-- Set up recurring meetings?`,
-      suggestions: ['Schedule meeting', 'View calendar', 'Find time slot', 'Send invites']
+I'd recommend a short, direct follow-up today. Want me to draft it?`,
+      suggestions: ['Draft follow-up', 'Open Brian’s profile', 'Recent interactions']
     }
   }
 
-  // Activity summary
-  if (lowerInput.includes('activity') || lowerInput.includes('recent') || lowerInput.includes('summary')) {
-    return {
-      response: `Here's your activity summary: 📊
-
-**Today's Activity:**
-- 12 tasks completed ✅
-- 8 files uploaded
-- 23 messages sent
-- 3 meetings attended
-
-**Weekly Stats:**
-- Productivity: Up 15% from last week
-- Most active: Tuesday (45 tasks)
-- Focus time: 28 hours
-- Collaboration: 15 team interactions
-
-**Trending Topics in Your Work:**
-1. Authentication implementation
-2. Database optimization
-3. UI/UX improvements
-4. Testing coverage
-
-Need more detailed analytics?`,
-      suggestions: ['Detailed report', 'Export data', 'Team activity', 'Productivity tips']
-    }
-  }
-
-  // Code/Development help
-  if (lowerInput.includes('code') || lowerInput.includes('debug') || lowerInput.includes('error') || lowerInput.includes('implement')) {
-    return {
-      response: `I can help with your development tasks! 💻
-
-**Development Assistance:**
-- Code review and optimization
-- Bug identification and fixes
-- Implementation suggestions
-- Best practices and patterns
-
-**Recent Code Activities:**
-- Fixed authentication bug in login flow
-- Optimized database queries (40% faster)
-- Added unit tests (coverage: 78%)
-- Refactored payment module
-
-What specific coding task do you need help with?`,
-      suggestions: ['Review code', 'Debug error', 'Optimize performance', 'Write tests']
-    }
-  }
-
-  // Help command
-  if (lowerInput.includes('help') || lowerInput === '?' || lowerInput.includes('what can you do')) {
-    return {
-      response: `I'm Lisa, your AI assistant! Here's how I can help you: 🚀
-
-**My Capabilities:**
-📋 **Task Management** - Organize, prioritize, and track tasks
-📄 **Document Analysis** - Extract insights from files
-📅 **Smart Scheduling** - Manage calendars and meetings
-📊 **Analytics** - Track productivity and patterns
-💻 **Code Assistant** - Help with development tasks
-💬 **Communication** - Draft emails and messages
-🔍 **Smart Search** - Find information quickly
-🎯 **Project Planning** - Roadmaps and timelines
-
-Just ask me anything or click on a quick action to get started!`,
-      suggestions: ['Organize tasks', 'Analyze document', 'Schedule meeting', 'Show analytics']
-    }
-  }
-
-  // Email/Communication
-  if (lowerInput.includes('email') || lowerInput.includes('message') || lowerInput.includes('draft')) {
-    return {
-      response: `I'll help you with your communications! ✉️
-
-**Draft Templates Ready:**
-1. Project update email
-2. Meeting follow-up
-3. Client proposal
-4. Team announcement
-
-**Recent Communications:**
-- Sent: 5 emails today
-- Received: 12 new messages
-- Pending: 3 draft responses
-
-Would you like me to:
-- Draft a new email
-- Summarize unread messages
-- Schedule email send
-- Create email templates?`,
-      suggestions: ['Draft email', 'View inbox', 'Create template', 'Schedule send']
-    }
-  }
-
-  // Data/Analytics
-  if (lowerInput.includes('data') || lowerInput.includes('analytics') || lowerInput.includes('report')) {
-    return {
-      response: `Let me generate analytics for you! 📈
-
-**Performance Metrics:**
-- Project completion: 87% on track
-- Team velocity: 42 story points/sprint
-- Code quality: A- (improved from B+)
-- Customer satisfaction: 4.6/5.0
-
-**Key Insights:**
-✅ Productivity peaks on Tuesdays
-📈 30% faster task completion this month
-🎯 Meeting efficiency improved by 25%
-💡 Suggestion: Batch similar tasks for better focus
-
-What specific metrics would you like to explore?`,
-      suggestions: ['Generate report', 'Export data', 'Team metrics', 'Custom dashboard']
-    }
-  }
-
-  // Default response with context awareness
   return {
-    response: `I understand you're asking about "${input}". Let me help you with that!
-
-Based on your request, I can:
-- Search for relevant information
-- Create action items
-- Provide recommendations
-- Connect you with the right resources
-
-How would you like me to assist you specifically with this?`,
-    suggestions: ['Tell me more', 'Search information', 'Create task', 'Get recommendations']
+    response: `Got it — "${input}". I can search your memory, prepare you for a person, summarize a meeting, or draft a follow-up. How would you like me to help?`,
+    suggestions: ['Search memory', 'Summarize yesterday', 'Prepare me for Brian', 'Draft follow-up']
   }
 }
 
@@ -231,36 +75,30 @@ const fileToBase64 = (file: File): Promise<string> => {
   })
 }
 
+// Quick-action chips shown above the composer (and in the empty state).
+const QUICK_ACTIONS: { label: string; prompt: string }[] = [
+  { label: 'Summarize yesterday', prompt: 'Summarize yesterday for me' },
+  { label: 'Prepare me for Brian', prompt: 'Prepare me for Brian' },
+  { label: 'What do I know about pricing', prompt: 'What do I know about pricing?' },
+  { label: 'Draft follow-up', prompt: 'Draft a follow-up email' },
+]
+
 export default function LisaAIPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState<string | null>(null)
+  const [showOperators, setShowOperators] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Initialize with welcome message
-  useEffect(() => {
-    const welcomeMessage: Message = {
-      role: 'assistant',
-      content: `Hello! I'm Lisa, your AI assistant. 👋
+  // The orchestrator powers the "Operators" affordance + intent routing preview.
+  const orchestrator = useMemo(() => new LisaOrchestrator(), [])
+  const operators: OperatorInfo[] = useMemo(() => orchestrator.listOperators(), [orchestrator])
 
-I'm here to help you be more productive and organized. I can assist with:
-- Task management and prioritization
-- Document analysis and summarization
-- Smart scheduling and calendar management
-- Code reviews and development help
-- Data analytics and insights
-- And much more!
-
-How can I help you today?`,
-      timestamp: new Date(),
-      suggestions: ['Help me organize tasks', 'Analyze a document', 'Schedule a meeting', 'Show my activity']
-    }
-    setMessages([welcomeMessage])
-  }, [])
+  const hasConversation = messages.length > 0
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -268,14 +106,14 @@ How can I help you today?`,
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, isTyping])
 
   const handleFileSelect = (files: FileList | null) => {
     if (files) {
       setFileError(null)
       const newFiles = Array.from(files)
       const validFiles: File[] = []
-      
+
       for (const file of newFiles) {
         if (file.size > 4.5 * 1024 * 1024) {
           setFileError(`File "${file.name}" exceeds the 4.5MB limit. Please upload a smaller file.`)
@@ -283,7 +121,7 @@ How can I help you today?`,
         }
         validFiles.push(file)
       }
-      
+
       if (validFiles.length > 0) {
         setAttachedFiles(prev => [...prev, ...validFiles])
       }
@@ -404,7 +242,7 @@ How can I help you today?`,
                     if (parsed.type === 'content' && parsed.content) {
                       receivedContent = true
                       const contentChunk = parsed.content
-                      setMessages(prev => prev.map(msg => 
+                      setMessages(prev => prev.map(msg =>
                         msg.id === assistantMsgId ? { ...msg, content: msg.content + contentChunk } : msg
                       ))
                     }
@@ -418,7 +256,7 @@ How can I help you today?`,
           const chunk = decoder.decode(value, { stream: true })
           lineBuffer += chunk
           const lines = lineBuffer.split('\n')
-          
+
           lineBuffer = lines.pop() || ''
 
           for (const line of lines) {
@@ -436,7 +274,7 @@ How can I help you today?`,
                   const contentChunk = parsed.content
 
                   // Progressively update the assistant message in state
-                  setMessages(prev => prev.map(msg => 
+                  setMessages(prev => prev.map(msg =>
                     msg.id === assistantMsgId ? { ...msg, content: msg.content + contentChunk } : msg
                   ))
                 }
@@ -483,7 +321,7 @@ How can I help you today?`,
         }
 
         const nextWord = words[currentWordIndex] + (currentWordIndex === words.length - 1 ? '' : ' ')
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === assistantMsgId ? { ...msg, content: msg.content + nextWord } : msg
         ))
 
@@ -499,268 +337,310 @@ How can I help you today?`,
     }
   }
 
-  const quickActions = [
-    { icon: CheckSquare, label: "Organize my tasks", action: "Help me organize my tasks" },
-    { icon: FileSearch, label: "Analyze document", action: "I need to analyze a document" },
-    { icon: Calendar, label: "Schedule meeting", action: "Help me schedule a meeting" },
-    { icon: TrendingUp, label: "Show analytics", action: "Show me my activity summary" },
-    { icon: Mail, label: "Draft email", action: "Help me draft an email" },
-    { icon: Code, label: "Code help", action: "I need help with code" }
-  ]
-
-  const capabilities = [
-    { icon: Brain, title: "Smart AI Assistant", desc: "Powered by advanced language models" },
-    { icon: Zap, title: "Instant Responses", desc: "Get help in real-time" },
-    { icon: Shield, title: "Secure & Private", desc: "Your data stays protected" },
-    { icon: Globe, title: "Multi-domain Expert", desc: "Help across all areas" },
-    { icon: Database, title: "Context Aware", desc: "Remembers your preferences" },
-    { icon: Heart, title: "Personalized", desc: "Learns and adapts to you" }
-  ]
-
   return (
-    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden relative">
-      {/* Ambient Siri-style glow background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-indigo-400/20 to-purple-400/0 blur-[120px] dark:from-indigo-600/10 dark:to-purple-600/0 animate-pulse" style={{ animationDuration: '8s' }}></div>
-        <div className="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-violet-400/20 to-fuchsia-400/0 blur-[120px] dark:from-violet-600/10 dark:to-fuchsia-600/0 animate-pulse" style={{ animationDuration: '12s' }}></div>
+    <div className="peak-os relative flex h-screen flex-col overflow-hidden">
+      {/* Aurora bloom behind the page */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[480px] w-[760px] -translate-x-1/2 rounded-full bg-peak-primary/10 blur-[140px]" />
       </div>
 
-      {/* Sidebar */}
-      <div className="hidden md:flex w-80 backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-r border-zinc-200/50 dark:border-zinc-800/50 flex flex-col relative z-10">
-        <div className="p-6 border-b border-zinc-200/50 dark:border-zinc-800/50">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">Lisa AI</h2>
-              <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                Online & Ready
-              </p>
-            </div>
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between gap-4 border-b border-peak-border px-6 py-4 sm:px-10">
+        <div className="flex items-center gap-3">
+          <LisaOrb size={36} />
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight text-peak">Lisa</h1>
+            <p className="flex items-center gap-1.5 text-xs text-peak-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-peak-green shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
+              Your AI orchestrator
+            </p>
           </div>
         </div>
 
-        <div className="p-4 border-b border-zinc-200/50 dark:border-zinc-800/50">
-          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Quick Actions</h3>
-          <div className="space-y-2">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon
-              return (
-                <button
-                  key={index}
-                  onClick={() => sendMessage(action.action)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        <button
+          onClick={() => setShowOperators(v => !v)}
+          className={[
+            'inline-flex items-center gap-2 rounded-xl border border-peak-border px-3.5 py-2 text-sm font-medium transition-colors',
+            showOperators ? 'bg-peak-primary/15 text-peak' : 'bg-white/[0.03] text-peak-muted hover:bg-white/[0.06]',
+          ].join(' ')}
+        >
+          <Boxes className="h-4 w-4 text-peak-primary-300" />
+          Operators
+        </button>
+      </header>
+
+      {/* Operators panel (architecture affordance) */}
+      {showOperators && (
+        <div className="relative z-10 border-b border-peak-border bg-white/[0.015] px-6 py-4 sm:px-10">
+          <div className="mx-auto max-w-3xl">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-peak-muted">
+              P1 Operators — Lisa orchestrates, operators execute
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {operators.map((op) => (
+                <div
+                  key={op.id}
+                  className="peak-glass flex items-start gap-3 p-3.5"
                 >
-                  <Icon className="w-4 h-4 text-violet-500" />
-                  <span>{action.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="flex-1 p-4 overflow-y-auto">
-          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Capabilities</h3>
-          <div className="space-y-3">
-            {capabilities.map((capability, index) => {
-              const Icon = capability.icon
-              return (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
+                    <Boxes className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-white">{capability.title}</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{capability.desc}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
-            <Settings className="w-4 h-4" />
-            <span className="text-sm">Settings</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col relative z-10 bg-transparent">
-        {/* Chat Header */}
-        <div className="backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-b border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Chat with Lisa</h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Your intelligent AI assistant</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
-                <Mic className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
-                <Phone className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg transition-colors">
-                <BookOpen className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-transparent">
-          {messages.map((message, index) => (
-            <div key={index} className="animate-in">
-              <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex max-w-3xl ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.role === 'user'
-                      ? 'bg-zinc-200 dark:bg-zinc-700'
-                      : 'bg-gradient-to-br from-violet-500 to-purple-600'
-                  }`}>
-                    {message.role === 'user' ? (
-                      <User className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                    ) : (
-                      <Bot className="w-4 h-4 text-white" />
-                    )}
-                  </div>
-                  <div>
-                    <div className={`px-4 py-3 rounded-2xl ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-                        : 'bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md text-zinc-800 dark:text-zinc-200 shadow-sm'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                           {message.attachments.map((file, i) => (
-                            <div key={i} className={`flex items-center gap-2 text-xs ${
-                              message.role === 'user' ? 'text-violet-100' : 'text-zinc-500 dark:text-zinc-400'
-                            }`}>
-                              {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                              <span>{file.name}</span>
-                            </div>
-                          ))}
-                        </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-peak">{op.name}</span>
+                      {op.status === 'available' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-peak-green/15 px-1.5 py-0.5 text-[10px] font-medium text-peak-green">
+                          <CheckCircle2 className="h-3 w-3" /> Available
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-peak-dim">
+                          <Clock className="h-3 w-3" /> Soon
+                        </span>
                       )}
                     </div>
-                    <p className={`text-xs mt-1 ${
-                      message.role === 'user' ? 'text-zinc-500 dark:text-zinc-400 text-right' : 'text-zinc-400 dark:text-zinc-500'
-                    }`}>
-                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    {message.suggestions && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {message.suggestions.map((suggestion, i) => (
-                          <button
-                            key={i}
-                            onClick={() => sendMessage(suggestion)}
-                            className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-all duration-200 active:scale-95"
-                          >
-                            {suggestion}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <p className="mt-0.5 text-xs leading-snug text-peak-muted">{op.description}</p>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </div>
+      )}
 
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="px-4 py-3 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl backdrop-blur-md shadow-sm">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+      {/* Messages / empty state */}
+      <div className="peak-scrollbar relative z-10 flex-1 overflow-y-auto px-6 py-6 sm:px-10">
+        <div className="mx-auto max-w-3xl">
+          {!hasConversation ? (
+            <EmptyState onPick={sendMessage} />
+          ) : (
+            <div className="space-y-6">
+              {messages.map((message, index) => (
+                <div key={index} className="animate-peak-fade-up">
+                  <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex max-w-2xl ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
+                      {message.role === 'user' ? (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-peak-border bg-white/[0.05]">
+                          <User className="h-4 w-4 text-peak-muted" />
+                        </div>
+                      ) : (
+                        <LisaOrb size={32} />
+                      )}
+                      <div>
+                        <div className={`rounded-2xl px-4 py-3 ${
+                          message.role === 'user'
+                            ? 'bg-peak-primary/20 border border-peak-primary/30 text-peak'
+                            : 'peak-glass text-peak'
+                        }`}>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {message.attachments.map((file, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs text-peak-muted">
+                                  {file.type.startsWith('image/') ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                                  <span>{file.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <p className={`mt-1 text-xs text-peak-dim ${message.role === 'user' ? 'text-right' : ''}`}>
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        {message.suggestions && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {message.suggestions.map((suggestion, i) => (
+                              <button
+                                key={i}
+                                onClick={() => sendMessage(suggestion)}
+                                className="rounded-lg border border-peak-border bg-white/[0.03] px-3 py-1 text-xs text-peak-primary-300 transition-colors hover:bg-white/[0.07]"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
+
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="flex items-start gap-3">
+                    <LisaOrb size={32} />
+                    <div className="peak-glass rounded-2xl px-4 py-3">
+                      <div className="flex gap-1">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-peak-primary-300" style={{ animationDelay: '0ms' }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-peak-primary-300" style={{ animationDelay: '150ms' }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-peak-primary-300" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
+      </div>
 
-        {/* Input Area */}
-        <div className="bg-white dark:bg-gray-800 backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border-t border-zinc-200/50 dark:border-zinc-800/50 px-6 py-4 sticky bottom-0 z-10">
+      {/* Composer */}
+      <div className="relative z-10 border-t border-peak-border px-6 py-4 sm:px-10">
+        <div className="mx-auto max-w-3xl">
           {fileError && (
-            <div className="mb-2 text-xs text-red-500 font-medium bg-red-500/10 dark:bg-red-500/5 px-3 py-1.5 rounded-lg border border-red-500/20 animate-in">
+            <div className="mb-2 rounded-lg border border-peak-red/20 bg-peak-red/10 px-3 py-1.5 text-xs font-medium text-peak-red">
               {fileError}
             </div>
           )}
-          {/* Attached Files Display */}
+
+          {/* Quick-action chips (always visible above composer) */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((qa) => (
+              <button
+                key={qa.label}
+                onClick={() => sendMessage(qa.prompt)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-peak-border bg-white/[0.03] px-3 py-1.5 text-xs text-peak-muted transition-colors hover:bg-white/[0.07] hover:text-peak"
+              >
+                <Sparkles className="h-3 w-3 text-peak-primary-300" />
+                {qa.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Attached files */}
           {attachedFiles.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2 animate-in">
+            <div className="mb-3 flex flex-wrap gap-2">
               {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+                <div key={index} className="flex items-center gap-2 rounded-lg border border-peak-border bg-white/[0.04] px-3 py-1">
                   {file.type.startsWith('image/') ? (
-                    <ImageIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <ImageIcon className="h-4 w-4 text-peak-muted" />
                   ) : (
-                    <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <FileText className="h-4 w-4 text-peak-muted" />
                   )}
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">{file.name}</span>
+                  <span className="text-sm text-peak">{file.name}</span>
                   <button
                     onClick={() => removeAttachedFile(index)}
-                    className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition"
+                    className="text-peak-dim transition-colors hover:text-peak-red"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="flex items-end gap-3">
-            <div className="flex-1 relative">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask Lisa anything..."
-                className="w-full px-4 py-3 pr-12 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-200"
-                rows={1}
-                style={{ minHeight: '48px' }}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={(e) => handleFileSelect(e.target.files)}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute right-3 bottom-3 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors duration-200"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
-            </div>
+          <div className="peak-glass flex items-end gap-2 p-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={(e) => handleFileSelect(e.target.files)}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-peak-muted transition-colors hover:bg-white/[0.06] hover:text-peak"
+              aria-label="Attach file"
+            >
+              <Paperclip className="h-5 w-5" />
+            </button>
+            <button
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-peak-muted transition-colors hover:bg-white/[0.06] hover:text-peak"
+              aria-label="Voice"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask Lisa anything…"
+              className="peak-scrollbar flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-peak placeholder:text-peak-muted focus:outline-none"
+              rows={1}
+              style={{ minHeight: '44px' }}
+            />
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() && attachedFiles.length === 0}
-              className="p-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:opacity-90 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/20"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-peak-primary text-white shadow-[0_0_20px_var(--peak-glow)] transition-all hover:bg-peak-primary-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+              aria-label="Send"
             >
-              <Send className="w-5 h-5" />
+              <Send className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
-            Powered by Google Gemini 2.5 Flash
+          <p className="mt-2 text-center text-xs text-peak-dim">
+            Powered by Google Gemini · Lisa routes your intent through Peak One Operators
           </p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** The cosmic purple orb avatar — pure CSS (mirrors LisaBriefingCard's orb). */
+function LisaOrb({ size = 32 }: { size?: number }) {
+  return (
+    <div
+      className="peak-orb relative shrink-0 animate-peak-pulse-glow"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.9)]"
+        style={{ width: size * 0.5, height: size * 0.5 }}
+        fill="currentColor"
+      >
+        <path d="M12 0c.6 5.4 2.6 7.4 8 8-5.4.6-7.4 2.6-8 8-.6-5.4-2.6-7.4-8-8 5.4-.6 7.4-2.6 8-8z" />
+      </svg>
+    </div>
+  )
+}
+
+/** The pre-conversation hero: big orb, greeting, quick-action chips. */
+function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 pt-10 text-center sm:pt-16">
+      <div className="relative mb-8 flex h-44 w-44 items-center justify-center">
+        {/* orbital rings */}
+        <div
+          className="peak-orb-ring animate-peak-float"
+          style={{ width: 220, height: 88, transform: 'rotate(-18deg)' }}
+        />
+        <div
+          className="peak-orb-ring"
+          style={{ width: 180, height: 64, transform: 'rotate(-18deg)', opacity: 0.6 }}
+        />
+        <LisaOrb size={104} />
+        {/* scattered stars */}
+        <span className="absolute right-4 top-6 h-1 w-1 rounded-full bg-white/80" />
+        <span className="absolute bottom-8 left-6 h-0.5 w-0.5 rounded-full bg-peak-primary-300" />
+      </div>
+
+      <h2 className="text-3xl font-semibold tracking-tight text-peak sm:text-4xl">
+        Ask Lisa <span className="text-peak-primary-300">anything</span>
+      </h2>
+      <p className="mt-3 max-w-md text-sm text-peak-muted">
+        I connect your memory, missions, people, and meetings. Ask a question or pick a starting point.
+      </p>
+
+      <div className="mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-2">
+        {QUICK_ACTIONS.map((qa) => (
+          <button
+            key={qa.label}
+            onClick={() => onPick(qa.prompt)}
+            className="peak-glass peak-glass-hover group flex items-center gap-3 p-3.5 text-left transition-colors"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span className="flex-1 text-sm font-medium text-peak">{qa.label}</span>
+            <ArrowUp className="h-4 w-4 rotate-45 text-peak-dim transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </button>
+        ))}
       </div>
     </div>
   )

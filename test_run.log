@@ -1,0 +1,132 @@
+==================================================
+          SaasX E2E Test Suite Runner             
+==================================================
+
+Dev server already running on port 3002. Reusing instance.
+Launching headless browser...
+
+--------------------------------------------------
+ Running TIER1 Tests
+--------------------------------------------------
+⏳ [RUNNING] [TIER1] test_lisa_send_message...
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Hello Lisa, I want to create a plan
+✅ [PASS]    [TIER1] test_lisa_send_message (1.11s)
+⏳ [RUNNING] [TIER1] test_lisa_streaming_response...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/lisa
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Testing stream
+✅ [PASS]    [TIER1] test_lisa_streaming_response (0.62s)
+⏳ [RUNNING] [TIER1] test_lisa_mock_fallback_mode...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/lisa
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: I need help
+[BROWSER NETWORK] ERROR 500: http://localhost:3002/api/ai/chat
+[BROWSER CONSOLE] ERROR: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[BROWSER CONSOLE] ERROR: AI chat error: JSHandle@error
+✅ [PASS]    [TIER1] test_lisa_mock_fallback_mode (0.89s)
+⏳ [RUNNING] [TIER1] test_lisa_file_attachment...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/lisa
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Sending my doc
+
+[Attached files: mock_file.txt]
+✅ [PASS]    [TIER1] test_lisa_file_attachment (0.81s)
+⏳ [RUNNING] [TIER1] test_lisa_auto_scroll...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/lisa
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] FAILED: http://localhost:3002/sign-in?_rsc=jkq6a - net::ERR_ABORTED
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Scroll message 0
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Scroll message 1
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Scroll message 2
+[BROWSER CONSOLE] LOG: [Lisa] Calling /api/ai/chat with message: Scroll message 3
+✅ [PASS]    [TIER1] test_lisa_auto_scroll (3.29s)
+⏳ [RUNNING] [TIER1] test_upload_file_selection...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+✅ [PASS]    [TIER1] test_upload_file_selection (0.41s)
+⏳ [RUNNING] [TIER1] test_upload_drag_drop...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/files/upload
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+✅ [PASS]    [TIER1] test_upload_drag_drop (0.42s)
+⏳ [RUNNING] [TIER1] test_upload_analysis...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/files/upload
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+✅ [PASS]    [TIER1] test_upload_analysis (0.62s)
+⏳ [RUNNING] [TIER1] test_upload_ai_tags...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/files/upload
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/icons/pwa/icon-144.png
+✅ [PASS]    [TIER1] test_upload_ai_tags (0.61s)
+⏳ [RUNNING] [TIER1] test_upload_queue_removal...
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/
+[BROWSER CONSOLE] LOG: [E2E TEST] Blocked service worker registration
+[BROWSER CONSOLE] ERROR: [PWA] Service Worker registration failed: JSHandle@error
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/manifest.json
+[BROWSER NETWORK] ERROR 304: http://localhost:3002/files/upload
+Killed
