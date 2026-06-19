@@ -17,11 +17,11 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
 
   const getPriorityColor = (priority: Task['priority']) => {
     switch (priority) {
-      case 'URGENT': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-      case 'HIGH': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400'
-      case 'MEDIUM': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400'
-      case 'LOW': return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400'
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400'
+      case 'URGENT': return 'text-peak-red bg-peak-red/15 ring-1 ring-peak-red/30'
+      case 'HIGH': return 'text-peak-amber bg-peak-amber/15 ring-1 ring-peak-amber/30'
+      case 'MEDIUM': return 'text-peak-amber bg-peak-amber/15 ring-1 ring-peak-amber/30'
+      case 'LOW': return 'text-peak-muted bg-white/[0.06] ring-1 ring-peak-border'
+      default: return 'text-peak-muted bg-white/[0.06] ring-1 ring-peak-border'
     }
   }
 
@@ -31,11 +31,11 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
     const diffTime = dueDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays < 0) return { text: 'Overdue', color: 'text-red-600 dark:text-red-400' }
-    if (diffDays === 0) return { text: 'Today', color: 'text-orange-600 dark:text-orange-400' }
-    if (diffDays === 1) return { text: 'Tomorrow', color: 'text-yellow-600 dark:text-yellow-400' }
-    if (diffDays <= 7) return { text: `${diffDays} days`, color: 'text-blue-600 dark:text-blue-400' }
-    return { text: dueDate.toLocaleDateString(), color: 'text-gray-600 dark:text-gray-400' }
+    if (diffDays < 0) return { text: 'Overdue', color: 'text-peak-red' }
+    if (diffDays === 0) return { text: 'Today', color: 'text-peak-amber' }
+    if (diffDays === 1) return { text: 'Tomorrow', color: 'text-peak-amber' }
+    if (diffDays <= 7) return { text: `${diffDays} days`, color: 'text-peak-primary-300' }
+    return { text: dueDate.toLocaleDateString(), color: 'text-peak-muted' }
   }
 
   const nextStatus = {
@@ -60,10 +60,10 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
     <div
       draggable={!isTemp}
       onDragStart={handleDragStart}
-      className={`bg-white dark:bg-gray-900 rounded-lg p-4 shadow-sm border transition-all group relative ${
-        isTemp ? 'animate-pulse opacity-60 cursor-default' : 'cursor-move hover:shadow-md'
+      className={`bg-peak-glass rounded-xl p-4 border transition-all group relative ${
+        isTemp ? 'animate-pulse opacity-60 cursor-default' : 'cursor-move hover:bg-white/[0.04]'
       } ${
-        isSelected ? 'border-purple-500 ring-2 ring-purple-200 dark:ring-purple-900/50' : 'border-gray-200 dark:border-gray-700'
+        isSelected ? 'border-peak-primary ring-2 ring-peak-primary/30' : 'border-peak-border'
       }`}
     >
       {/* Selection checkbox */}
@@ -75,7 +75,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
             disabled={isTemp}
             onChange={() => onToggleSelect(task.id)}
             onClick={(e) => e.stopPropagation()}
-            className={`w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 focus:ring-2 ${
+            className={`w-4 h-4 text-peak-primary bg-white/[0.04] border-peak-border rounded focus:ring-peak-primary focus:ring-2 ${
               isTemp ? 'cursor-not-allowed' : 'cursor-pointer'
             }`}
           />
@@ -84,12 +84,12 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
 
       {/* Header */}
       <div className={`flex items-start justify-between mb-2 ${onToggleSelect ? 'ml-6' : ''}`}>
-        <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
+        <h4 className="font-medium text-peak text-sm line-clamp-2">
           {task.title}
         </h4>
         <div className="relative">
           {isTemp ? (
-            <div className="flex items-center justify-center text-gray-400 py-1">
+            <div className="flex items-center justify-center text-peak-dim py-1">
               <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -98,20 +98,20 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
           ) : (
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition"
+              className="text-peak-dim hover:text-peak opacity-0 group-hover:opacity-100 transition"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
           )}
 
           {showMenu && (
-            <div className="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 w-40">
+            <div className="absolute right-0 top-6 z-10 bg-peak-glass rounded-xl shadow-lg border border-peak-border py-1 w-40">
               <button
                 onClick={() => {
                   onUpdateStatus(task.id, nextStatus[task.status])
                   setShowMenu(false)
                 }}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-peak hover:bg-white/[0.04] flex items-center gap-2"
               >
                 <ChevronRight className="w-4 h-4" />
                 Move to {nextStatus[task.status].replace('_', ' ').toLowerCase()}
@@ -121,7 +121,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
                   onDelete(task.id)
                   setShowMenu(false)
                 }}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-white/[0.04] flex items-center gap-2 text-peak-red"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -133,7 +133,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
 
       {/* Description */}
       {task.description && (
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+        <p className="text-xs text-peak-muted mb-3 line-clamp-2">
           {task.description}
         </p>
       )}
@@ -144,7 +144,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
           {task.tags.map(tag => (
             <span
               key={tag}
-              className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded"
+              className="text-xs px-2 py-0.5 bg-white/[0.06] text-peak-muted rounded ring-1 ring-peak-border"
             >
               {tag}
             </span>
@@ -169,7 +169,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
 
       {/* Footer */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-3 text-xs text-peak-muted">
           {task.attachments > 0 && (
             <span className="flex items-center gap-1">
               <Paperclip className="w-3 h-3" />

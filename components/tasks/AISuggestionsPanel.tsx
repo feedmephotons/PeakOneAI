@@ -83,15 +83,15 @@ export default function AISuggestionsPanel() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'task':
-        return 'from-green-500 to-emerald-600'
+        return 'bg-peak-green'
       case 'deadline':
-        return 'from-orange-500 to-amber-600'
+        return 'bg-peak-amber'
       case 'priority':
-        return 'from-red-500 to-pink-600'
+        return 'bg-peak-red'
       case 'meeting':
-        return 'from-purple-500 to-indigo-600'
+        return 'bg-peak-primary'
       default:
-        return 'from-blue-500 to-cyan-600'
+        return 'bg-peak-primary'
     }
   }
 
@@ -111,19 +111,19 @@ export default function AISuggestionsPanel() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-peak-primary rounded-xl flex items-center justify-center">
           <Brain className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Suggestions</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Powered by your meetings</p>
+          <h2 className="text-xl font-bold text-peak">Suggestions</h2>
+          <p className="text-xs text-peak-muted">Powered by your meetings</p>
         </div>
       </div>
 
       {/* Add from Meeting Button */}
       <button
         onClick={handleAddFromMeeting}
-        className="w-full flex items-center justify-between px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors"
       >
         <div className="flex items-center gap-2">
           <Video className="w-5 h-5" />
@@ -134,23 +134,23 @@ export default function AISuggestionsPanel() {
 
       {/* AI Suggestions */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Suggested Actions</h3>
+        <h3 className="text-sm font-semibold text-peak-muted mb-3">Suggested Actions</h3>
         <div className="space-y-3">
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.id}
-              className="group bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer"
+              className="group bg-peak-glass rounded-xl p-4 border border-peak-border hover:bg-white/[0.04] hover:border-peak-primary/30 transition-all cursor-pointer"
               onClick={() => handleAddSuggestion(suggestion)}
             >
               <div className="flex items-start gap-3 mb-2">
-                <div className={`w-8 h-8 bg-gradient-to-br ${getTypeColor(suggestion.type)} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-8 h-8 ${getTypeColor(suggestion.type)} rounded-lg flex items-center justify-center flex-shrink-0`}>
                   {getTypeIcon(suggestion.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                  <h4 className="font-medium text-peak text-sm mb-1">
                     {suggestion.title}
                   </h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs text-peak-muted">
                     {suggestion.description}
                   </p>
                 </div>
@@ -158,17 +158,17 @@ export default function AISuggestionsPanel() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
                     <div
-                      className={`h-full bg-gradient-to-r ${getTypeColor(suggestion.type)} transition-all`}
+                      className={`h-full ${getTypeColor(suggestion.type)} transition-all`}
                       style={{ width: `${suggestion.confidence}%` }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <span className="text-xs font-medium text-peak-muted">
                     {suggestion.confidence}%
                   </span>
                 </div>
-                <Plus className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition ml-2" />
+                <Plus className="w-4 h-4 text-peak-dim group-hover:text-peak-primary-300 transition ml-2" />
               </div>
             </div>
           ))}
@@ -177,29 +177,29 @@ export default function AISuggestionsPanel() {
 
       {/* Linked Meetings */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Recent Meetings</h3>
+        <h3 className="text-sm font-semibold text-peak-muted mb-3">Recent Meetings</h3>
         <div className="space-y-2">
           {linkedMeetings.map((meeting) => (
             <button
               key={meeting.id}
               onClick={() => handleViewMeeting(meeting.id)}
-              className="w-full text-left p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md transition-all group"
+              className="w-full text-left p-3 bg-peak-glass rounded-xl border border-peak-border hover:border-peak-primary/30 hover:bg-white/[0.04] transition-all group"
             >
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Video className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <div className="w-8 h-8 bg-peak-primary/15 ring-1 ring-peak-primary/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Video className="w-4 h-4 text-peak-primary-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1 truncate">
+                  <h4 className="font-medium text-peak text-sm mb-1 truncate">
                     {meeting.title}
                   </h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 text-xs text-peak-muted">
                     <span>{meeting.date.toLocaleDateString()}</span>
                     <span>•</span>
                     <span>{meeting.actionItems} action items</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-peak-dim group-hover:text-peak-primary-300 transition flex-shrink-0" />
               </div>
             </button>
           ))}
@@ -212,7 +212,7 @@ export default function AISuggestionsPanel() {
           const event = new CustomEvent('openPeakAI')
           window.dispatchEvent(event)
         }}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition border border-gray-200 dark:border-gray-700"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/[0.04] text-peak rounded-xl hover:bg-white/[0.08] transition border border-peak-border"
       >
         <Brain className="w-5 h-5" />
         <span className="font-medium">Ask Lisa</span>
@@ -220,13 +220,13 @@ export default function AISuggestionsPanel() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{suggestions.length}</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Suggestions</p>
+        <div className="bg-peak-primary/15 ring-1 ring-peak-primary/30 rounded-xl p-3 border border-peak-border">
+          <p className="text-2xl font-bold text-peak">{suggestions.length}</p>
+          <p className="text-xs text-peak-muted">Suggestions</p>
         </div>
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-green-100 dark:border-green-800">
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{linkedMeetings.reduce((sum, m) => sum + m.actionItems, 0)}</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Action Items</p>
+        <div className="bg-peak-green/15 ring-1 ring-peak-green/30 rounded-xl p-3 border border-peak-border">
+          <p className="text-2xl font-bold text-peak">{linkedMeetings.reduce((sum, m) => sum + m.actionItems, 0)}</p>
+          <p className="text-xs text-peak-muted">Action Items</p>
         </div>
       </div>
     </div>

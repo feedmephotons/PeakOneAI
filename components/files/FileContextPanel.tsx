@@ -2,6 +2,8 @@
 
 import { Video, CheckSquare, Calendar, Users, ExternalLink, Clock, Brain, TrendingUp } from 'lucide-react'
 
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
 interface MeetingReference {
   id: string
   title: string
@@ -84,9 +86,9 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
     ],
     collaborators: ['Sarah Chen', 'Mike Johnson', 'Alex Kim'],
     recentActivity: [
-      { user: 'Sarah Chen', action: 'Commented on page 3', time: new Date(Date.now() - 3600000) },
-      { user: 'Mike Johnson', action: 'Downloaded', time: new Date(Date.now() - 7200000) },
-      { user: 'You', action: 'Uploaded version 3', time: new Date(Date.now() - 86400000) }
+      { user: 'Sarah Chen', action: 'Commented on page 3', time: new Date(PEAK_NOW - 3600000) },
+      { user: 'Mike Johnson', action: 'Downloaded', time: new Date(PEAK_NOW - 7200000) },
+      { user: 'You', action: 'Uploaded version 3', time: new Date(PEAK_NOW - 86400000) }
     ]
   }
 
@@ -95,30 +97,30 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
   }
 
   const getTypeColor = (type: 'call' | 'meeting') => {
-    return type === 'call' ? 'from-purple-500 to-indigo-600' : 'from-blue-500 to-cyan-600'
+    return type === 'call' ? 'bg-peak-primary' : 'bg-peak-blue'
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'HIGH':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+        return 'bg-peak-red/15 text-peak-red ring-1 ring-peak-red/30'
       case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+        return 'bg-peak-amber/15 text-peak-amber ring-1 ring-peak-amber/30'
       case 'LOW':
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+        return 'bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/30'
       default:
-        return 'bg-gray-100 text-gray-700'
+        return 'bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/30'
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'text-green-600 dark:text-green-400'
+        return 'text-peak-green'
       case 'IN_PROGRESS':
-        return 'text-blue-600 dark:text-blue-400'
+        return 'text-peak-primary-300'
       default:
-        return 'text-gray-600 dark:text-gray-400'
+        return 'text-peak-muted'
     }
   }
 
@@ -138,27 +140,27 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 bg-peak-primary rounded-xl flex items-center justify-center flex-shrink-0">
           <ExternalLink className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">File Context</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Smart insights for {context.fileName}</p>
+          <h2 className="text-xl font-bold text-peak">File Context</h2>
+          <p className="text-xs text-peak-muted truncate">Smart insights for {context.fileName}</p>
         </div>
       </div>
 
       {/* Insights */}
-      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+      <div className="bg-peak-glass border border-peak-border rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-peak-primary rounded-lg flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Insights</h3>
+          <h3 className="text-sm font-semibold text-peak">Insights</h3>
         </div>
         <ul className="space-y-2">
           {context.aiInsights.map((insight, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
-              <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
+            <li key={i} className="flex items-start gap-2 text-xs text-peak-muted">
+              <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0 text-peak-primary-300" />
               <span>{insight}</span>
             </li>
           ))}
@@ -167,7 +169,7 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
 
       {/* Meeting References */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-peak-muted mb-3 flex items-center gap-2">
           <Video className="w-4 h-4" />
           Discussed in Meetings ({context.meetingReferences.length})
         </h3>
@@ -176,26 +178,26 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
             <button
               key={ref.id}
               onClick={() => handleViewMeeting(ref.id, ref.type)}
-              className="w-full text-left group bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 transition-all"
+              className="w-full text-left group bg-peak-glass rounded-xl p-4 border border-peak-border hover:shadow-lg hover:border-peak-primary/40 transition-all"
             >
               <div className="flex items-start gap-3 mb-2">
-                <div className={`w-8 h-8 bg-gradient-to-br ${getTypeColor(ref.type)} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-8 h-8 ${getTypeColor(ref.type)} rounded-lg flex items-center justify-center flex-shrink-0`}>
                   {getTypeIcon(ref.type)}
                   <span className="text-white text-xs sr-only">{ref.type}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
+                  <h4 className="font-medium text-peak text-sm truncate group-hover:text-peak-primary-300 transition">
                     {ref.title}
                   </h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="flex items-center gap-2 text-xs text-peak-muted mt-1">
                     <Clock className="w-3 h-3" />
-                    <span>{ref.date.toLocaleDateString()}</span>
+                    <span>{ref.date.toLocaleDateString(undefined, { timeZone: 'UTC' })}</span>
                     <span>•</span>
                     <span>{ref.timestamp}</span>
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
+              <p className="text-xs text-peak-muted italic bg-white/[0.04] border border-peak-border rounded-lg p-2">
                 &ldquo;{ref.context}&rdquo;
               </p>
             </button>
@@ -205,7 +207,7 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
 
       {/* Related Tasks */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-peak-muted mb-3 flex items-center gap-2">
           <CheckSquare className="w-4 h-4" />
           Related Tasks ({context.relatedTasks.length})
         </h3>
@@ -214,10 +216,10 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
             <button
               key={task.id}
               onClick={() => handleViewTask(task.id)}
-              className="w-full text-left p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all group"
+              className="w-full text-left p-3 bg-peak-glass rounded-lg border border-peak-border hover:border-peak-primary/40 hover:shadow-md transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
-                <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                <h4 className="font-medium text-sm text-peak truncate group-hover:text-peak-primary-300 transition">
                   {task.title}
                 </h4>
                 <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
@@ -234,7 +236,7 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
 
       {/* Collaborators */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-peak-muted mb-3 flex items-center gap-2">
           <Users className="w-4 h-4" />
           Active Collaborators
         </h3>
@@ -242,12 +244,12 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
           {context.collaborators.map((name, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700"
+              className="flex items-center gap-2 px-3 py-1.5 bg-peak-glass rounded-full border border-peak-border"
             >
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-6 h-6 bg-peak-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {name[0]}
               </div>
-              <span className="text-xs text-gray-700 dark:text-gray-300">{name.split(' ')[0]}</span>
+              <span className="text-xs text-peak-muted">{name.split(' ')[0]}</span>
             </div>
           ))}
         </div>
@@ -255,22 +257,22 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
 
       {/* Recent Activity */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-peak-muted mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4" />
           Recent Activity
         </h3>
         <div className="space-y-2">
           {context.recentActivity.map((activity, i) => (
-            <div key={i} className="flex items-start gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-              <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            <div key={i} className="flex items-start gap-3 p-2 bg-peak-glass border border-peak-border rounded-lg">
+              <div className="w-6 h-6 bg-peak-green rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                 {activity.user[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-900 dark:text-white">
+                <p className="text-xs text-peak">
                   <span className="font-medium">{activity.user}</span> {activity.action}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {activity.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <p className="text-xs text-peak-muted">
+                  {activity.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
                 </p>
               </div>
             </div>
@@ -284,7 +286,7 @@ export default function FileContextPanel({ file }: { file?: { name: string; id: 
           const event = new CustomEvent('openPeakAI')
           window.dispatchEvent(event)
         }}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition border border-gray-200 dark:border-gray-700"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/[0.04] text-peak-muted rounded-xl hover:bg-white/[0.04] hover:text-peak transition border border-peak-border"
       >
         <Brain className="w-5 h-5" />
         <span className="font-medium">Ask Lisa About This File</span>
