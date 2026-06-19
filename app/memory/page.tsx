@@ -74,7 +74,7 @@ const NAV_SECTIONS: {
 ]
 
 const NAV_ENTITIES: { id: string; label: string; icon: React.ComponentType<{ className?: string }>; href?: string }[] = [
-  { id: 'projects', label: 'Projects', icon: FolderKanban, href: '/projects' },
+  { id: 'projects', label: 'Projects', icon: FolderKanban, href: '/projects/tasks' },
   { id: 'people', label: 'People', icon: User, href: '/people' },
   { id: 'companies', label: 'Companies', icon: Building },
   { id: 'meetings', label: 'Meetings', icon: Calendar },

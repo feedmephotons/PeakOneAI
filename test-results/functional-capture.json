@@ -1,21 +1,13 @@
 {
-  "base": "https://peak-one-2q6skvaye-saasx.vercel.app",
+  "base": "https://peak-one-pvr6rs4yh-saasx.vercel.app",
   "capturedConsole": [
     {
       "type": "error",
-      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
-    },
-    {
-      "type": "error",
-      "text": "Failed to mark conversation as read: TypeError: Failed to fetch\n    at ee (https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/app/messages/page-6bffaf4b8ffa5955.js:1:6868)\n    at https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/app/messages/page-6bffaf4b8ffa5955.js:1:4056\n    at o1 (https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/4bd1b696-3df673f0c529b4f"
-    },
-    {
-      "type": "error",
-      "text": "Error fetching messages: TypeError: Failed to fetch\n    at https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/app/messages/page-6bffaf4b8ffa5955.js:1:3282\n    at https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/app/messages/page-6bffaf4b8ffa5955.js:1:3489\n    at o1 (https://peak-one-2q6skvaye-saasx.vercel.app/_next/static/chunks/4bd1b696-3df673f0c529b4fe.js:1:89340)\n   "
-    },
-    {
-      "type": "error",
       "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "type": "error",
+      "text": "Error fetching user/conversations: TypeError: Failed to fetch\n    at https://peak-one-pvr6rs4yh-saasx.vercel.app/_next/static/chunks/app/messages/page-a3b2cc792f750bc5.js:1:3020"
     },
     {
       "type": "error",
@@ -26,6 +18,10 @@
     "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
   ],
   "failedRequests": [
+    {
+      "status": 404,
+      "url": "/projects?_rsc=k5smi"
+    },
     {
       "status": 404,
       "url": "/automations"
@@ -41,10 +37,6 @@
     {
       "status": 400,
       "url": "/_next/image?url=https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3DJohn%2BDoe%26background%3D6366f1%26color%3Dfff&w=96&q=75"
-    },
-    {
-      "status": 404,
-      "url": "/contacts"
     }
   ],
   "navTargets": [
@@ -94,7 +86,7 @@
     },
     {
       "path": "/contacts",
-      "status": 404
+      "status": 200
     }
   ],
   "pages": [
@@ -170,7 +162,7 @@
         {
           "label": "knowledge category clickable",
           "ok": true,
-          "result": "/memory/company"
+          "result": "/memory?category=Strategy%20%26%20Vision"
         }
       ]
     },
