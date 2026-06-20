@@ -28,172 +28,113 @@ function isBinaryBuffer(buffer: Buffer): boolean {
   return checkLength > 0 && (controlChars / checkLength) > 0.1;
 }
 
-// Keyword-based simulated AI responses (matching client getAIResponse)
+// Keyword-based simulated AI responses, grounded in the canonical Acme Corp /
+// Sarah Chen / Launch Product X world (mirrors lib/peak/mock.ts). This is the
+// default keyless demo, so it must stay on-world and consistent with /lisa,
+// the Daily Brief, missions, priorities, and people.
 function getMockResponseText(input: string): string {
   const lowerInput = input.toLowerCase()
 
-  if (lowerInput.includes('task') || lowerInput.includes('todo') || lowerInput.includes('organize')) {
-    return `I can help you organize your tasks! Here's what I suggest:
+  // Brian Miller / pricing / investor
+  if (lowerInput.includes('brian') || lowerInput.includes('pricing') || lowerInput.includes('investor') || lowerInput.includes('summit')) {
+    return `Here's where things stand with **Brian Miller** (Summit Ventures): 💬
 
-📋 **Current Priority Tasks:**
-1. Review pending pull requests
-2. Update project documentation
-3. Prepare for tomorrow's standup meeting
-4. Complete code review for the authentication module
+- He has not replied to your **pricing follow-up** in 4 days.
+- His open concern is **margin** — it overlaps with the Q2 campaign messaging you're about to lock.
+- Good news to lead with: the **Q2 campaign is tracking 18% above target** on qualified pipeline.
 
-Would you like me to:
-- Create a new task list
-- Set priorities for existing tasks
-- Schedule reminders for deadlines
-- Analyze your productivity patterns?`
+**Suggested next step:** send him the pipeline result plus a one-page rationale for the **$49 anchor / annual-discount** pricing, and ask for 20 minutes before Thursday's board update. Want me to draft that email?`
   }
 
-  if (lowerInput.includes('document') || lowerInput.includes('analyze') || lowerInput.includes('file')) {
-    return `I can analyze documents and files for you!
+  // Launch Product X / mission status
+  if (lowerInput.includes('launch') || lowerInput.includes('product x') || lowerInput.includes('mission') || lowerInput.includes('status')) {
+    return `**Launch Product X** is **ON TRACK at 72%** (health 81). 🚀
 
-📄 **Document Analysis Capabilities:**
-- Extract key information and summaries
-- Identify important dates and deadlines
-- Find patterns and insights
-- Generate reports and visualizations
+**Objectives**
+- Finalize spec & roadmap — 100% ✅
+- Ship core feature set to beta — 85%
+- Legal & compliance review — 45% ⚠️ (at risk)
+- Q2 marketing campaign — 70%
+- Onboard first 10 design partners — 60%
 
-To analyze a document, simply upload it using the paperclip icon. I support:
-- PDF files
-- Word documents (.doc, .docx)
-- Text files
-- Spreadsheets
-- Images with text
-
-What type of document would you like to analyze?`
+**The one risk to watch:** the legal/compliance review is your only **HIGH** risk with the **June 30** launch six weeks out. Tom Becker flagged contract terms that need outside counsel. Unblocking legal this week protects the date.`
   }
 
+  // Tasks / todos
+  if (lowerInput.includes('task') || lowerInput.includes('todo') || lowerInput.includes('organize') || lowerInput.includes('priorit')) {
+    return `Here are your **top priorities** today: 📋
+
+1. **Respond to Brian Miller on pricing** — URGENT, no reply in 4 days (blocking the board update).
+2. **Unblock legal review for Product X** — HIGH, compliance is at 45%; engage outside counsel.
+3. **Approve Q2 launch comms calendar** — Lisa Park needs sign-off to lock launch week.
+
+On the board, the long poles are the **GA candidate sign-off** (David Kim, due the 22nd) and the **outside-counsel brief**. Want me to reprioritize or assign any of these?`
+  }
+
+  // Meetings / schedule / calendar
   if (lowerInput.includes('meeting') || lowerInput.includes('schedule') || lowerInput.includes('calendar')) {
-    return `Let me help you with scheduling! 📅
+    return `Your schedule today: 📅
 
-**Your Upcoming Schedule:**
-- 10:00 AM - Team standup (in 2 hours)
-- 2:00 PM - Client presentation
-- 3:30 PM - Code review session
-- Tomorrow 9:00 AM - Sprint planning
+- **6:00 PM** — Q2 Campaign Review with **Lisa Park** (campaign is 18% above target; decide on the launch-week sequence).
+- **8:00 PM** — Launch Sync (**Eng + Legal**) — resolve the legal review timeline before the GA candidate.
 
-**Available time slots today:**
-- 11:00 AM - 12:00 PM
-- 12:30 PM - 1:30 PM
-- 4:00 PM - 5:30 PM
-
-Would you like to:
-- Schedule a new meeting
-- Send calendar invites
-- Find common availability
-- Set up recurring meetings?`
+The Launch Sync is the important one: it's where you can approve outside counsel and get a dated path to legal sign-off from Tom Becker. Want a quick prep brief for either meeting?`
   }
 
-  if (lowerInput.includes('activity') || lowerInput.includes('recent') || lowerInput.includes('summary')) {
-    return `Here's your activity summary: 📊
+  // Documents / files
+  if (lowerInput.includes('document') || lowerInput.includes('analyze') || lowerInput.includes('file')) {
+    return `I can pull from your workspace documents. 📄 The ones most relevant right now:
 
-**Today's Activity:**
-- 12 tasks completed ✅
-- 8 files uploaded
-- 23 messages sent
-- 3 meetings attended
+- **Product Launch Plan.pdf** — the June 30 runbook (eng: David, comms: Lisa, legal: Tom).
+- **Q2 Marketing Strategy.docx** — the campaign tracking 18% above target.
+- **Competitive Pricing Research.xlsx** — the $49 anchor recommendation.
 
-**Weekly Stats:**
-- Productivity: Up 15% from last week
-- Most active: Tuesday (45 tasks)
-- Focus time: 28 hours
-- Collaboration: 15 team interactions
-
-**Trending Topics in Your Work:**
-1. Authentication implementation
-2. Database optimization
-3. UI/UX improvements
-4. Testing coverage
-
-Need more detailed analytics?`
+Upload a file with the paperclip and I'll summarize it and link it to the right mission. What would you like me to analyze?`
   }
 
-  if (lowerInput.includes('code') || lowerInput.includes('debug') || lowerInput.includes('error') || lowerInput.includes('implement')) {
-    return `I can help with your development tasks! 💻
-
-**Development Assistance:**
-- Code review and optimization
-- Bug identification and fixes
-- Implementation suggestions
-- Best practices and patterns
-
-**Recent Code Activities:**
-- Fixed authentication bug in login flow
-- Optimized database queries (40% faster)
-- Added unit tests (coverage: 78%)
-- Refactored payment module
-
-What specific coding task do you need help with?`
-  }
-
-  if (lowerInput.includes('help') || lowerInput === '?' || lowerInput.includes('what can you do')) {
-    return `I'm Lisa, your AI assistant! Here's how I can help you: 🚀
-
-**My Capabilities:**
-📋 **Task Management** - Organize, prioritize, and track tasks
-📄 **Document Analysis** - Extract insights from files
-📅 **Smart Scheduling** - Manage calendars and meetings
-📊 **Analytics** - Track productivity and patterns
-💻 **Code Assistant** - Help with development tasks
-💬 **Communication** - Draft emails and messages
-🔍 **Smart Search** - Find information quickly
-🎯 **Project Planning** - Roadmaps and timelines
-
-Just ask me anything or click on a quick action to get started!`
-  }
-
+  // Email / draft
   if (lowerInput.includes('email') || lowerInput.includes('message') || lowerInput.includes('draft')) {
-    return `I'll help you with your communications! ✉️
+    return `Happy to draft something. ✉️ A few that would move things forward today:
 
-**Draft Templates Ready:**
-1. Project update email
-2. Meeting follow-up
-3. Client proposal
-4. Team announcement
+1. **Pricing follow-up to Brian Miller** — lead with the 18%-above-target pipeline and the $49 rationale.
+2. **Comms-calendar sign-off to Lisa Park** — approve so she can lock launch week.
+3. **Outside-counsel approval to Tom Becker** — unblock the compliance review.
 
-**Recent Communications:**
-- Sent: 5 emails today
-- Received: 12 new messages
-- Pending: 3 draft responses
-
-Would you like me to:
-- Draft a new email
-- Summarize unread messages
-- Schedule email send
-- Create email templates?`
+Tell me which one and I'll write it in your Acme brand voice.`
   }
 
-  if (lowerInput.includes('data') || lowerInput.includes('analytics') || lowerInput.includes('report')) {
-    return `Let me generate analytics for you! 📈
+  // Analytics / reports
+  if (lowerInput.includes('data') || lowerInput.includes('analytics') || lowerInput.includes('report') || lowerInput.includes('metric')) {
+    return `Here's the Acme snapshot heading into the board update: 📈
 
-**Performance Metrics:**
-- Project completion: 87% on track
-- Team velocity: 42 story points/sprint
-- Code quality: A- (improved from B+)
-- Customer satisfaction: 4.6/5.0
+- **Qualified pipeline:** 18% above target
+- **Launch Product X:** 72% complete, health 81
+- **Missions:** Launch Product X (72%, on track), Q2 Growth Engine (48%, at risk), Platform Reliability (88%, on track)
+- **Open risks:** 1 HIGH (legal/compliance review)
 
-**Key Insights:**
-- Productivity peaks on Tuesdays
-- 30% faster task completion this month
-- Meeting efficiency improved by 25%
-- Suggestion: Batch similar tasks for better focus
-
-What specific metrics would you like to explore?`
+Want me to assemble the Q2 board deck or a one-page exec summary from this?`
   }
 
-  return `I understand you're asking about "${input}". Let me help you with that!
+  // Help / capabilities
+  if (lowerInput.includes('help') || lowerInput === '?' || lowerInput.includes('what can you do')) {
+    return `I'm **Lisa**, your AI chief of staff for Acme Corp. 🚀 I can:
 
-Based on your request, I can:
-- Search for relevant information
-- Create action items
-- Provide recommendations
-- Connect you with the right resources
+📋 **Priorities & tasks** — what to do next across Launch Product X, Q2 Growth, and Reliability
+🤝 **Relationships** — prep you for Brian Miller, Jenna Rivera, Tom Becker, or your team
+📅 **Meetings** — brief you before, summarize after, and pull out action items
+📄 **Documents** — summarize files and draft reports/decks in your brand voice
+📊 **Insights** — surface risks (like the legal review) before they bite
 
-How would you like me to assist you specifically with this?`
+Just ask — e.g. "prep me for Brian" or "what's at risk on the launch?"`
+  }
+
+  return `Got it — you're asking about "${input}". Here's how I'd help in the context of **Acme Corp** and the **Product X launch**:
+
+- Tie it back to your live missions and this week's priorities (legal review, Brian's pricing reply, the comms-calendar sign-off).
+- Draft any email, note, or doc in your Acme brand voice.
+- Flag anything that puts the **June 30** launch date at risk.
+
+What would you like me to do specifically?`
 }
 
 // Helper to stream a simulated mock SSE response

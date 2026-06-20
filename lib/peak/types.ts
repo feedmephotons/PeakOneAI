@@ -182,6 +182,10 @@ export interface Mission {
   objectiveCount?: number
   riskCount?: number
 
+  // Board-level metrics + dependencies (KeyMetricsPanel / Dependencies panel)
+  keyMetrics?: MissionKeyMetrics
+  dependencies?: MissionDependency[]
+
   createdAt: ISODate
   updatedAt: ISODate
 }
@@ -371,6 +375,327 @@ export interface DailyBrief {
   activity: ActivityItem[]
   quickActions: QuickAction[]
   insight?: LisaInsight
+}
+
+// ============================================================================
+// Mission key metrics + dependencies (KeyMetricsPanel / Dependencies)
+// ============================================================================
+
+/** Board-level outcome metrics for a mission's KeyMetricsPanel. */
+export interface MissionKeyMetrics {
+  /** e.g. "$12.4M" — projected revenue impact. */
+  revenueImpact: string
+  /** e.g. "48K" — customers / users affected. */
+  customerImpact: string
+  /** e.g. "$120M" — addressable market opportunity. */
+  marketOpportunity: string
+  /** 0-10 confidence score. */
+  confidence: number
+  /** Small caption under the hero progress, e.g. "+6% vs last week". */
+  deltaCaption?: string
+}
+
+/** A cross-mission / cross-team dependency rendered on /missions/[id]. */
+export interface MissionDependency {
+  id: ID
+  label: string
+  /** What it blocks or is blocked by. */
+  detail?: string
+  status: 'BLOCKED' | 'AT_RISK' | 'ON_TRACK' | 'DONE'
+  owner?: UserRef
+}
+
+// ============================================================================
+// Tasks — canonical task board
+// ============================================================================
+
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
+export interface Task {
+  id: ID
+  title: string
+  description?: string | null
+  status: TaskStatus
+  priority: TaskPriority
+  assignee?: UserRef
+  /** TagManager tag IDs (stable, filterable) — e.g. ['tag-launch','tag-eng']. */
+  tags: string[]
+  dueDate?: ISODate | null
+  missionId?: ID | null
+  /** Optional mission name cache for list views. */
+  missionName?: string | null
+  createdAt: ISODate
+  updatedAt: ISODate
+  completedAt?: ISODate | null
+}
+
+/** A canonical TagManager tag definition shared app-wide. */
+export interface TaskTag {
+  id: ID
+  label: string
+  color: string
+}
+
+// ============================================================================
+// Files / Documents
+// ============================================================================
+
+export type FileKind = 'document' | 'spreadsheet' | 'presentation' | 'pdf' | 'image' | 'folder' | 'other'
+
+export interface FileItem {
+  id: ID
+  name: string
+  kind: FileKind
+  /** Bytes. */
+  size: number
+  /** Human readable, e.g. "2.4 MB". */
+  sizeLabel: string
+  /** MIME-ish, e.g. "application/pdf". */
+  mimeType?: string
+  owner: UserRef
+  /** Inline data: URI or /public asset — never a dead remote host. */
+  thumbnailDataUri?: string | null
+  /** Mission this file belongs to, if any. */
+  missionId?: ID | null
+  /** Note this file is derived from, if any. */
+  noteId?: ID | null
+  /** Lisa AI one-line summary. */
+  aiSummary?: string | null
+  aiTags?: string[]
+  starred?: boolean
+  deleted?: boolean
+  folderId?: ID | null
+  createdAt: ISODate
+  updatedAt: ISODate
+}
+
+// ============================================================================
+// Messages — channels, DMs, group threads
+// ============================================================================
+
+export type ThreadKind = 'CHANNEL' | 'DM' | 'GROUP'
+
+export interface ChatMessage {
+  id: ID
+  threadId: ID
+  sender: UserRef
+  body: string
+  createdAt: ISODate
+  /** ids of users who have read this. */
+  readBy?: ID[]
+}
+
+export interface MessageThread {
+  id: ID
+  kind: ThreadKind
+  /** Channel name ("#product-x") or group title; DMs derive name from members. */
+  name: string
+  members: UserRef[]
+  messages: ChatMessage[]
+  unread?: number
+  /** Cached last message preview. */
+  lastMessage?: string
+  lastMessageAt?: ISODate
+}
+
+// ============================================================================
+// Calls — recents + recordings + transcripts
+// ============================================================================
+
+export type CallDirection = 'INBOUND' | 'OUTBOUND' | 'MISSED'
+
+export interface CallTranscriptLine {
+  speaker: string
+  text: string
+  /** Offset like "00:42". */
+  at?: string
+}
+
+export interface CallRecord {
+  id: ID
+  title: string
+  direction: CallDirection
+  participants: UserRef[]
+  startTime: ISODate
+  durationSec: number
+  /** Human readable, e.g. "18m 30s". */
+  durationLabel: string
+  hasRecording: boolean
+  recordingUrl?: string | null
+  transcript?: CallTranscriptLine[]
+  aiSummary?: string | null
+  actionItems?: string[]
+  missionId?: ID | null
+}
+
+// ============================================================================
+// Email — inbox / folders
+// ============================================================================
+
+export type EmailFolder = 'inbox' | 'sent' | 'archive' | 'trash' | 'starred'
+
+export interface EmailMessage {
+  id: ID
+  folder: EmailFolder
+  from: UserRef
+  to: UserRef[]
+  subject: string
+  body: string
+  /** Plain preview snippet. */
+  preview: string
+  read: boolean
+  starred: boolean
+  date: ISODate
+  missionId?: ID | null
+}
+
+// ============================================================================
+// Calendar
+// ============================================================================
+
+export type CalendarEventType = 'MEETING' | 'FOCUS' | 'DEADLINE' | 'REMINDER'
+
+export interface CalendarEvent {
+  id: ID
+  title: string
+  type: CalendarEventType
+  start: ISODate
+  end?: ISODate | null
+  location?: string | null
+  attendees?: UserRef[]
+  /** /video/room/[id] join link for video meetings. */
+  joinUrl?: string | null
+  /** Back-reference to the source meeting. */
+  meetingId?: ID | null
+  color?: string
+  description?: string
+}
+
+// ============================================================================
+// Notifications
+// ============================================================================
+
+export type NotificationKind = 'MEETING' | 'TASK' | 'MENTION' | 'AI' | 'FILE' | 'CALL' | 'SYSTEM'
+
+export interface NotificationItem {
+  id: ID
+  kind: NotificationKind
+  title: string
+  body: string
+  /** Avatar source (team/contact). */
+  actor?: UserRef
+  read: boolean
+  /** Deep link, e.g. "/tasks", "/video/room/meeting-launch-sync", "/lisa". */
+  actionUrl?: string | null
+  timestamp: ISODate
+  tone?: Tone
+}
+
+// ============================================================================
+// Meeting detail (transcripts / summaries / recordings)
+// ============================================================================
+
+export interface MeetingDetail extends MeetingItem {
+  durationSec?: number
+  durationLabel?: string
+  transcript?: CallTranscriptLine[]
+  aiSummary?: string | null
+  actionItems?: string[]
+  hasRecording?: boolean
+  recordingUrl?: string | null
+  missionId?: ID | null
+}
+
+// ============================================================================
+// Analytics
+// ============================================================================
+
+export interface AnalyticsSummary {
+  tasksTotal: number
+  tasksCompleted: number
+  tasksInProgress: number
+  tasksOverdue: number
+  completionRate: number // 0-100
+  /** Avg active missions progress. */
+  avgMissionProgress: number
+  /** Story points / velocity (sum of mission velocity). */
+  velocity: number
+  filesCount: number
+  meetingsCount: number
+  /** 7-day completion series for the productivity chart. */
+  weeklyCompleted: { day: string; count: number }[]
+  /** Tasks bucketed by priority. */
+  byPriority: { priority: string; count: number }[]
+  /** Tasks bucketed by assignee. */
+  byAssignee: { name: string; count: number }[]
+}
+
+// ============================================================================
+// Automations
+// ============================================================================
+
+export interface AutomationRule {
+  id: ID
+  name: string
+  description: string
+  enabled: boolean
+  trigger: string
+  action: string
+  /** e.g. "#product-x" or "email Sarah + Lisa". */
+  target: string
+  runsCount: number
+  lastRun?: ISODate | null
+}
+
+// ============================================================================
+// Settings — org / billing / identity
+// ============================================================================
+
+export interface BillingInvoice {
+  id: ID
+  date: ISODate
+  amount: string
+  status: 'PAID' | 'DUE' | 'FAILED'
+  url?: string | null
+}
+
+export interface OrgIdentity {
+  /** User identity. */
+  user: UserRef
+  company: string
+  companySlug: string
+  /** Canonical headcount — single source of truth. */
+  teamSize: number
+  departments: number
+  plan: string
+  seats: number
+  seatsUsed: number
+  /** Masked, non-test card. */
+  cardBrand: string
+  cardLast4: string
+  cardExpiry: string
+  billingEmail: string
+  nextInvoiceDate: ISODate
+  invoices: BillingInvoice[]
+  /** Stable storage figure (no Math.random). */
+  storageUsedGb: number
+  storageTotalGb: number
+}
+
+/** A seeded brand-voice guideline for /settings/brand-voice. */
+export interface BrandVoiceGuideline {
+  id: ID
+  name: string
+  enabled: boolean
+  defaultLevel: 'subtle' | 'balanced' | 'strong'
+  tone: string[]
+  doList: string[]
+  dontList: string[]
+  sample: string
+  createdBy: UserRef
+  createdAt: ISODate
+  updatedAt: ISODate
 }
 
 // ============================================================================
