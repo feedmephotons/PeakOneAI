@@ -75,7 +75,7 @@ export default function CallSummaryPage() {
     // Build a plain-text summary and download it as a real Blob (no fake alert).
     const lines: string[] = []
     lines.push(call.title)
-    lines.push(`Date: ${startDate.toLocaleString()}`)
+    lines.push(`Date: ${startDate.toLocaleString('en-US', { timeZone: 'UTC' })}`)
     lines.push(`Duration: ${call.durationLabel}`)
     lines.push(`Participants: ${call.participants.map((p) => p.name).join(', ')}`)
     lines.push('')
@@ -154,7 +154,7 @@ export default function CallSummaryPage() {
             <div className="flex flex-wrap items-center gap-5 text-sm text-peak-muted">
               <span className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {startDate.toLocaleDateString('en-US', { timeZone: 'UTC' })} at {startDate.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })}
               </span>
               <span className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />

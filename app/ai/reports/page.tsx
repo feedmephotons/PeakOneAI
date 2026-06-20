@@ -123,7 +123,7 @@ export default function AIReportsPage() {
     }, 700)
   }
 
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })
 
   const reportCount = reports.length
   const summaryCards = useMemo(

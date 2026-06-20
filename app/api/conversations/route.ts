@@ -41,8 +41,9 @@ function mockConversations() {
 export async function GET() {
   try {
     const user = await getCurrentUser()
-    if (!user) {
-      // Demo / unauthenticated — serve the canonical mock threads.
+    if (!user || user.id === 'demo-user-id') {
+      // Demo / unauthenticated — serve the canonical mock threads (ignore any
+      // stale DB rows tied to the shared demo user).
       return NextResponse.json({ conversations: mockConversations(), source: 'mock' })
     }
 

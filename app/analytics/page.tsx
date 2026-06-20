@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
       out.push({
         date: dateStr,
         value: weekly[idx]?.count ?? 0,
-        label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }),
       })
     }
     return out

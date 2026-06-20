@@ -53,7 +53,7 @@ const TODAY = FIXED_TODAY_DATE.slice(0, 10); // 2026-06-18
 function buildTodayMeetings(): Meeting[] {
   return MOCK_CALENDAR_EVENTS.filter((e) => e.type === 'MEETING').map((e) => {
     const startDate = e.start.split('T')[0];
-    const startTime = new Date(e.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const startTime = new Date(e.start).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' });
     const status: Meeting['status'] =
       startDate < TODAY ? 'completed' : e.meetingId ? 'live' : 'upcoming';
     return {
@@ -74,7 +74,7 @@ function buildRecordings(): Recording[] {
   return getMockMeetingDetails().map((d) => ({
     id: `rec-${d.id}`,
     title: d.title,
-    date: new Date(d.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    date: new Date(d.startTime).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' }),
     duration: d.durationLabel || '—',
     size: d.id === 'meeting-launch-sync' ? '512 MB' : '298 MB',
     transcript: !!(d.transcript && d.transcript.length),

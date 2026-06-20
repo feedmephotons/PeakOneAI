@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     const user = await getCurrentUser()
-    if (!user) {
+    if (!user || user.id === 'demo-user-id') {
       // Demo / unauthenticated — serve canonical mock messages.
       return NextResponse.json({ messages: mockMessagesForThread(conversationId), source: 'mock' })
     }

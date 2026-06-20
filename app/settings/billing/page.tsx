@@ -17,7 +17,7 @@ const PER_SEAT = 49
 const MONTHLY_TOTAL = `$${(PER_SEAT * ORG.seatsUsed).toFixed(2)}`
 
 function formatInvoiceDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function BillingSettingsPage() {
