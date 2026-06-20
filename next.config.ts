@@ -27,6 +27,32 @@ const nextConfig: NextConfig = {
     cpus: 1,
     workerThreads: false,
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // pptxgenjs (used client-side for .pptx export) references node: built-ins
+      // that don't exist in the browser bundle. Strip the node: scheme and stub
+      // the Node built-ins on the client so its browser code path is used.
+      const webpack = require('webpack')
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource: { request: string }) => {
+          resource.request = resource.request.replace(/^node:/, '')
+        }),
+      )
+      config.resolve = config.resolve || {}
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        fs: false,
+        https: false,
+        http: false,
+        path: false,
+        os: false,
+        stream: false,
+        crypto: false,
+        zlib: false,
+      }
+    }
+    return config
+  },
 };
 
 // Wrap with Sentry configuration

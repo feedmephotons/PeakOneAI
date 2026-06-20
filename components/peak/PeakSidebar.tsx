@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Home, Target, BrainCircuit, CheckSquare, Calendar,
-  MessageSquare, Phone, FolderOpen, BarChart3, Zap, Plug, Sparkles,
+  MessageSquare, Phone, FolderOpen, FilePlus, BarChart3, Zap, Plug, Sparkles,
   Settings, HelpCircle, ChevronDown,
 } from 'lucide-react'
 
@@ -27,6 +27,7 @@ const NAV: PeakNavItem[] = [
   { id: 'messages', label: 'Messages', href: '/messages', icon: MessageSquare },
   { id: 'calls', label: 'Calls', href: '/calls', icon: Phone },
   { id: 'files', label: 'Files', href: '/files', icon: FolderOpen },
+  { id: 'create', label: 'Create', href: '/create', icon: FilePlus },
   { id: 'analytics', label: 'Analytics', href: '/analytics', icon: BarChart3 },
   { id: 'automations', label: 'Automations', href: '/automation', icon: Zap },
   { id: 'integrations', label: 'Integrations', href: '/settings/integrations', icon: Plug },

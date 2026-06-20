@@ -30,6 +30,7 @@ export type PeakIntentKind =
   | 'relationship'// "prepare me for Brian" — relationship brief
   | 'mission'     // "spin up a mission for …"
   | 'email'       // "draft a follow-up to …"
+  | 'create'      // "build me a Q2 sales report", "create a board deck", …
   | 'unknown'
 
 /** A parsed user intent handed to operators. */
@@ -144,6 +145,22 @@ const RELATIONSHIP_RE = /\b(prepare me for|brief me on|relationship brief|who is
 const MISSION_RE = /\b(mission|spin up|launch (a )?project|new initiative)\b/i
 const EMAIL_RE = /\b(draft (a |an )?(follow.?up|email|reply)|write (an )?email|send (a )?note)\b/i
 
+/** A create/build verb paired with a document-shaped noun → the 'create' intent. */
+const CREATE_VERB_RE = /\b(create|build|generate|make|draft|put together|write|prepare)\b/i
+const CREATE_NOUN_RE = /\b(report|deck|slides?|presentation|spreadsheet|excel|sheet|forecast|proposal|dashboard|model|summary|qbr|board (deck|presentation)|investor deck|financial (forecast|model))\b/i
+
+/** Map a matched document noun to a DocType (best-effort, for entities.topic/docType). */
+function extractDocType(text: string): string | undefined {
+  const t = text.toLowerCase()
+  if (/\b(dashboard)\b/.test(t)) return 'dashboard'
+  if (/\b(spreadsheet|excel|sheet|forecast|model)\b/.test(t)) return 'spreadsheet'
+  if (/\b(deck|slides?|presentation|qbr|investor)\b/.test(t)) return 'presentation'
+  if (/\bproposal\b/.test(t)) return 'proposal'
+  if (/\bsummary\b/.test(t)) return 'summary'
+  if (/\breport\b/.test(t)) return 'report'
+  return undefined
+}
+
 /** Best-effort person extraction: "prepare me for Brian" → "Brian". */
 function extractPerson(text: string): string | undefined {
   const m = text.match(/\b(?:for|with|to|about)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/)
@@ -159,6 +176,17 @@ function extractTopic(text: string): string | undefined {
 /** Parse a raw utterance into a typed intent. No model call. */
 export function parseIntent(text: string): PeakIntent {
   const t = text.trim()
+
+  // Document creation wins when a create/build verb is paired with a doc noun,
+  // e.g. "build me a Q2 sales report", "create a board deck", "generate a forecast".
+  if (CREATE_VERB_RE.test(t) && CREATE_NOUN_RE.test(t)) {
+    return {
+      kind: 'create',
+      text: t,
+      confidence: 0.85,
+      entities: { topic: extractTopic(t), docType: extractDocType(t) },
+    }
+  }
 
   if (RELATIONSHIP_RE.test(t)) {
     return { kind: 'relationship', text: t, confidence: 0.8, entities: { person: extractPerson(t) } }
@@ -218,6 +246,49 @@ export const MeetingOperator: PeakOperator = {
       steps,
       dryRun: true,
       artifacts: {},
+    }
+  },
+}
+
+// ============================================================================
+// DocumentOperator — the Create Studio operator
+// ============================================================================
+
+/**
+ * Turns stored company knowledge into a polished business document (report,
+ * deck, spreadsheet, dashboard…). It gathers the company context, generates the
+ * requested document type, formats it, and hands back a ready artifact. The real
+ * generation happens at POST /api/create/generate; this operator returns the
+ * typed plan + the inferred docType so the UI can route to the Create Studio.
+ */
+export const DocumentOperator: PeakOperator = {
+  id: 'document',
+  name: 'Document Operator',
+  description:
+    'Turn your company knowledge into polished documents — reports, decks, spreadsheets, proposals, and dashboards — grounded in Memory, missions, CRM, and metrics.',
+  status: 'available',
+
+  canHandle(intent) {
+    return intent.kind === 'create'
+  },
+
+  async run(ctx) {
+    const docType = (ctx.intent.entities?.docType as string | undefined) || 'report'
+    const steps: OperatorStep[] = [
+      { id: 'context', label: 'Gather company context', description: 'Compile what P1 knows: Memory notes, missions, CRM, meetings, metrics.', status: 'pending' },
+      { id: 'generate', label: `Generate ${docType}`, description: `Draft the ${docType} grounded in the company context.`, status: 'pending' },
+      { id: 'format', label: 'Format', description: 'Lay out sections, charts, tables, and metrics in the Create Studio.', status: 'pending' },
+      { id: 'ready', label: 'Ready', description: 'Document is ready to view, regenerate, and export.', status: 'pending' },
+    ]
+
+    steps.forEach((s) => ctx.onStep?.(s))
+
+    return {
+      operatorId: DocumentOperator.id,
+      summary: `Document Operator is ready to build a ${docType} from your company knowledge. Open the Create Studio to generate, refine, and export it.`,
+      steps,
+      dryRun: true,
+      artifacts: { docType, prompt: ctx.intent.text, route: '/create' },
     }
   },
 }
@@ -320,6 +391,7 @@ export class LisaOrchestrator {
 export function defaultRegistry(): OperatorRegistry {
   return new OperatorRegistry()
     .register(MeetingOperator)
+    .register(DocumentOperator)
     .register(EmailOperator)
     .register(ResearchOperator)
     .register(MissionOperator)

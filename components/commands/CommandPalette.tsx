@@ -8,7 +8,7 @@ import {
   Mail, Presentation, Phone, Settings, Sparkles, Brain, FileSearch,
   Languages, ArrowRightLeft, Plus, Calendar, Mic, Command as CommandIcon,
   CornerDownLeft, ArrowUp, ArrowDown, Terminal, Activity, Target, UserCog,
-  Sunrise,
+  Sunrise, FilePlus, FileText, Table2, LayoutDashboard,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -242,6 +242,51 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     },
 
     // ── Create ──────────────────────────────────────────────────────────
+    {
+      id: 'create-document',
+      label: 'Create document',
+      description: 'Open the Create Studio',
+      category: 'Create',
+      icon: <FilePlus className="w-4 h-4" />,
+      keywords: ['create', 'studio', 'document', 'generate', 'new doc'],
+      action: () => navigate('/create'),
+    },
+    {
+      id: 'create-report',
+      label: 'Create report',
+      description: 'Build a Q2 sales report',
+      category: 'Create',
+      icon: <FileText className="w-4 h-4" />,
+      keywords: ['report', 'sales', 'q2', 'create', 'generate'],
+      action: () => navigate('/create?template=sales-report-q2'),
+    },
+    {
+      id: 'create-deck',
+      label: 'Build a deck',
+      description: 'Generate a board presentation',
+      category: 'Create',
+      icon: <Presentation className="w-4 h-4" />,
+      keywords: ['deck', 'presentation', 'board', 'slides', 'build'],
+      action: () => navigate('/create?template=board-presentation'),
+    },
+    {
+      id: 'create-spreadsheet',
+      label: 'Generate spreadsheet',
+      description: 'Build a financial forecast',
+      category: 'Create',
+      icon: <Table2 className="w-4 h-4" />,
+      keywords: ['spreadsheet', 'forecast', 'financial', 'excel', 'generate'],
+      action: () => navigate('/create?template=financial-forecast'),
+    },
+    {
+      id: 'create-marketing-dashboard',
+      label: 'Marketing dashboard',
+      description: 'Generate a marketing dashboard',
+      category: 'Create',
+      icon: <LayoutDashboard className="w-4 h-4" />,
+      keywords: ['marketing', 'dashboard', 'analytics', 'social', 'generate'],
+      action: () => navigate('/create?template=marketing-dashboard'),
+    },
     {
       id: 'create-meeting',
       label: 'Start meeting',

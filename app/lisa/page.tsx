@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Send, User, Mic, Paperclip, X, FileText,
   Image as ImageIcon, Sparkles, ArrowUp, Boxes, CheckCircle2, Clock,
@@ -76,14 +77,17 @@ const fileToBase64 = (file: File): Promise<string> => {
 }
 
 // Quick-action chips shown above the composer (and in the empty state).
-const QUICK_ACTIONS: { label: string; prompt: string }[] = [
+// `href` routes (e.g. to the Create Studio); otherwise `prompt` is sent to Lisa.
+const QUICK_ACTIONS: { label: string; prompt: string; href?: string }[] = [
   { label: 'Summarize yesterday', prompt: 'Summarize yesterday for me' },
   { label: 'Prepare me for Brian', prompt: 'Prepare me for Brian' },
+  { label: 'Build a Q2 sales report', prompt: 'Build me a Q2 sales report', href: '/create?template=sales-report-q2' },
   { label: 'What do I know about pricing', prompt: 'What do I know about pricing?' },
   { label: 'Draft follow-up', prompt: 'Draft a follow-up email' },
 ]
 
 export default function LisaAIPage() {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -411,7 +415,7 @@ export default function LisaAIPage() {
       <div className="peak-scrollbar relative z-10 flex-1 overflow-y-auto px-6 py-6 sm:px-10">
         <div className="mx-auto max-w-3xl">
           {!hasConversation ? (
-            <EmptyState onPick={sendMessage} />
+            <EmptyState onPick={sendMessage} onRoute={(href) => router.push(href)} />
           ) : (
             <div className="space-y-6">
               {messages.map((message, index) => (
@@ -500,7 +504,7 @@ export default function LisaAIPage() {
             {QUICK_ACTIONS.map((qa) => (
               <button
                 key={qa.label}
-                onClick={() => sendMessage(qa.prompt)}
+                onClick={() => (qa.href ? router.push(qa.href) : sendMessage(qa.prompt))}
                 className="inline-flex items-center gap-1.5 rounded-full border border-peak-border bg-white/[0.03] px-3 py-1.5 text-xs text-peak-muted transition-colors hover:bg-white/[0.07] hover:text-peak"
               >
                 <Sparkles className="h-3 w-3 text-peak-primary-300" />
@@ -605,7 +609,7 @@ function LisaOrb({ size = 32 }: { size?: number }) {
 }
 
 /** The pre-conversation hero: big orb, greeting, quick-action chips. */
-function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
+function EmptyState({ onPick, onRoute }: { onPick: (prompt: string) => void; onRoute: (href: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 pt-10 text-center sm:pt-16">
       <div className="relative mb-8 flex h-44 w-44 items-center justify-center">
@@ -635,7 +639,7 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
         {QUICK_ACTIONS.map((qa) => (
           <button
             key={qa.label}
-            onClick={() => onPick(qa.prompt)}
+            onClick={() => (qa.href ? onRoute(qa.href) : onPick(qa.prompt))}
             className="peak-glass peak-glass-hover group flex items-center gap-3 p-3.5 text-left transition-colors"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
