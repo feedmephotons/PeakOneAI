@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   GlassPanel,
   SectionLabel,
@@ -13,101 +14,35 @@ import {
   PhoneIncoming, PhoneOutgoing, PhoneMissed, MoreVertical,
   FileText, Shield, Brain, Lock
 } from 'lucide-react'
+import { MOCK_CALLS, FIXED_TODAY } from '@/lib/peak/mock'
+import type { CallRecord } from '@/lib/peak/types'
 
-interface Call {
-  id: string
-  type: 'audio' | 'video'
-  direction: 'incoming' | 'outgoing' | 'missed'
-  status: 'completed' | 'missed' | 'declined'
-  participants: {
-    name: string
-    initials: string
-  }[]
-  duration?: number
-  timestamp: Date
-  hasRecording?: boolean
-  hasTranscript?: boolean
-  aiSummary?: string
+// Canonical Acme calls (seeded from MOCK_CALLS). Deterministic / SSR-safe — no
+// Date.now()/random; "now" is anchored to FIXED_TODAY.
+const NOW = new Date(FIXED_TODAY).getTime()
+
+function isVideo(call: CallRecord) {
+  // Sync/standup style calls render as video; 1:1 voice as audio.
+  return call.participants.length > 2 || /sync|review|standup/i.test(call.title)
+}
+
+function uiDirection(call: CallRecord): 'incoming' | 'outgoing' | 'missed' {
+  if (call.direction === 'MISSED') return 'missed'
+  if (call.direction === 'INBOUND') return 'incoming'
+  return 'outgoing'
 }
 
 export default function CallsPage() {
-  const [calls, setCalls] = useState<Call[]>([])
+  const router = useRouter()
   const [filter, setFilter] = useState<'all' | 'video' | 'audio' | 'missed'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const mockCalls: Call[] = [
-      {
-        id: '1',
-        type: 'video',
-        direction: 'outgoing',
-        status: 'completed',
-        participants: [{ name: 'Sarah Johnson', initials: 'SJ' }, { name: 'John Smith', initials: 'JS' }],
-        duration: 2700,
-        timestamp: new Date(Date.now() - 3600000),
-        hasRecording: true,
-        hasTranscript: true,
-        aiSummary: 'Discussed Q4 objectives and resource allocation'
-      },
-      {
-        id: '2',
-        type: 'audio',
-        direction: 'incoming',
-        status: 'completed',
-        participants: [{ name: 'Mike Wilson', initials: 'MW' }],
-        duration: 420,
-        timestamp: new Date(Date.now() - 7200000),
-        hasTranscript: true
-      },
-      {
-        id: '3',
-        type: 'video',
-        direction: 'missed',
-        status: 'missed',
-        participants: [{ name: 'Emily Chen', initials: 'EC' }],
-        timestamp: new Date(Date.now() - 14400000)
-      },
-      {
-        id: '4',
-        type: 'video',
-        direction: 'outgoing',
-        status: 'completed',
-        participants: [{ name: 'Team Standup', initials: 'TS' }],
-        duration: 900,
-        timestamp: new Date(Date.now() - 86400000),
-        hasRecording: true,
-        hasTranscript: true,
-        aiSummary: 'Daily standup - reviewed sprint progress, 3 tasks completed'
-      },
-      {
-        id: '5',
-        type: 'audio',
-        direction: 'incoming',
-        status: 'completed',
-        participants: [{ name: 'Client Call', initials: 'CC' }],
-        duration: 1800,
-        timestamp: new Date(Date.now() - 172800000),
-        hasTranscript: true,
-        aiSummary: 'Client feedback on latest release, discussed next features'
-      },
-      {
-        id: '6',
-        type: 'video',
-        direction: 'missed',
-        status: 'missed',
-        participants: [{ name: 'Lisa Park', initials: 'LP' }],
-        timestamp: new Date(Date.now() - 259200000)
-      },
-    ]
+  const calls = MOCK_CALLS
 
-    setCalls(mockCalls)
-    setLoading(false)
-  }, [])
-
-  const getDirectionIcon = (call: Call) => {
-    if (call.status === 'missed') return <PhoneMissed className="w-4 h-4 text-peak-red" />
-    if (call.direction === 'incoming') return <PhoneIncoming className="w-4 h-4 text-peak-green" />
+  const getDirectionIcon = (call: CallRecord) => {
+    const dir = uiDirection(call)
+    if (dir === 'missed') return <PhoneMissed className="w-4 h-4 text-peak-red" />
+    if (dir === 'incoming') return <PhoneIncoming className="w-4 h-4 text-peak-green" />
     return <PhoneOutgoing className="w-4 h-4 text-peak-primary-300" />
   }
 
@@ -123,12 +58,13 @@ export default function CallsPage() {
     return `${mins}m ${secs}s`
   }
 
-  const formatTime = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  const formatTime = (iso: string) => {
+    const date = new Date(iso)
+    const diff = NOW - date.getTime()
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
+    if (diff < 0) return date.toLocaleDateString()
     if (hours < 1) return 'Just now'
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
@@ -136,21 +72,21 @@ export default function CallsPage() {
   }
 
   const filteredCalls = calls.filter(call => {
-    const matchesSearch = call.participants.some(p =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const haystack = (call.title + ' ' + call.participants.map(p => p.name).join(' ')).toLowerCase()
+    const matchesSearch = haystack.includes(searchQuery.toLowerCase())
 
     if (filter === 'all') return matchesSearch
-    if (filter === 'missed') return matchesSearch && call.status === 'missed'
-    return matchesSearch && call.type === filter
+    if (filter === 'missed') return matchesSearch && uiDirection(call) === 'missed'
+    if (filter === 'video') return matchesSearch && isVideo(call)
+    return matchesSearch && !isVideo(call) // audio
   })
 
   const stats = {
     total: calls.length,
-    video: calls.filter(c => c.type === 'video').length,
-    audio: calls.filter(c => c.type === 'audio').length,
-    missed: calls.filter(c => c.status === 'missed').length,
-    totalDuration: calls.reduce((sum, c) => sum + (c.duration || 0), 0)
+    video: calls.filter(isVideo).length,
+    audio: calls.filter(c => !isVideo(c)).length,
+    missed: calls.filter(c => uiDirection(c) === 'missed').length,
+    totalDuration: calls.reduce((sum, c) => sum + (c.durationSec || 0), 0)
   }
 
   return (
@@ -244,12 +180,7 @@ export default function CallsPage() {
       {/* Calls List */}
       <SectionLabel className="mb-3">Call History</SectionLabel>
       <GlassPanel className="overflow-hidden p-0">
-        {loading ? (
-          <div className="p-12 text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-peak-primary border-t-transparent"></div>
-            <p className="text-peak-muted">Loading calls...</p>
-          </div>
-        ) : filteredCalls.length === 0 ? (
+        {filteredCalls.length === 0 ? (
           <div className="p-12 text-center">
             <Phone className="mx-auto mb-4 h-16 w-16 text-peak-dim" />
             <p className="text-lg font-medium text-peak">No calls found</p>
@@ -259,16 +190,22 @@ export default function CallsPage() {
           </div>
         ) : (
           <div className="divide-y divide-peak-border">
-            {filteredCalls.map(call => (
-              <div key={call.id} className="p-4 transition-colors hover:bg-white/[0.04]">
+            {filteredCalls.map(call => {
+              const video = isVideo(call)
+              return (
+              <Link
+                key={call.id}
+                href={`/calls/summary/${call.id}`}
+                className="block p-4 transition-colors hover:bg-white/[0.04]"
+              >
                 <div className="flex items-center gap-4">
                   {/* Type Icon */}
                   <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                    call.type === 'video'
+                    video
                       ? 'bg-peak-blue/15 text-peak-blue'
                       : 'bg-peak-green/15 text-peak-green'
                   }`}>
-                    {call.type === 'video' ? (
+                    {video ? (
                       <Video className="w-6 h-6" />
                     ) : (
                       <Phone className="w-6 h-6" />
@@ -280,17 +217,17 @@ export default function CallsPage() {
                     <div className="mb-1 flex items-center gap-2">
                       {getDirectionIcon(call)}
                       <p className="truncate font-medium text-peak">
-                        {call.participants.map(p => p.name).join(', ')}
+                        {call.title}
                       </p>
                       <Lock className="w-3 h-3 shrink-0 text-peak-dim" />
                     </div>
                     <div className="flex items-center gap-3 text-sm text-peak-muted">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {formatTime(call.timestamp)}
+                        {formatTime(call.startTime)}
                       </span>
-                      {call.duration && (
-                        <span>{formatDuration(call.duration)}</span>
+                      {call.durationSec > 0 && (
+                        <span>{call.durationLabel}</span>
                       )}
                       {call.participants.length > 1 && (
                         <span className="flex items-center gap-1">
@@ -300,9 +237,9 @@ export default function CallsPage() {
                       )}
                     </div>
                     {call.aiSummary && (
-                      <p className="mt-2 flex items-center gap-2 text-sm text-peak-muted">
-                        <Brain className="w-3 h-3 text-peak-primary-300" />
-                        {call.aiSummary}
+                      <p className="mt-2 flex items-start gap-2 text-sm text-peak-muted">
+                        <Brain className="mt-0.5 w-3 h-3 shrink-0 text-peak-primary-300" />
+                        <span className="line-clamp-1">{call.aiSummary}</span>
                       </p>
                     )}
                   </div>
@@ -310,22 +247,35 @@ export default function CallsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     {call.hasRecording && (
-                      <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak" title="Play recording">
+                      <button
+                        onClick={(e) => { e.preventDefault(); router.push(`/calls/summary/${call.id}`) }}
+                        className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak"
+                        title="Play recording"
+                      >
                         <Play className="w-4 h-4" />
                       </button>
                     )}
-                    {call.hasTranscript && (
-                      <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak" title="View transcript">
+                    {call.transcript && call.transcript.length > 0 && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); router.push(`/calls/summary/${call.id}#transcript`) }}
+                        className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak"
+                        title="View transcript"
+                      >
                         <FileText className="w-4 h-4" />
                       </button>
                     )}
-                    <button className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak">
+                    <button
+                      onClick={(e) => { e.preventDefault(); router.push(`/calls/summary/${call.id}`) }}
+                      className="rounded-lg p-2 text-peak-dim transition-colors hover:bg-white/[0.04] hover:text-peak"
+                      title="Open call summary"
+                    >
                       <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
+              </Link>
+              )
+            })}
           </div>
         )}
       </GlassPanel>

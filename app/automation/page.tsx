@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   PeakShell,
   GlassPanel,
-  SectionLabel,
   StatTile,
   AskLisaBar,
 } from '@/components/peak'
@@ -13,6 +12,7 @@ import {
   Mail, MessageSquare, Calendar, FileText, Users, Bot, ArrowRight,
   Settings, Trash2, Copy, X, AlertTriangle
 } from 'lucide-react'
+import { MOCK_AUTOMATIONS as CANON_AUTOMATIONS, FIXED_TODAY } from '@/lib/peak/mock'
 
 interface Automation {
   id: string
@@ -50,52 +50,43 @@ const ACTION_TYPES = [
   { id: 'schedule_meeting', label: 'Schedule Meeting', icon: Calendar, description: 'Book calendar event' },
 ]
 
-const MOCK_AUTOMATIONS: Automation[] = [
-  {
-    id: '1',
-    name: 'Daily Standup Reminder',
-    description: 'Send reminder 10 minutes before daily standup',
-    trigger: { type: 'schedule', config: 'Daily at 8:50 AM' },
-    actions: [
-      { type: 'send_message', description: 'Post reminder in #team channel' },
-      { type: 'notify_team', description: 'Send push notifications' }
-    ],
-    status: 'active',
-    runsCount: 45,
-    lastRun: new Date(Date.now() - 3600000 * 24),
-    createdAt: new Date(Date.now() - 86400000 * 30)
-  },
-  {
-    id: '2',
-    name: 'New Member Welcome',
-    description: 'Welcome new team members automatically',
-    trigger: { type: 'message', config: 'When user joins organization' },
-    actions: [
-      { type: 'send_message', description: 'Send welcome DM' },
-      { type: 'create_task', description: 'Create onboarding checklist' },
-      { type: 'notify_team', description: 'Announce in #general' }
-    ],
-    status: 'active',
-    runsCount: 12,
-    lastRun: new Date(Date.now() - 86400000 * 7),
-    createdAt: new Date(Date.now() - 86400000 * 60)
-  },
-  {
-    id: '3',
-    name: 'Meeting Summary',
-    description: 'Generate AI summary after video calls',
-    trigger: { type: 'meeting', config: 'When meeting ends' },
-    actions: [
-      { type: 'ai_action', description: 'Generate meeting summary' },
-      { type: 'send_email', description: 'Email summary to participants' },
-      { type: 'create_task', description: 'Create action items as tasks' }
-    ],
-    status: 'active',
-    runsCount: 89,
-    lastRun: new Date(Date.now() - 3600000),
-    createdAt: new Date(Date.now() - 86400000 * 45)
-  }
-]
+// Infer a trigger block type from the canonical free-text trigger string.
+function inferTriggerType(trigger: string): Automation['trigger']['type'] {
+  const t = trigger.toLowerCase()
+  if (t.includes('weekday') || t.includes('friday') || t.includes('am') || t.includes('pm') || t.includes('daily')) return 'schedule'
+  if (t.includes('risk')) return 'task'
+  if (t.includes('call') || t.includes('meeting') || t.includes('recording')) return 'meeting'
+  if (t.includes('email')) return 'email'
+  if (t.includes('message')) return 'message'
+  if (t.includes('file')) return 'file'
+  return 'schedule'
+}
+
+// Split a canonical action+target into discrete UI action blocks.
+function inferActions(action: string, target: string): Automation['actions'] {
+  const a = action.toLowerCase()
+  const blocks: Automation['actions'] = []
+  if (a.includes('email')) blocks.push({ type: 'send_email', description: `Email ${target}` })
+  if (a.includes('post') || a.includes('digest')) blocks.push({ type: 'send_message', description: `Post to ${target}` })
+  if (a.includes('notify') || a.includes('ping')) blocks.push({ type: 'notify_team', description: `Notify ${target}` })
+  if (a.includes('summary') || a.includes('ask lisa') || a.includes('ai')) blocks.push({ type: 'ai_action', description: action })
+  if (a.includes('action item') || a.includes('task')) blocks.push({ type: 'create_task', description: 'Create action items as tasks' })
+  if (blocks.length === 0) blocks.push({ type: 'send_message', description: `${action} → ${target}` })
+  return blocks
+}
+
+// Seed the UI list from the canonical Acme Corp automations.
+const SEED_AUTOMATIONS: Automation[] = CANON_AUTOMATIONS.map((rule) => ({
+  id: rule.id,
+  name: rule.name,
+  description: rule.description,
+  trigger: { type: inferTriggerType(rule.trigger), config: rule.trigger },
+  actions: inferActions(rule.action, rule.target),
+  status: rule.enabled ? 'active' : 'paused',
+  runsCount: rule.runsCount,
+  lastRun: rule.lastRun ? new Date(rule.lastRun) : undefined,
+  createdAt: new Date('2026-05-01T09:00:00.000Z'),
+}))
 
 export default function AutomationPage() {
   const [automations, setAutomations] = useState<Automation[]>([])
@@ -104,6 +95,7 @@ export default function AutomationPage() {
 
   // Builder States
   const [isBuilding, setIsBuilding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [builderName, setBuilderName] = useState('')
   const [builderDesc, setBuilderDesc] = useState('')
   const [selectedTrigger, setSelectedTrigger] = useState<string | null>(null)
@@ -111,23 +103,45 @@ export default function AutomationPage() {
   const [selectedActions, setSelectedActions] = useState<Array<{ type: string; description: string }>>([])
   const [validationError, setValidationError] = useState<string | null>(null)
 
+  // Kebab dropdown menu state (which automation's menu is open)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  // Bump the seed version when the canonical fixtures change so stale
+  // off-world localStorage (Sarah Johnson / #team / #general) gets reseeded.
+  const SEED_VERSION = 'acme-v1'
+
   useEffect(() => {
+    const versioned = localStorage.getItem('automations_seed')
     const saved = localStorage.getItem('automations')
-    if (saved) {
+    if (saved && versioned === SEED_VERSION) {
       try {
         setAutomations(JSON.parse(saved).map((a: any) => ({
           ...a,
           lastRun: a.lastRun ? new Date(a.lastRun) : undefined,
           createdAt: new Date(a.createdAt)
         })))
-      } catch (e) {
-        setAutomations(MOCK_AUTOMATIONS)
+        return
+      } catch {
+        // fall through to reseed
       }
-    } else {
-      setAutomations(MOCK_AUTOMATIONS)
-      localStorage.setItem('automations', JSON.stringify(MOCK_AUTOMATIONS))
     }
+    setAutomations(SEED_AUTOMATIONS)
+    localStorage.setItem('automations', JSON.stringify(SEED_AUTOMATIONS))
+    localStorage.setItem('automations_seed', SEED_VERSION)
   }, [])
+
+  // Close the kebab menu on outside click.
+  useEffect(() => {
+    if (!openMenuId) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenuId])
 
   const saveToStorage = (list: Automation[]) => {
     setAutomations(list)
@@ -150,7 +164,7 @@ export default function AutomationPage() {
 
   const formatTime = (date?: Date) => {
     if (!date) return 'Never'
-    const now = new Date()
+    const now = new Date(FIXED_TODAY)
     const diff = now.getTime() - date.getTime()
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
@@ -195,6 +209,17 @@ export default function AutomationPage() {
     setSelectedActions(selectedActions.filter((_, i) => i !== index))
   }
 
+  const resetBuilder = () => {
+    setIsBuilding(false)
+    setEditingId(null)
+    setBuilderName('')
+    setBuilderDesc('')
+    setSelectedTrigger(null)
+    setTriggerConfig('')
+    setSelectedActions([])
+    setValidationError(null)
+  }
+
   const handleSaveAutomation = () => {
     if (!builderName.trim()) {
       setValidationError('Automation name is required.')
@@ -215,31 +240,73 @@ export default function AutomationPage() {
       return
     }
 
-    const newAuto: Automation = {
-      id: `auto-${Date.now()}`,
-      name: builderName,
-      description: builderDesc || `Custom automation triggered by ${selectedTrigger}`,
-      trigger: {
-        type: selectedTrigger as any,
-        config: triggerConfig
-      },
-      actions: selectedActions,
-      status: 'active',
-      runsCount: 0,
-      createdAt: new Date()
+    if (editingId) {
+      // Update existing automation in place.
+      const updated = automations.map(a =>
+        a.id === editingId
+          ? {
+              ...a,
+              name: builderName,
+              description: builderDesc || a.description,
+              trigger: { type: selectedTrigger as any, config: triggerConfig },
+              actions: selectedActions,
+            }
+          : a
+      )
+      saveToStorage(updated)
+    } else {
+      const newAuto: Automation = {
+        id: `auto-${Date.now()}`,
+        name: builderName,
+        description: builderDesc || `Custom automation triggered by ${selectedTrigger}`,
+        trigger: {
+          type: selectedTrigger as any,
+          config: triggerConfig
+        },
+        actions: selectedActions,
+        status: 'active',
+        runsCount: 0,
+        createdAt: new Date(FIXED_TODAY)
+      }
+      saveToStorage([newAuto, ...automations])
     }
 
-    const updated = [newAuto, ...automations]
-    saveToStorage(updated)
+    resetBuilder()
+  }
 
-    // Reset and close
-    setIsBuilding(false)
-    setBuilderName('')
-    setBuilderDesc('')
-    setSelectedTrigger(null)
-    setTriggerConfig('')
-    setSelectedActions([])
+  // Open the builder pre-filled to edit an existing automation.
+  const openEdit = (automation: Automation) => {
+    setEditingId(automation.id)
+    setBuilderName(automation.name)
+    setBuilderDesc(automation.description)
+    setSelectedTrigger(automation.trigger.type)
+    setTriggerConfig(automation.trigger.config)
+    setSelectedActions(automation.actions.map(a => ({ ...a })))
     setValidationError(null)
+    setOpenMenuId(null)
+    setIsBuilding(true)
+  }
+
+  // Clone an automation (kebab → Duplicate).
+  const duplicateAutomation = (automation: Automation) => {
+    const clone: Automation = {
+      ...automation,
+      id: `auto-${Date.now()}`,
+      name: `${automation.name} (Copy)`,
+      actions: automation.actions.map(a => ({ ...a })),
+      status: 'paused',
+      runsCount: 0,
+      lastRun: undefined,
+      createdAt: new Date(FIXED_TODAY),
+    }
+    saveToStorage([clone, ...automations])
+    setOpenMenuId(null)
+  }
+
+  // Delete an automation (kebab → Delete).
+  const deleteAutomation = (id: string) => {
+    saveToStorage(automations.filter(a => a.id !== id))
+    setOpenMenuId(null)
   }
 
   return (
@@ -251,17 +318,14 @@ export default function AutomationPage() {
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-peak">
                 <Zap className="h-5 w-5 text-peak-primary-300" />
-                Automation Flow Builder
+                {editingId ? 'Edit Automation' : 'Automation Flow Builder'}
               </h2>
               <p className="mt-1 text-xs text-peak-muted">
                 Design and link triggers with one or more action nodes
               </p>
             </div>
             <button
-              onClick={() => {
-                setIsBuilding(false)
-                setValidationError(null)
-              }}
+              onClick={resetBuilder}
               className="rounded-lg p-2 transition hover:bg-white/[0.06]"
             >
               <X className="h-5 w-5 text-peak-muted" />
@@ -453,10 +517,7 @@ export default function AutomationPage() {
             )}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => {
-                  setIsBuilding(false)
-                  setValidationError(null)
-                }}
+                onClick={resetBuilder}
                 className="rounded-lg border border-peak-border px-4 py-2 text-peak-muted transition hover:bg-white/[0.04] hover:text-peak"
               >
                 Cancel
@@ -465,7 +526,7 @@ export default function AutomationPage() {
                 onClick={handleSaveAutomation}
                 className="rounded-lg bg-peak-primary px-6 py-2 font-semibold text-white shadow-peak-glow transition-colors hover:bg-peak-primary-600"
               >
-                Save Automation
+                {editingId ? 'Update Automation' : 'Save Automation'}
               </button>
             </div>
           </div>
@@ -609,12 +670,57 @@ export default function AutomationPage() {
                           <Play className="h-4 w-4" />
                         )}
                       </button>
-                      <button className="rounded-lg p-2 transition hover:bg-white/[0.04]">
+                      <button
+                        onClick={() => openEdit(automation)}
+                        title="Edit automation"
+                        aria-label="Edit automation"
+                        className="rounded-lg p-2 transition hover:bg-white/[0.04]"
+                      >
                         <Settings className="h-4 w-4 text-peak-dim" />
                       </button>
-                      <button className="rounded-lg p-2 transition hover:bg-white/[0.04]">
-                        <MoreVertical className="h-4 w-4 text-peak-dim" />
-                      </button>
+                      <div className="relative" ref={openMenuId === automation.id ? menuRef : undefined}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === automation.id ? null : automation.id)}
+                          title="More actions"
+                          aria-label="More actions"
+                          aria-haspopup="menu"
+                          aria-expanded={openMenuId === automation.id}
+                          className="rounded-lg p-2 transition hover:bg-white/[0.04]"
+                        >
+                          <MoreVertical className="h-4 w-4 text-peak-dim" />
+                        </button>
+                        {openMenuId === automation.id && (
+                          <div
+                            role="menu"
+                            className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-peak-border bg-peak-panel shadow-peak"
+                          >
+                            <button
+                              role="menuitem"
+                              onClick={() => openEdit(automation)}
+                              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-peak transition hover:bg-white/[0.05]"
+                            >
+                              <Settings className="h-4 w-4 text-peak-dim" />
+                              Edit
+                            </button>
+                            <button
+                              role="menuitem"
+                              onClick={() => duplicateAutomation(automation)}
+                              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-peak transition hover:bg-white/[0.05]"
+                            >
+                              <Copy className="h-4 w-4 text-peak-dim" />
+                              Duplicate
+                            </button>
+                            <button
+                              role="menuitem"
+                              onClick={() => deleteAutomation(automation.id)}
+                              className="flex w-full items-center gap-2 border-t border-peak-border px-3 py-2.5 text-left text-sm text-peak-red transition hover:bg-peak-red/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 

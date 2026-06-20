@@ -1,142 +1,280 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Search as SearchIcon, FileText, MessageSquare, Users, Calendar,
-  CheckSquare, Bot, FolderOpen, Clock, Filter, X, ArrowRight
+  CheckSquare, Bot, FolderOpen, Clock, X, ArrowRight, Target, Phone, StickyNote
 } from 'lucide-react'
+import {
+  FIXED_TODAY,
+  getMockTasks,
+  getMockFiles,
+  getMockThreads,
+  getMockCalendarEvents,
+  getMockCalls,
+  MOCK_PEOPLE,
+  MOCK_MISSIONS,
+  MOCK_NOTES,
+} from '@/lib/peak/mock'
+
+type ResultType = 'file' | 'message' | 'task' | 'meeting' | 'contact' | 'ai' | 'mission' | 'note' | 'call'
 
 interface SearchResult {
   id: string
-  type: 'file' | 'message' | 'task' | 'meeting' | 'contact' | 'ai' | 'folder'
+  type: ResultType
   title: string
   description: string
   url: string
-  timestamp?: Date
-  highlight?: string
+  timestamp?: string
 }
 
 const SEARCH_CATEGORIES = [
   { id: 'all', label: 'All', icon: SearchIcon },
+  { id: 'missions', label: 'Missions', icon: Target },
+  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
   { id: 'files', label: 'Files', icon: FileText },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
-  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-  { id: 'meetings', label: 'Meetings', icon: Calendar },
+  { id: 'meetings', label: 'Calendar', icon: Calendar },
   { id: 'contacts', label: 'People', icon: Users },
+  { id: 'notes', label: 'Notes', icon: StickyNote },
 ]
 
-const RECENT_SEARCHES = [
-  'Q4 report',
-  'marketing campaign',
-  'sprint planning',
-  'budget review',
+// Acme Corp seeded recent searches (match canonical entities).
+const DEFAULT_RECENT_SEARCHES = [
+  'Launch Product X',
+  'Brian Miller',
+  'board deck',
+  'reliability',
 ]
+
+const RECENT_KEY = 'peak.search.recent.v1'
+
+// Build the full canonical result corpus once. Deterministic — derived only
+// from the fixtures and FIXED_TODAY (no Date.now / random → SSR-safe).
+function buildCorpus(): SearchResult[] {
+  const results: SearchResult[] = []
+
+  for (const m of MOCK_MISSIONS) {
+    results.push({
+      id: `mission-${m.id}`,
+      type: 'mission',
+      title: m.name,
+      description: m.description || `${m.progress}% complete · ${m.status.replace('_', ' ').toLowerCase()}`,
+      url: `/missions/${m.id}`,
+      timestamp: m.targetDate || undefined,
+    })
+  }
+
+  for (const t of getMockTasks()) {
+    const who = t.assignee?.name ? `Assigned to ${t.assignee.name}` : 'Unassigned'
+    results.push({
+      id: `task-${t.id}`,
+      type: 'task',
+      title: t.title,
+      description: t.missionName ? `${t.missionName} · ${who}` : who,
+      url: '/tasks',
+      timestamp: t.dueDate || t.updatedAt,
+    })
+  }
+
+  for (const f of getMockFiles()) {
+    results.push({
+      id: `file-${f.id}`,
+      type: 'file',
+      title: f.name,
+      description: f.aiSummary || `${f.sizeLabel} · ${f.owner.name}`,
+      url: '/files',
+      timestamp: f.updatedAt,
+    })
+  }
+
+  for (const th of getMockThreads()) {
+    results.push({
+      id: `thread-${th.id}`,
+      type: 'message',
+      title: th.name,
+      description: th.lastMessage || `${th.members.length} members`,
+      url: `/messages?thread=${th.id}`,
+      timestamp: th.lastMessageAt,
+    })
+  }
+
+  for (const ev of getMockCalendarEvents()) {
+    const attendees = ev.attendees?.map((a) => a.name).join(', ')
+    results.push({
+      id: `event-${ev.id}`,
+      type: 'meeting',
+      title: ev.title,
+      description: ev.description || (attendees ? `With ${attendees}` : ev.type),
+      url: ev.joinUrl || '/calendar',
+      timestamp: ev.start,
+    })
+  }
+
+  for (const c of getMockCalls()) {
+    results.push({
+      id: `call-${c.id}`,
+      type: 'call',
+      title: c.title,
+      description: c.aiSummary || c.durationLabel || 'Call recording',
+      url: `/calls/summary/${c.id}`,
+      timestamp: c.startTime,
+    })
+  }
+
+  for (const p of MOCK_PEOPLE) {
+    const detail = [p.title, p.company].filter(Boolean).join(' · ')
+    results.push({
+      id: `contact-${p.id}`,
+      type: 'contact',
+      title: p.name,
+      description: [detail, p.email].filter(Boolean).join(' — '),
+      url: `/people/${p.id}`,
+    })
+  }
+
+  for (const n of MOCK_NOTES) {
+    results.push({
+      id: `note-${n.id}`,
+      type: 'note',
+      title: n.title,
+      description: (n.body || '').slice(0, 120) || `${n.brain} note`,
+      url: '/memory',
+      timestamp: n.updatedAt,
+    })
+  }
+
+  return results
+}
+
+const CATEGORY_MAP: Record<string, ResultType[]> = {
+  missions: ['mission'],
+  files: ['file'],
+  messages: ['message'],
+  tasks: ['task'],
+  meetings: ['meeting', 'call'],
+  contacts: ['contact'],
+  notes: ['note'],
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [recentSearches, setRecentSearches] = useState<string[]>(RECENT_SEARCHES)
+  const [recentSearches, setRecentSearches] = useState<string[]>(DEFAULT_RECENT_SEARCHES)
 
-  const mockSearch = useCallback((searchQuery: string, cat: string): SearchResult[] => {
-    if (!searchQuery.trim()) return []
+  const corpus = useMemo(() => buildCorpus(), [])
 
-    const allResults: SearchResult[] = [
-      { id: '1', type: 'file', title: 'Q4 Sales Report.pdf', description: 'Quarterly analysis with growth projections', url: '/files', timestamp: new Date(Date.now() - 86400000) },
-      { id: '2', type: 'file', title: 'Marketing Strategy 2025.docx', description: 'Annual marketing plan and budget', url: '/files', timestamp: new Date(Date.now() - 172800000) },
-      { id: '3', type: 'message', title: 'Message in #general', description: 'Sarah: Can we discuss the Q4 results?', url: '/messages', timestamp: new Date(Date.now() - 3600000) },
-      { id: '4', type: 'message', title: 'Message from John Smith', description: 'The report looks great! A few suggestions...', url: '/messages', timestamp: new Date(Date.now() - 7200000) },
-      { id: '5', type: 'task', title: 'Review Q4 Budget', description: 'Due tomorrow - Assigned to you', url: '/tasks', timestamp: new Date(Date.now() - 14400000) },
-      { id: '6', type: 'task', title: 'Update marketing materials', description: 'In progress - Due in 3 days', url: '/tasks' },
-      { id: '7', type: 'meeting', title: 'Quarterly Review Meeting', description: 'Tomorrow at 2:00 PM with Leadership Team', url: '/calendar' },
-      { id: '8', type: 'meeting', title: 'Sprint Planning', description: 'Monday at 9:00 AM', url: '/calendar' },
-      { id: '9', type: 'contact', title: 'Sarah Johnson', description: 'Product Manager - sarah@company.com', url: '/messages' },
-      { id: '10', type: 'contact', title: 'John Smith', description: 'Engineering Lead - john@company.com', url: '/messages' },
-      { id: '11', type: 'ai', title: 'Lisa AI: Budget Analysis', description: 'Conversation about Q4 budget breakdown', url: '/lisa', timestamp: new Date(Date.now() - 86400000) },
-      { id: '12', type: 'folder', title: 'Project Documents', description: '15 files - Last updated 2 days ago', url: '/files' },
-    ]
-
-    const filtered = allResults.filter(result => {
-      const matchesQuery = result.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        result.description.toLowerCase().includes(searchQuery.toLowerCase())
-
-      if (cat === 'all') return matchesQuery
-
-      const categoryMap: Record<string, string[]> = {
-        files: ['file', 'folder'],
-        messages: ['message'],
-        tasks: ['task'],
-        meetings: ['meeting'],
-        contacts: ['contact'],
+  // Load persisted recent searches (seeded with Acme terms on first visit).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RECENT_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length) setRecentSearches(parsed)
+      } else {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(DEFAULT_RECENT_SEARCHES))
       }
-
-      return matchesQuery && categoryMap[cat]?.includes(result.type)
-    })
-
-    return filtered
+    } catch {
+      /* ignore */
+    }
   }, [])
+
+  const runSearch = useCallback(
+    (searchQuery: string, cat: string): SearchResult[] => {
+      const q = searchQuery.toLowerCase().trim()
+      if (!q) return []
+      return corpus.filter((r) => {
+        const matchesQuery =
+          r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q)
+        if (!matchesQuery) return false
+        if (cat === 'all') return true
+        return CATEGORY_MAP[cat]?.includes(r.type) ?? true
+      })
+    },
+    [corpus],
+  )
 
   useEffect(() => {
     if (!query.trim()) {
       setResults([])
       return
     }
-
     setLoading(true)
     const timer = setTimeout(() => {
-      const searchResults = mockSearch(query, category)
-      setResults(searchResults)
+      setResults(runSearch(query, category))
       setLoading(false)
-    }, 300)
-
+    }, 250)
     return () => clearTimeout(timer)
-  }, [query, category, mockSearch])
+  }, [query, category, runSearch])
+
+  const persistRecent = (term: string) => {
+    setRecentSearches((prev) => {
+      const next = [term, ...prev.filter((s) => s !== term)].slice(0, 6)
+      try {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
 
   const handleSearch = (searchQuery: string) => {
     setQuery(searchQuery)
-    if (searchQuery.trim() && !recentSearches.includes(searchQuery)) {
-      setRecentSearches(prev => [searchQuery, ...prev.slice(0, 4)])
-    }
   }
 
-  const getIcon = (type: SearchResult['type']) => {
-    const icons = {
+  // Commit a recent search when the user pauses on a non-empty query.
+  useEffect(() => {
+    if (!query.trim()) return
+    const t = setTimeout(() => persistRecent(query.trim()), 1200)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
+
+  const getIcon = (type: ResultType) => {
+    const icons: Record<ResultType, typeof FileText> = {
       file: FileText,
-      folder: FolderOpen,
       message: MessageSquare,
       task: CheckSquare,
       meeting: Calendar,
       contact: Users,
-      ai: Bot
+      ai: Bot,
+      mission: Target,
+      note: StickyNote,
+      call: Phone,
     }
     return icons[type] || SearchIcon
   }
 
-  const getIconColor = (type: SearchResult['type']) => {
-    const colors = {
+  const getIconColor = (type: ResultType) => {
+    const colors: Record<ResultType, string> = {
       file: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-      folder: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30',
       message: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
       task: 'text-green-500 bg-green-100 dark:bg-green-900/30',
       meeting: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
       contact: 'text-pink-500 bg-pink-100 dark:bg-pink-900/30',
-      ai: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30'
+      ai: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
+      mission: 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30',
+      note: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
+      call: 'text-cyan-500 bg-cyan-100 dark:bg-cyan-900/30',
     }
     return colors[type] || 'text-gray-500 bg-gray-100'
   }
 
-  const formatTime = (date?: Date) => {
-    if (!date) return ''
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (hours < 1) return 'Just now'
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
+  // Deterministic relative time vs FIXED_TODAY (SSR-safe).
+  const formatTime = (iso?: string) => {
+    if (!iso) return ''
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return ''
+    const diff = new Date(FIXED_TODAY).getTime() - date.getTime()
+    const days = Math.round(diff / 86400000)
+    if (days === 0) return 'Today'
+    if (days === 1) return 'Yesterday'
+    if (days > 1 && days < 7) return `${days}d ago`
+    if (days < 0 && days > -7) return `in ${Math.abs(days)}d`
     return date.toLocaleDateString()
   }
 
@@ -149,7 +287,7 @@ export default function SearchPage() {
             Search Everything
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Find files, messages, tasks, meetings, and more
+            Find missions, tasks, files, people, meetings, and more
           </p>
         </div>
 
@@ -168,6 +306,7 @@ export default function SearchPage() {
             <button
               onClick={() => setQuery('')}
               className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              aria-label="Clear search"
             >
               <X className="w-5 h-5 text-gray-400" />
             </button>

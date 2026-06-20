@@ -1,175 +1,103 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  Bell, Check, CheckCheck, Trash2, Settings, Filter,
-  MessageSquare, Calendar, FileText, Users, Bot, Phone,
-  Star, AlertCircle, Info, CheckCircle, X, MoreVertical
+  Bell, CheckCheck, Settings,
+  Calendar, FileText, Users, Bot, Phone,
+  Star, AlertCircle, Info, CheckCircle, X
 } from 'lucide-react'
+import { MOCK_NOTIFICATIONS, FIXED_TODAY } from '@/lib/peak/mock'
+import type { NotificationItem } from '@/lib/peak/types'
 
-interface Notification {
-  id: string
-  type: 'message' | 'meeting' | 'task' | 'file' | 'mention' | 'ai' | 'call' | 'system'
-  title: string
-  description: string
-  timestamp: Date
-  read: boolean
-  starred: boolean
-  priority?: 'low' | 'normal' | 'high' | 'urgent'
-  actionUrl?: string
-  sender?: {
-    name: string
-    avatar?: string
-    initials: string
-  }
+// Local UI-state extension of the canonical NotificationItem (adds starred,
+// which the demo persists to localStorage but is not part of the world model).
+interface UINotification extends NotificationItem {
+  starred?: boolean
 }
 
 const NOTIFICATION_FILTERS = [
   { id: 'all', label: 'All', icon: Bell },
   { id: 'unread', label: 'Unread', icon: AlertCircle },
   { id: 'mentions', label: 'Mentions', icon: Users },
-  { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'meetings', label: 'Meetings', icon: Calendar },
+  { id: 'tasks', label: 'Tasks', icon: CheckCircle },
   { id: 'ai', label: 'Lisa AI', icon: Bot },
 ]
 
+const STORAGE_KEY = 'peak-notifications-v2'
+
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const router = useRouter()
+  const [notifications, setNotifications] = useState<UINotification[]>([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load or create mock notifications
-    const saved = localStorage.getItem('notifications')
+    // Hydrate from localStorage if the user has interacted before; otherwise
+    // seed from the canonical Acme Corp notification fixtures.
+    const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
-      const parsed = JSON.parse(saved)
-      setNotifications(parsed.map((n: Notification) => ({
-        ...n,
-        timestamp: new Date(n.timestamp)
-      })))
+      try {
+        setNotifications(JSON.parse(saved))
+      } catch {
+        setNotifications(MOCK_NOTIFICATIONS as UINotification[])
+      }
     } else {
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'mention',
-          title: 'Sarah mentioned you in #general',
-          description: '@you Can you review the latest design mockups?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 5),
-          read: false,
-          starred: false,
-          priority: 'high',
-          sender: { name: 'Sarah Johnson', initials: 'SJ' }
-        },
-        {
-          id: '2',
-          type: 'meeting',
-          title: 'Meeting starting in 15 minutes',
-          description: 'Sprint Planning with Engineering Team',
-          timestamp: new Date(Date.now() - 1000 * 60 * 10),
-          read: false,
-          starred: true,
-          priority: 'urgent'
-        },
-        {
-          id: '3',
-          type: 'ai',
-          title: 'Lisa AI completed your request',
-          description: 'Your document summary is ready to view',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          read: false,
-          starred: false
-        },
-        {
-          id: '4',
-          type: 'task',
-          title: 'Task assigned to you',
-          description: 'Review Q4 marketing budget proposal',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60),
-          read: true,
-          starred: false,
-          sender: { name: 'John Smith', initials: 'JS' }
-        },
-        {
-          id: '5',
-          type: 'file',
-          title: 'New file shared with you',
-          description: 'Project Roadmap.pdf was shared by Emily Chen',
-          timestamp: new Date(Date.now() - 1000 * 60 * 120),
-          read: true,
-          starred: false,
-          sender: { name: 'Emily Chen', initials: 'EC' }
-        },
-        {
-          id: '6',
-          type: 'message',
-          title: 'New message from Mike Wilson',
-          description: 'Hey, did you get a chance to look at the proposal?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 180),
-          read: true,
-          starred: false,
-          sender: { name: 'Mike Wilson', initials: 'MW' }
-        },
-        {
-          id: '7',
-          type: 'call',
-          title: 'Missed call from Lisa Park',
-          description: 'You missed a video call at 2:30 PM',
-          timestamp: new Date(Date.now() - 1000 * 60 * 240),
-          read: true,
-          starred: false,
-          sender: { name: 'Lisa Park', initials: 'LP' }
-        },
-        {
-          id: '8',
-          type: 'system',
-          title: 'Weekly activity summary',
-          description: 'Your productivity increased by 15% this week!',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-          read: true,
-          starred: false
-        }
-      ]
-      setNotifications(mockNotifications)
-      localStorage.setItem('notifications', JSON.stringify(mockNotifications))
+      setNotifications(MOCK_NOTIFICATIONS as UINotification[])
     }
     setLoading(false)
   }, [])
 
-  const getIcon = (type: Notification['type']) => {
+  const persist = (updated: UINotification[]) => {
+    setNotifications(updated)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  }
+
+  const getIcon = (kind: NotificationItem['kind']) => {
     const icons = {
-      message: MessageSquare,
-      meeting: Calendar,
-      task: CheckCircle,
-      file: FileText,
-      mention: Users,
-      ai: Bot,
-      call: Phone,
-      system: Info
-    }
-    return icons[type] || Bell
+      MEETING: Calendar,
+      TASK: CheckCircle,
+      MENTION: Users,
+      AI: Bot,
+      FILE: FileText,
+      CALL: Phone,
+      SYSTEM: Info,
+    } as const
+    return icons[kind] || Bell
   }
 
-  const getIconColor = (type: Notification['type']) => {
+  const getIconColor = (kind: NotificationItem['kind']) => {
     const colors = {
-      message: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-      meeting: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
-      task: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-      file: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
-      mention: 'text-pink-500 bg-pink-100 dark:bg-pink-900/30',
-      ai: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
-      call: 'text-red-500 bg-red-100 dark:bg-red-900/30',
-      system: 'text-gray-500 bg-gray-100 dark:bg-gray-700'
-    }
-    return colors[type] || 'text-gray-500 bg-gray-100'
+      MEETING: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+      TASK: 'text-green-500 bg-green-100 dark:bg-green-900/30',
+      MENTION: 'text-pink-500 bg-pink-100 dark:bg-pink-900/30',
+      AI: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
+      FILE: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
+      CALL: 'text-red-500 bg-red-100 dark:bg-red-900/30',
+      SYSTEM: 'text-gray-500 bg-gray-100 dark:bg-gray-700',
+    } as const
+    return colors[kind] || 'text-gray-500 bg-gray-100'
   }
 
-  const formatTime = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  // SSR-safe: relative time anchored to the fixed world clock (FIXED_TODAY),
+  // never Date.now(), so the same fixtures render identically every load.
+  const formatTime = (iso: string) => {
+    const date = new Date(iso)
+    const now = new Date(FIXED_TODAY).getTime()
+    const diff = now - date.getTime()
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
+    if (diff < 0) {
+      // Scheduled in the (world) future, e.g. a meeting starting later today.
+      const upMin = Math.floor(-diff / 60000)
+      const upHr = Math.floor(-diff / 3600000)
+      if (upMin < 60) return `in ${upMin}m`
+      if (upHr < 24) return `in ${upHr}h`
+      return date.toLocaleDateString()
+    }
     if (minutes < 1) return 'Just now'
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
@@ -178,51 +106,45 @@ export default function NotificationsPage() {
   }
 
   const markAsRead = (id: string) => {
-    const updated = notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    )
-    setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    persist(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)))
   }
 
   const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }))
-    setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    persist(notifications.map((n) => ({ ...n, read: true })))
   }
 
   const toggleStar = (id: string) => {
-    const updated = notifications.map(n =>
-      n.id === id ? { ...n, starred: !n.starred } : n
-    )
-    setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    persist(notifications.map((n) => (n.id === id ? { ...n, starred: !n.starred } : n)))
   }
 
   const deleteNotification = (id: string) => {
-    const updated = notifications.filter(n => n.id !== id)
-    setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    persist(notifications.filter((n) => n.id !== id))
   }
 
-  const filteredNotifications = notifications.filter(n => {
+  // Click a row -> mark read, then deep-link to the canonical actionUrl.
+  const handleOpen = (n: UINotification) => {
+    markAsRead(n.id)
+    if (n.actionUrl) router.push(n.actionUrl)
+  }
+
+  const filteredNotifications = notifications.filter((n) => {
     switch (filter) {
       case 'unread':
         return !n.read
       case 'mentions':
-        return n.type === 'mention'
-      case 'messages':
-        return n.type === 'message'
+        return n.kind === 'MENTION'
       case 'meetings':
-        return n.type === 'meeting'
+        return n.kind === 'MEETING'
+      case 'tasks':
+        return n.kind === 'TASK'
       case 'ai':
-        return n.type === 'ai'
+        return n.kind === 'AI'
       default:
         return true
     }
   })
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -245,7 +167,11 @@ export default function NotificationsPage() {
               <CheckCheck className="w-4 h-4" />
               Mark all read
             </button>
-            <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+            <button
+              onClick={() => router.push('/settings/notifications')}
+              title="Notification settings"
+              className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+            >
               <Settings className="w-5 h-5" />
             </button>
           </div>
@@ -253,7 +179,7 @@ export default function NotificationsPage() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-          {NOTIFICATION_FILTERS.map(f => {
+          {NOTIFICATION_FILTERS.map((f) => {
             const Icon = f.icon
             return (
               <button
@@ -289,14 +215,14 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredNotifications.map(notification => {
-                const Icon = getIcon(notification.type)
-                const colorClass = getIconColor(notification.type)
+              {filteredNotifications.map((notification) => {
+                const Icon = getIcon(notification.kind)
+                const colorClass = getIconColor(notification.kind)
 
                 return (
                   <div
                     key={notification.id}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => handleOpen(notification)}
                     className={`p-4 flex gap-4 cursor-pointer transition hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                       !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                     }`}
@@ -312,20 +238,25 @@ export default function NotificationsPage() {
                             {notification.title}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">
-                            {notification.description}
+                            {notification.body}
                           </p>
                           <div className="flex items-center gap-3 mt-2">
+                            {notification.actor && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {notification.actor.name}
+                              </span>
+                            )}
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {formatTime(notification.timestamp)}
                             </span>
-                            {notification.priority === 'urgent' && (
+                            {notification.tone === 'red' && (
                               <span className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
-                                Urgent
+                                High risk
                               </span>
                             )}
-                            {notification.priority === 'high' && (
+                            {notification.tone === 'amber' && (
                               <span className="text-xs px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">
-                                High Priority
+                                Needs attention
                               </span>
                             )}
                           </div>

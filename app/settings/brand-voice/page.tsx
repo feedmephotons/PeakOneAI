@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, Upload, FileText, Brain, Plus, Trash2, Check, Edit3,
-  AlertCircle, BookOpen, Settings, ToggleLeft, ToggleRight, Shield
+  AlertCircle, BookOpen, Settings, ToggleLeft, ToggleRight, Shield, X
 } from 'lucide-react'
+import { MOCK_BRAND_VOICE } from '@/lib/peak/mock'
 
 interface BrandGuideline {
   id: string
@@ -38,93 +39,157 @@ const ENFORCEMENT_LEVELS = [
   { level: 4, name: 'Auto-Rewrite', description: 'Automatic brand voice alignment' }
 ]
 
+// Map the canonical defaultLevel onto the enforcement scale.
+const LEVEL_FROM_DEFAULT: Record<string, number> = { subtle: 2, balanced: 3, strong: 4 }
+
+// Seed the Acme "Company Brand Voice" guideline from the canonical fixture so the page is never empty.
+function seedGuidelines(): BrandGuideline[] {
+  const bv = MOCK_BRAND_VOICE
+  return [
+    {
+      id: bv.id,
+      name: bv.name,
+      description: bv.sample,
+      voiceTone: 'professional',
+      personality: bv.tone,
+      isActive: bv.enabled,
+      isDefault: true,
+      createdAt: bv.createdAt,
+      _count: {
+        approvedTerms: bv.doList.length,
+        forbiddenTerms: bv.dontList.length,
+        messagingRules: bv.doList.length + bv.dontList.length,
+      },
+    },
+  ]
+}
+
+const STORAGE_KEY = 'brandVoiceGuidelines'
+const SETTINGS_KEY = 'brandVoiceSettings'
+
 export default function BrandVoiceSettingsPage() {
   const [guidelines, setGuidelines] = useState<BrandGuideline[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [editing, setEditing] = useState<BrandGuideline | null>(null)
   const [newGuideline, setNewGuideline] = useState({
     name: '',
     description: '',
     voiceTone: 'professional'
   })
-  const [defaultLevel, setDefaultLevel] = useState(2)
-  const [brandVoiceEnabled, setBrandVoiceEnabled] = useState(true)
+  const [defaultLevel, setDefaultLevel] = useState(LEVEL_FROM_DEFAULT[MOCK_BRAND_VOICE.defaultLevel])
+  const [brandVoiceEnabled, setBrandVoiceEnabled] = useState(MOCK_BRAND_VOICE.enabled)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // TODO: Get workspace ID from context/API when organization support is added
-  const workspaceId = 'default-workspace'
+  const persist = useCallback((list: BrandGuideline[]) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+  }, [])
 
-  const fetchGuidelines = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/brand-voice/guidelines?workspaceId=${workspaceId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setGuidelines(data.guidelines)
-      }
-    } catch (error) {
-      console.error('Failed to fetch guidelines:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [workspaceId])
-
+  // Hydrate from localStorage, falling back to the canonical seed (never empty).
   useEffect(() => {
-    fetchGuidelines()
-  }, [fetchGuidelines])
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file && file.type === 'application/pdf') {
-      setUploadFile(file)
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      try {
+        setGuidelines(JSON.parse(raw))
+      } catch {
+        setGuidelines(seedGuidelines())
+      }
+    } else {
+      const seeded = seedGuidelines()
+      setGuidelines(seeded)
+      persist(seeded)
     }
+
+    const s = localStorage.getItem(SETTINGS_KEY)
+    if (s) {
+      try {
+        const v = JSON.parse(s)
+        if (typeof v.defaultLevel === 'number') setDefaultLevel(v.defaultLevel)
+        if (typeof v.brandVoiceEnabled === 'boolean') setBrandVoiceEnabled(v.brandVoiceEnabled)
+      } catch { /* ignore */ }
+    }
+    setIsLoading(false)
+  }, [persist])
+
+  const persistSettings = (next: { defaultLevel?: number; brandVoiceEnabled?: boolean }) => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      defaultLevel: next.defaultLevel ?? defaultLevel,
+      brandVoiceEnabled: next.brandVoiceEnabled ?? brandVoiceEnabled,
+    }))
   }
 
-  const handleUpload = async () => {
-    if (!newGuideline.name.trim()) {
-      alert('Please enter a guideline name')
-      return
-    }
+  // Single file-select path shared by the click-to-upload input and drag-and-drop.
+  const acceptFile = (file?: File | null) => {
+    if (file && file.type === 'application/pdf') setUploadFile(file)
+  }
 
-    setIsUploading(true)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    acceptFile(e.target.files?.[0])
+  }
 
-    try {
-      let fileBase64 = null
-      let fileMimeType = null
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    acceptFile(e.dataTransfer.files?.[0])
+  }
 
-      if (uploadFile) {
-        const buffer = await uploadFile.arrayBuffer()
-        fileBase64 = Buffer.from(buffer).toString('base64')
-        fileMimeType = uploadFile.type
+  const resetModal = () => {
+    setShowUploadModal(false)
+    setUploadFile(null)
+    setEditing(null)
+    setNewGuideline({ name: '', description: '', voiceTone: 'professional' })
+  }
+
+  const handleSubmit = () => {
+    if (!newGuideline.name.trim()) return
+    // EXTERNAL: needs Clerk + Prisma (POST /api/brand-voice/guidelines) and Gemini PDF extraction.
+    // Demo path creates/edits a guideline locally so the flow is fully demoable.
+    if (editing) {
+      const updated = guidelines.map((g) =>
+        g.id === editing.id
+          ? { ...g, name: newGuideline.name, description: newGuideline.description, voiceTone: newGuideline.voiceTone }
+          : g
+      )
+      setGuidelines(updated)
+      persist(updated)
+    } else {
+      const created: BrandGuideline = {
+        id: `guideline-${Date.now()}`,
+        name: newGuideline.name,
+        description: newGuideline.description,
+        voiceTone: newGuideline.voiceTone,
+        personality: [],
+        isActive: true,
+        isDefault: guidelines.length === 0,
+        createdAt: new Date().toISOString(),
+        _count: { approvedTerms: 0, forbiddenTerms: 0, messagingRules: 0 },
       }
-
-      const response = await fetch('/api/brand-voice/guidelines', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newGuideline,
-          workspaceId,
-          fileBase64,
-          fileMimeType,
-          isDefault: guidelines.length === 0
-        })
-      })
-
-      if (response.ok) {
-        setShowUploadModal(false)
-        setNewGuideline({ name: '', description: '', voiceTone: 'professional' })
-        setUploadFile(null)
-        fetchGuidelines()
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to create guideline')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload guideline')
-    } finally {
-      setIsUploading(false)
+      const next = [...guidelines, created]
+      setGuidelines(next)
+      persist(next)
     }
+    resetModal()
+  }
+
+  const toggleActive = (id: string) => {
+    const next = guidelines.map((g) => (g.id === id ? { ...g, isActive: !g.isActive } : g))
+    setGuidelines(next)
+    persist(next)
+  }
+
+  const startEdit = (g: BrandGuideline) => {
+    setEditing(g)
+    setNewGuideline({ name: g.name, description: g.description ?? '', voiceTone: g.voiceTone })
+    setShowUploadModal(true)
+  }
+
+  const deleteGuideline = (id: string) => {
+    if (!confirm('Delete this brand guideline?')) return
+    const next = guidelines.filter((g) => g.id !== id)
+    setGuidelines(next)
+    persist(next)
   }
 
   return (
@@ -152,7 +217,7 @@ export default function BrandVoiceSettingsPage() {
             </div>
 
             <button
-              onClick={() => setShowUploadModal(true)}
+              onClick={() => { setEditing(null); setNewGuideline({ name: '', description: '', voiceTone: 'professional' }); setShowUploadModal(true) }}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               <Plus className="w-4 h-4" />
@@ -180,10 +245,11 @@ export default function BrandVoiceSettingsPage() {
                 </div>
               </div>
               <button
-                onClick={() => setBrandVoiceEnabled(!brandVoiceEnabled)}
+                onClick={() => { const next = !brandVoiceEnabled; setBrandVoiceEnabled(next); persistSettings({ brandVoiceEnabled: next }) }}
                 className={`p-1 rounded-full transition ${
                   brandVoiceEnabled ? 'text-purple-600' : 'text-gray-400'
                 }`}
+                aria-label="Toggle brand voice assistant"
               >
                 {brandVoiceEnabled ? (
                   <ToggleRight className="w-8 h-8" />
@@ -198,7 +264,7 @@ export default function BrandVoiceSettingsPage() {
               <div className="font-medium text-gray-900 dark:text-white mb-2">Default Enforcement Level</div>
               <select
                 value={defaultLevel}
-                onChange={(e) => setDefaultLevel(Number(e.target.value))}
+                onChange={(e) => { const v = Number(e.target.value); setDefaultLevel(v); persistSettings({ defaultLevel: v }) }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                   dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
@@ -260,13 +326,16 @@ export default function BrandVoiceSettingsPage() {
                             Default
                           </span>
                         )}
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          guideline.isActive
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                        }`}>
+                        <button
+                          onClick={() => toggleActive(guideline.id)}
+                          className={`px-2 py-0.5 text-xs rounded-full transition ${
+                            guideline.isActive
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}
+                        >
                           {guideline.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        </button>
                       </div>
 
                       {guideline.description && (
@@ -309,10 +378,18 @@ export default function BrandVoiceSettingsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
-                      <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
+                      <button
+                        onClick={() => startEdit(guideline)}
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
+                        aria-label="Edit guideline"
+                      >
                         <Edit3 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </button>
-                      <button className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition">
+                      <button
+                        onClick={() => deleteGuideline(guideline.id)}
+                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition"
+                        aria-label="Delete guideline"
+                      >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </button>
                     </div>
@@ -351,14 +428,17 @@ export default function BrandVoiceSettingsPage() {
         </div>
       </div>
 
-      {/* Upload Modal */}
+      {/* Upload / Edit Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add Brand Guidelines
+                {editing ? 'Edit Brand Guidelines' : 'Add Brand Guidelines'}
               </h3>
+              <button onClick={resetModal} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
 
             <div className="p-6 space-y-4">
@@ -412,7 +492,15 @@ export default function BrandVoiceSettingsPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Upload Brand Guidelines PDF (Optional)
                 </label>
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
+                {/* Single file input + real drag-and-drop (no double-fire). */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition ${
+                    isDragging ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                >
                   {uploadFile ? (
                     <div className="flex items-center justify-center gap-3">
                       <FileText className="w-8 h-8 text-purple-500" />
@@ -423,6 +511,7 @@ export default function BrandVoiceSettingsPage() {
                       <button
                         onClick={() => setUploadFile(null)}
                         className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                        aria-label="Remove file"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </button>
@@ -431,27 +520,27 @@ export default function BrandVoiceSettingsPage() {
                     <>
                       <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Drag & drop or click to upload
+                        Drag &amp; drop a PDF here, or
                       </p>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="application/pdf"
                         onChange={handleFileSelect}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        className="hidden"
                       />
-                      <label className="inline-block px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                        />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-block px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                      >
                         Choose File
-                      </label>
+                      </button>
                     </>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {/* EXTERNAL: needs Gemini PDF extraction to auto-derive voice + terminology + rules. */}
                   AI will analyze the PDF and extract brand voice, terminology, and messaging rules automatically.
                 </p>
               </div>
@@ -459,31 +548,18 @@ export default function BrandVoiceSettingsPage() {
 
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
               <button
-                onClick={() => {
-                  setShowUploadModal(false)
-                  setUploadFile(null)
-                  setNewGuideline({ name: '', description: '', voiceTone: 'professional' })
-                }}
+                onClick={resetModal}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
                 Cancel
               </button>
               <button
-                onClick={handleUpload}
-                disabled={isUploading || !newGuideline.name.trim()}
+                onClick={handleSubmit}
+                disabled={!newGuideline.name.trim()}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
               >
-                {isUploading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="w-4 h-4" />
-                    Create Guidelines
-                  </>
-                )}
+                <Brain className="w-4 h-4" />
+                {editing ? 'Save Changes' : 'Create Guidelines'}
               </button>
             </div>
           </div>

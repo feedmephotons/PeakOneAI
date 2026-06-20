@@ -1,13 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Sparkles,
   Search,
   Plus,
-  ChevronDown,
   ArrowRight,
   Send,
   FileText,
@@ -22,10 +21,29 @@ import {
   Eye,
   Brain,
 } from 'lucide-react'
+import {
+  MOCK_NOTES,
+  MOCK_FILES,
+  MOCK_TEAM,
+  ACME_TEAM_SIZE,
+} from '@/lib/peak/mock'
+import type { Note } from '@/lib/peak/types'
 
 // ----------------------------------------------------------------------------
-// Static mock content (mirrors the Company Brain mockup)
+// Derived content — driven entirely by the canonical Acme Corp fixtures
 // ----------------------------------------------------------------------------
+
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
+function relativeTime(iso: string): string {
+  const diff = PEAK_NOW - new Date(iso).getTime()
+  const mins = Math.round(diff / 60000)
+  if (mins < 60) return `${Math.max(1, mins)}m ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.round(hrs / 24)
+  return days === 1 ? '1d ago' : `${days}d ago`
+}
 
 interface Stat {
   label: string
@@ -34,68 +52,64 @@ interface Stat {
   icon: React.ComponentType<{ className?: string }>
 }
 
+// Real counts from the fixtures (notes, files, team) rather than invented numbers.
+const noteCount = MOCK_NOTES.length
+const fileCount = MOCK_FILES.filter((f) => !f.deleted).length
+const knowledgeItems = noteCount + fileCount
+const connectionCount = MOCK_NOTES.reduce((s, n) => s + (n.connectionCount ?? 0), 0)
+
 const STATS: Stat[] = [
-  { label: 'Documents', value: '1,247', delta: '+ 23 this month', icon: FileText },
-  { label: 'Knowledge Items', value: '2,842', delta: '+ 45 this month', icon: Layers },
-  { label: 'Contributors', value: '128', delta: '+ 8 this month', icon: Users },
-  { label: 'Views (30d)', value: '12.6K', delta: '+ 18%', icon: Eye },
-  { label: 'Searches (30d)', value: '3,421', delta: '+ 21%', icon: Search },
+  { label: 'Documents', value: String(fileCount), delta: 'Across all missions', icon: FileText },
+  { label: 'Knowledge Items', value: String(knowledgeItems), delta: `${noteCount} notes · ${fileCount} files`, icon: Layers },
+  { label: 'Contributors', value: String(ACME_TEAM_SIZE), delta: 'Acme Corp team', icon: Users },
+  { label: 'Connections', value: String(connectionCount), delta: 'Auto-linked by Lisa', icon: Eye },
+  { label: 'Brains', value: '3', delta: 'My · Team · Company', icon: Brain },
 ]
 
 interface Category {
   title: string
+  /** Tag used to filter /memory. */
+  tag: string
   icon: React.ComponentType<{ className?: string }>
   tint: string
   bg: string
-  documents: number
-  updated: string
 }
 
-const CATEGORIES: Category[] = [
-  { title: 'Strategy & Vision', icon: Compass, tint: 'text-peak-primary-300', bg: 'bg-peak-primary/15', documents: 24, updated: 'Updated 2d ago' },
-  { title: 'Policies & Procedures', icon: ShieldCheck, tint: 'text-peak-blue', bg: 'bg-peak-blue/15', documents: 87, updated: 'Updated 5d ago' },
-  { title: 'Product & Engineering', icon: Box, tint: 'text-peak-primary-300', bg: 'bg-peak-primary/15', documents: 156, updated: 'Updated 1h ago' },
-  { title: 'Sales & Marketing', icon: Megaphone, tint: 'text-peak-amber', bg: 'bg-peak-amber/15', documents: 89, updated: 'Updated 3h ago' },
-  { title: 'Finance & Legal', icon: Scale, tint: 'text-peak-green', bg: 'bg-peak-green/15', documents: 64, updated: 'Updated 1d ago' },
-  { title: 'People & Culture', icon: Users, tint: 'text-peak-red', bg: 'bg-peak-red/15', documents: 43, updated: 'Updated 4d ago' },
-]
-
-interface RecentItem {
-  title: string
-  author: string
-  time: string
-  tag: string
-  tagTone: string
-}
-
-const RECENTLY_UPDATED: RecentItem[] = [
-  { title: 'Q2 OKR Document', author: 'Mike Wilson', time: '2h ago', tag: 'Strategy', tagTone: 'bg-peak-primary/15 text-peak-primary-300' },
-  { title: 'Remote Work Policy', author: 'HR Team', time: '5h ago', tag: 'HR', tagTone: 'bg-peak-blue/15 text-peak-blue' },
-  { title: 'Product Roadmap 2025', author: 'Product Team', time: '8h ago', tag: 'Product', tagTone: 'bg-peak-primary/15 text-peak-primary-300' },
-  { title: 'Security Guidelines v2.1', author: 'IT Team', time: '1d ago', tag: 'Security', tagTone: 'bg-peak-green/15 text-peak-green' },
-  { title: 'Sales Playbook', author: 'Emily Chen', time: '1d ago', tag: 'Sales', tagTone: 'bg-peak-amber/15 text-peak-amber' },
-]
-
-interface PopularItem {
-  title: string
-  category: string
-  views: string
-}
-
-const POPULAR: PopularItem[] = [
-  { title: 'Employee Handbook', category: 'People & Culture', views: '2.2K' },
-  { title: 'Code of Conduct', category: 'Policies & Procedures', views: '1.8K' },
-  { title: 'Q1 Financial Report', category: 'Finance & Legal', views: '1.5K' },
-  { title: 'Product Strategy', category: 'Strategy & Vision', views: '1.3K' },
-  { title: 'All Hands Presentation', category: 'Strategy & Vision', views: '1.1K' },
+// Categories map to real note tags so the deep-link actually filters /memory.
+const CATEGORY_DEFS: Category[] = [
+  { title: 'Strategy', tag: 'strategy', icon: Compass, tint: 'text-peak-primary-300', bg: 'bg-peak-primary/15' },
+  { title: 'Launch', tag: 'launch', icon: Box, tint: 'text-peak-primary-300', bg: 'bg-peak-primary/15' },
+  { title: 'Marketing', tag: 'marketing', icon: Megaphone, tint: 'text-peak-amber', bg: 'bg-peak-amber/15' },
+  { title: 'Pricing & Research', tag: 'research', icon: Scale, tint: 'text-peak-green', bg: 'bg-peak-green/15' },
+  { title: 'Partnership', tag: 'partnership', icon: ShieldCheck, tint: 'text-peak-blue', bg: 'bg-peak-blue/15' },
+  { title: 'Product', tag: 'product-x', icon: Users, tint: 'text-peak-red', bg: 'bg-peak-red/15' },
 ]
 
 const SUGGESTED_QUESTIONS = [
   'What are our Q2 priorities?',
-  'Show me the latest product updates',
-  'Find sales playbook',
-  "What's our remote work policy?",
+  'Summarize the Product Launch Plan',
+  'What did the pricing research recommend?',
+  'What is the BrightPath partnership decision?',
 ]
+
+// Tag → pill tone for the Recently Updated list.
+const TAG_TONE: Record<string, string> = {
+  strategy: 'bg-peak-primary/15 text-peak-primary-300',
+  launch: 'bg-peak-primary/15 text-peak-primary-300',
+  marketing: 'bg-peak-amber/15 text-peak-amber',
+  research: 'bg-peak-green/15 text-peak-green',
+  pricing: 'bg-peak-green/15 text-peak-green',
+  partnership: 'bg-peak-blue/15 text-peak-blue',
+  decision: 'bg-peak-blue/15 text-peak-blue',
+}
+
+function tagTone(tag?: string): string {
+  return (tag && TAG_TONE[tag]) || 'bg-white/[0.06] text-peak-muted'
+}
+
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 // ----------------------------------------------------------------------------
 // Page
@@ -111,6 +125,45 @@ export default function CompanyBrainPage() {
     if (!q) return
     router.push('/lisa?q=' + encodeURIComponent(q))
   }
+
+  // --- Derived category cards: real doc counts + last-updated per tag -------
+  const categories = useMemo(() => {
+    return CATEGORY_DEFS.map((c) => {
+      const matches = MOCK_NOTES.filter((n) => n.tags.includes(c.tag))
+      const docs = matches.length
+      const latest = matches.reduce<string | null>(
+        (acc, n) => (!acc || new Date(n.updatedAt) > new Date(acc) ? n.updatedAt : acc),
+        null,
+      )
+      return { ...c, documents: docs, updated: latest ? `Updated ${relativeTime(latest)}` : 'No documents yet' }
+    })
+  }, [])
+
+  // --- Recently updated: notes sorted by updatedAt -------------------------
+  const recentlyUpdated = useMemo(() => {
+    return [...MOCK_NOTES]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 5)
+      .map((n: Note) => ({
+        id: n.id,
+        title: n.title,
+        author: n.author?.name ?? MOCK_TEAM[0].name,
+        time: relativeTime(n.updatedAt),
+        tag: n.tags[0] ?? 'note',
+      }))
+  }, [])
+
+  // --- Popular knowledge: files with AI summaries -------------------------
+  const popular = useMemo(() => {
+    return MOCK_FILES.filter((f) => !f.deleted)
+      .slice(0, 5)
+      .map((f) => ({
+        id: f.id,
+        title: f.name,
+        category: f.owner.name,
+        meta: f.sizeLabel,
+      }))
+  }, [])
 
   return (
     <div className="peak-os min-h-screen">
@@ -155,12 +208,11 @@ export default function CompanyBrainPage() {
           </div>
 
           <button
-            onClick={() => router.push('/files')}
+            onClick={() => router.push('/memory')}
             className="order-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-peak-primary to-peak-primary-600 px-5 py-3 text-sm font-medium text-white shadow-[0_0_24px_-6px_var(--peak-glow)] transition-all hover:brightness-110 lg:order-3"
           >
             <Plus className="h-4 w-4" />
             New Document
-            <ChevronDown className="h-4 w-4 opacity-80" />
           </button>
         </header>
 
@@ -202,19 +254,21 @@ export default function CompanyBrainPage() {
               <p className="mb-5 text-sm text-peak-muted">Curated knowledge across the organization</p>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {CATEGORIES.map((c) => {
+                {categories.map((c) => {
                   const Icon = c.icon
                   return (
                     <button
                       key={c.title}
-                      onClick={() => router.push('/memory?category=' + encodeURIComponent(c.title))}
+                      onClick={() => router.push('/memory?category=' + encodeURIComponent(c.tag))}
                       className="group flex flex-col rounded-2xl border border-peak-border bg-white/[0.02] p-4 text-left transition-all hover:border-peak-primary/30 hover:bg-white/[0.04]"
                     >
                       <span className={['mb-4 flex h-10 w-10 items-center justify-center rounded-xl', c.bg, c.tint].join(' ')}>
                         <Icon className="h-5 w-5" />
                       </span>
                       <span className="text-sm font-semibold text-peak">{c.title}</span>
-                      <span className="mt-3 text-xs text-peak-muted">{c.documents} documents</span>
+                      <span className="mt-3 text-xs text-peak-muted">
+                        {c.documents} {c.documents === 1 ? 'document' : 'documents'}
+                      </span>
                       <span className="mt-0.5 text-[11px] text-peak-dim">{c.updated}</span>
                     </button>
                   )
@@ -229,10 +283,10 @@ export default function CompanyBrainPage() {
                 <h2 className="text-lg font-semibold text-peak">Recently Updated</h2>
                 <p className="mb-4 text-sm text-peak-muted">The latest knowledge, always up to date</p>
                 <ul className="space-y-1">
-                  {RECENTLY_UPDATED.map((it) => (
-                    <li key={it.title}>
+                  {recentlyUpdated.map((it) => (
+                    <li key={it.id}>
                       <button
-                        onClick={() => router.push('/files')}
+                        onClick={() => router.push('/memory?note=' + encodeURIComponent(it.id))}
                         className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
                       >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-peak-primary-300">
@@ -243,15 +297,15 @@ export default function CompanyBrainPage() {
                           <span className="block truncate text-xs text-peak-muted">{it.author}</span>
                         </span>
                         <span className="shrink-0 text-xs text-peak-dim">{it.time}</span>
-                        <span className={['shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium', it.tagTone].join(' ')}>
-                          {it.tag}
+                        <span className={['shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium', tagTone(it.tag)].join(' ')}>
+                          {titleCase(it.tag)}
                         </span>
                       </button>
                     </li>
                   ))}
                 </ul>
                 <button
-                  onClick={() => router.push('/files')}
+                  onClick={() => router.push('/memory')}
                   className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
                 >
                   View all updates
@@ -264,10 +318,10 @@ export default function CompanyBrainPage() {
                 <h2 className="text-lg font-semibold text-peak">Popular Knowledge</h2>
                 <p className="mb-4 text-sm text-peak-muted">Most accessed by your team</p>
                 <ul className="space-y-1">
-                  {POPULAR.map((it) => (
-                    <li key={it.title}>
+                  {popular.map((it) => (
+                    <li key={it.id}>
                       <button
-                        onClick={() => router.push('/files')}
+                        onClick={() => router.push('/files?file=' + encodeURIComponent(it.id))}
                         className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
                       >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-peak-muted">
@@ -279,7 +333,7 @@ export default function CompanyBrainPage() {
                         </span>
                         <span className="flex shrink-0 items-center gap-1.5 text-xs text-peak-dim">
                           <Eye className="h-3.5 w-3.5" />
-                          {it.views}
+                          {it.meta}
                         </span>
                       </button>
                     </li>

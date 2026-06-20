@@ -1,20 +1,46 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { getMockThread, MOCK_USER } from '@/lib/peak/mock'
+
+// ----------------------------------------------------------------------------
+// Peak-mock fallback — serve the canonical Acme Corp thread messages when there
+// is no DB / no authenticated user so the messages demo is never empty.
+// ----------------------------------------------------------------------------
+function mockMessagesForThread(conversationId: string) {
+  const thread = getMockThread(conversationId)
+  if (!thread) return [] as Array<Record<string, unknown>>
+  return thread.messages.map((m) => {
+    const isOwn = m.sender.id === MOCK_USER.id
+    return {
+      id: m.id,
+      conversationId: thread.id,
+      // Map Sarah (the demo user) to the 'user' sender id the client treats as own.
+      senderId: isOwn ? 'user' : m.sender.id,
+      senderName: isOwn ? 'You' : m.sender.name,
+      senderAvatar: m.sender.avatarUrl || undefined,
+      content: m.body,
+      timestamp: m.createdAt,
+      type: 'text' as const,
+      isRead: true,
+    }
+  })
+}
 
 // GET: Fetch messages for a conversation
 export async function GET(request: Request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     const conversationId = searchParams.get('conversationId')
 
     if (!conversationId) {
       return NextResponse.json({ error: 'Missing conversationId parameter' }, { status: 400 })
+    }
+
+    const user = await getCurrentUser()
+    if (!user) {
+      // Demo / unauthenticated — serve canonical mock messages.
+      return NextResponse.json({ messages: mockMessagesForThread(conversationId), source: 'mock' })
     }
 
     // Verify user is a participant of this conversation
@@ -26,6 +52,11 @@ export async function GET(request: Request) {
     })
 
     if (!participant) {
+      // Could be one of the seeded demo threads — fall back to mock messages.
+      const mock = mockMessagesForThread(conversationId)
+      if (mock.length > 0) {
+        return NextResponse.json({ messages: mock, source: 'mock' })
+      }
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -63,6 +94,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ messages: formattedMessages })
   } catch (error) {
     console.error('[Messages GET] Error:', error)
+    // DB unreachable in demo — try the mock fallback before erroring.
+    try {
+      const { searchParams } = new URL(request.url)
+      const conversationId = searchParams.get('conversationId')
+      if (conversationId) {
+        return NextResponse.json({ messages: mockMessagesForThread(conversationId), source: 'mock' })
+      }
+    } catch {
+      /* ignore */
+    }
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
   }
 }
@@ -70,16 +111,31 @@ export async function GET(request: Request) {
 // POST: Persist a new message
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await request.json()
     const { id, type, fileUrl, fileName, content, conversationId } = body
 
     if (!conversationId) {
       return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 })
+    }
+
+    const user = await getCurrentUser()
+    if (!user) {
+      // Demo mode — echo the message back as persisted so the optimistic UI
+      // resolves the "Sending..." state without a DB.
+      const formattedMessage = {
+        id: id || `msg-${Date.now()}`,
+        conversationId,
+        senderId: 'user',
+        senderName: 'You',
+        senderAvatar: undefined,
+        content: content || '',
+        timestamp: new Date().toISOString(),
+        type: type || 'text',
+        fileUrl: fileUrl || undefined,
+        fileName: fileName || undefined,
+        isRead: true,
+      }
+      return NextResponse.json({ message: formattedMessage, source: 'mock' }, { status: 201 })
     }
 
     // Verify user is a participant of this conversation
@@ -91,6 +147,23 @@ export async function POST(request: Request) {
     })
 
     if (!participant) {
+      // Seeded demo thread — echo back optimistically instead of 403.
+      if (getMockThread(conversationId)) {
+        const formattedMessage = {
+          id: id || `msg-${Date.now()}`,
+          conversationId,
+          senderId: 'user',
+          senderName: 'You',
+          senderAvatar: undefined,
+          content: content || '',
+          timestamp: new Date().toISOString(),
+          type: type || 'text',
+          fileUrl: fileUrl || undefined,
+          fileName: fileName || undefined,
+          isRead: true,
+        }
+        return NextResponse.json({ message: formattedMessage, source: 'mock' }, { status: 201 })
+      }
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -167,11 +240,6 @@ export async function POST(request: Request) {
 // PUT: Mark all messages in a conversation as read
 export async function PUT(request: Request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await request.json()
     const { conversationId } = body
 
@@ -179,20 +247,30 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 })
     }
 
-    // Update ConversationParticipant for the current user
-    const updatedParticipant = await prisma.conversationParticipant.update({
-      where: {
-        conversationId_userId: {
-          conversationId,
-          userId: user.id
-        }
-      },
-      data: {
-        lastReadAt: new Date()
-      }
-    })
+    const user = await getCurrentUser()
+    if (!user) {
+      // Demo mode — no DB to update; acknowledge so the client clears unread.
+      return NextResponse.json({ success: true, lastReadAt: new Date().toISOString(), source: 'mock' })
+    }
 
-    return NextResponse.json({ success: true, lastReadAt: updatedParticipant.lastReadAt })
+    // Update ConversationParticipant for the current user
+    try {
+      const updatedParticipant = await prisma.conversationParticipant.update({
+        where: {
+          conversationId_userId: {
+            conversationId,
+            userId: user.id
+          }
+        },
+        data: {
+          lastReadAt: new Date()
+        }
+      })
+      return NextResponse.json({ success: true, lastReadAt: updatedParticipant.lastReadAt })
+    } catch {
+      // Seeded demo thread has no participant row — acknowledge anyway.
+      return NextResponse.json({ success: true, lastReadAt: new Date().toISOString(), source: 'mock' })
+    }
   } catch (error) {
     console.error('[Messages PUT] Error:', error)
     return NextResponse.json({ error: 'Failed to mark messages as read' }, { status: 500 })

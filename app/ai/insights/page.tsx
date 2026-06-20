@@ -1,19 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Brain, TrendingUp, TrendingDown, Users, Clock, Target,
-  Lightbulb, AlertTriangle, ChevronRight, BarChart3
+  Lightbulb, AlertTriangle, ChevronRight, BarChart3, Sparkles,
 } from 'lucide-react'
+import {
+  MOCK_INSIGHT,
+  MOCK_MISSION,
+  MOCK_MISSIONS,
+  MOCK_MISSION_RECOMMENDATIONS,
+  ACME_COMPANY,
+} from '@/lib/peak/mock'
+
+type InsightType = 'productivity' | 'collaboration' | 'opportunity' | 'warning'
+type Impact = 'high' | 'medium' | 'low'
 
 interface Insight {
   id: string
-  type: 'productivity' | 'collaboration' | 'opportunity' | 'warning'
+  type: InsightType
   title: string
   description: string
-  impact: 'high' | 'medium' | 'low'
+  impact: Impact
   actionable: boolean
+  /** Where "Take Action" should send the user. */
+  actionHref: string
+  /** If set, send this as a Lisa prompt instead of navigating to a page. */
+  lisaPrompt?: string
   metric?: {
     value: string
     change: number
@@ -21,156 +36,174 @@ interface Insight {
   }
 }
 
-const MOCK_INSIGHTS: Insight[] = [
-  {
-    id: '1',
-    type: 'productivity',
-    title: 'Peak productivity hours identified',
-    description: 'Your team is most productive between 9-11 AM. Consider scheduling important meetings outside this window.',
-    impact: 'high',
-    actionable: true,
-    metric: { value: '47%', change: 12, trend: 'up' }
-  },
-  {
-    id: '2',
-    type: 'collaboration',
-    title: 'Cross-team communication gap detected',
-    description: 'Engineering and Marketing teams have 40% less interaction this month. Consider a joint sync meeting.',
-    impact: 'medium',
-    actionable: true,
-    metric: { value: '-40%', change: -40, trend: 'down' }
-  },
-  {
-    id: '3',
-    type: 'opportunity',
-    title: 'Meeting time can be optimized',
-    description: '23% of your meetings run over scheduled time. AI can help create better agendas.',
-    impact: 'high',
-    actionable: true
-  },
-  {
-    id: '4',
+/** Map mission risk levels to insight impact. */
+const RISK_IMPACT: Record<string, Impact> = { HIGH: 'high', MED: 'medium', LOW: 'low' }
+/** Map mission-recommendation tone to an insight type. */
+const TONE_TYPE: Record<string, InsightType> = {
+  red: 'warning',
+  amber: 'opportunity',
+  green: 'productivity',
+  primary: 'collaboration',
+}
+
+/**
+ * Insights are derived deterministically from the canonical Acme Corp world:
+ *  - Lisa's Insight of the Day (MOCK_INSIGHT)
+ *  - the Launch Product X mission risks (MOCK_MISSION.risks)
+ *  - Lisa's mission recommendations (MOCK_MISSION_RECOMMENDATIONS)
+ *  - the at-risk mission (Q2 Growth Engine) progress
+ * No Date.now()/random — SSR-safe.
+ */
+function buildInsights(): Insight[] {
+  const out: Insight[] = []
+
+  // 1. Insight of the Day — Brian Miller / pricing.
+  out.push({
+    id: MOCK_INSIGHT.id,
     type: 'warning',
-    title: 'Deadline risk detected',
-    description: 'Sprint goal completion rate is at 65%. 3 tasks may not be completed by Friday.',
+    title: MOCK_INSIGHT.title,
+    description: MOCK_INSIGHT.body,
     impact: 'high',
     actionable: true,
-    metric: { value: '65%', change: -15, trend: 'down' }
-  },
-  {
-    id: '5',
-    type: 'productivity',
-    title: 'Response time improved',
-    description: 'Average message response time decreased by 18% this week.',
-    impact: 'medium',
-    actionable: false,
-    metric: { value: '4.2 min', change: -18, trend: 'down' }
-  },
-]
+    actionHref: MOCK_INSIGHT.cta?.href || '/people/contact-brian-miller',
+  })
+
+  // 2. Mission risks → warning/opportunity insights.
+  ;(MOCK_MISSION.risks || []).forEach((risk) => {
+    out.push({
+      id: `insight-${risk.id}`,
+      type: risk.level === 'HIGH' ? 'warning' : 'opportunity',
+      title: `${risk.title} — ${MOCK_MISSION.name}`,
+      description: `${risk.note} (Impact: ${risk.impact}; probability: ${risk.probability}.)`,
+      impact: RISK_IMPACT[risk.level] ?? 'medium',
+      actionable: true,
+      actionHref: `/missions/${MOCK_MISSION.id}`,
+      lisaPrompt: `What's at risk on ${MOCK_MISSION.name} and how do I unblock "${risk.title}"?`,
+    })
+  })
+
+  // 3. Q2 Growth Engine momentum (campaign 18% above target = opportunity).
+  const q2 = MOCK_MISSIONS.find((m) => m.id === 'mission-q2-growth')
+  if (q2) {
+    out.push({
+      id: 'insight-q2-momentum',
+      type: 'opportunity',
+      title: 'Q2 campaign is tracking 18% above target',
+      description:
+        'The Q2 Growth Engine campaign is outperforming on qualified pipeline. Now is a good time to lock the launch-week comms sequence with Lisa Park.',
+      impact: 'high',
+      actionable: true,
+      actionHref: `/missions/${q2.id}`,
+      metric: { value: '+18%', change: 18, trend: 'up' },
+    })
+  }
+
+  // 4. Lisa recommendations → actionable insights routed to Lisa.
+  MOCK_MISSION_RECOMMENDATIONS.forEach((rec) => {
+    out.push({
+      id: `insight-${rec.id}`,
+      type: TONE_TYPE[rec.tone || 'primary'] ?? 'collaboration',
+      title: rec.title,
+      description: rec.body,
+      impact: rec.tone === 'red' ? 'high' : rec.tone === 'amber' ? 'medium' : 'low',
+      actionable: true,
+      actionHref: '/lisa',
+      lisaPrompt: rec.title,
+    })
+  })
+
+  return out
+}
 
 export default function AIInsightsPage() {
-  const [insights] = useState<Insight[]>(MOCK_INSIGHTS)
-  const [filter, setFilter] = useState<'all' | 'productivity' | 'collaboration' | 'opportunity' | 'warning'>('all')
+  const router = useRouter()
+  const insights = useMemo(() => buildInsights(), [])
+  const [filter, setFilter] = useState<'all' | InsightType>('all')
 
-  const filteredInsights = filter === 'all'
-    ? insights
-    : insights.filter(i => i.type === filter)
+  const filteredInsights = filter === 'all' ? insights : insights.filter((i) => i.type === filter)
 
-  const getTypeIcon = (type: Insight['type']) => {
+  const takeAction = (insight: Insight) => {
+    if (insight.lisaPrompt) {
+      // Hand the intent to Lisa via the canonical chat surface.
+      router.push(`/lisa?prompt=${encodeURIComponent(insight.lisaPrompt)}`)
+    } else {
+      router.push(insight.actionHref)
+    }
+  }
+
+  const getTypeIcon = (type: InsightType) => {
     const icons = {
       productivity: TrendingUp,
       collaboration: Users,
       opportunity: Lightbulb,
-      warning: AlertTriangle
+      warning: AlertTriangle,
     }
     return icons[type]
   }
 
-  const getTypeColor = (type: Insight['type']) => {
+  const getTypeColor = (type: InsightType) => {
     const colors = {
-      productivity: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-      collaboration: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-      opportunity: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30',
-      warning: 'text-red-500 bg-red-100 dark:bg-red-900/30'
+      productivity: 'text-peak-green bg-peak-green/15',
+      collaboration: 'text-peak-blue bg-peak-blue/15',
+      opportunity: 'text-amber-300 bg-amber-400/15',
+      warning: 'text-peak-red bg-peak-red/15',
     }
     return colors[type]
   }
 
-  const getImpactColor = (impact: Insight['impact']) => {
+  const getImpactColor = (impact: Impact) => {
     const colors = {
-      high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-      medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-      low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      high: 'bg-peak-red/15 text-peak-red',
+      medium: 'bg-amber-400/15 text-amber-300',
+      low: 'bg-peak-green/15 text-peak-green',
     }
     return colors[impact]
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="peak-os min-h-screen p-6">
+      <div className="mx-auto max-w-5xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center">
-            <Brain className="w-7 h-7 text-white" />
+        <div className="mb-8 flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-peak-primary/15">
+            <Brain className="h-7 w-7 text-peak-primary-300" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Insights
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Intelligent observations and recommendations from Lisa AI
+            <h1 className="text-3xl font-semibold tracking-tight text-peak">Insights</h1>
+            <p className="text-sm text-peak-muted">
+              Lisa&rsquo;s observations across {ACME_COMPANY}&rsquo;s missions, risks, and momentum
             </p>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Brain className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Total Insights</span>
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[
+            { icon: Brain, label: 'Total Insights', value: insights.length, color: 'text-peak-primary-300' },
+            { icon: AlertTriangle, label: 'Warnings', value: insights.filter((i) => i.type === 'warning').length, color: 'text-peak-red' },
+            { icon: Lightbulb, label: 'Opportunities', value: insights.filter((i) => i.type === 'opportunity').length, color: 'text-amber-300' },
+            { icon: Target, label: 'Actionable', value: insights.filter((i) => i.actionable).length, color: 'text-peak-green' },
+          ].map((card) => (
+            <div key={card.label} className="peak-glass p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <card.icon className={`h-4 w-4 ${card.color}`} />
+                <span className="text-sm text-peak-muted">{card.label}</span>
+              </div>
+              <p className="text-2xl font-bold text-peak">{card.value}</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{insights.length}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Warnings</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {insights.filter(i => i.type === 'warning').length}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Lightbulb className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Opportunities</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {insights.filter(i => i.type === 'opportunity').length}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Actionable</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {insights.filter(i => i.actionable).length}
-            </p>
-          </div>
+          ))}
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-          {(['all', 'productivity', 'collaboration', 'opportunity', 'warning'] as const).map(f => (
+        <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+          {(['all', 'productivity', 'collaboration', 'opportunity', 'warning'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition ${
                 filter === f
-                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-peak-primary text-white'
+                  : 'border border-peak-border bg-white/[0.03] text-peak-muted hover:bg-white/[0.06]'
               }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -180,55 +213,44 @@ export default function AIInsightsPage() {
 
         {/* Insights List */}
         <div className="space-y-4">
-          {filteredInsights.map(insight => {
+          {filteredInsights.map((insight) => {
             const Icon = getTypeIcon(insight.type)
             const colorClass = getTypeColor(insight.type)
 
             return (
-              <div
-                key={insight.id}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition"
-              >
+              <div key={insight.id} className="peak-glass peak-glass-hover p-6 transition">
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                    <Icon className="w-6 h-6" />
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
+                    <Icon className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {insight.title}
-                      </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getImpactColor(insight.impact)}`}>
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <h3 className="font-semibold text-peak">{insight.title}</h3>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${getImpactColor(insight.impact)}`}>
                         {insight.impact} impact
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      {insight.description}
-                    </p>
+                    <p className="mb-4 text-sm leading-relaxed text-peak-muted">{insight.description}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         {insight.metric && (
                           <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              {insight.metric.value}
-                            </span>
-                            <span className={`flex items-center text-sm ${
-                              insight.metric.trend === 'up' ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                              {insight.metric.trend === 'up' ? (
-                                <TrendingUp className="w-4 h-4" />
-                              ) : (
-                                <TrendingDown className="w-4 h-4" />
-                              )}
+                            <span className="text-lg font-bold text-peak">{insight.metric.value}</span>
+                            <span className={`flex items-center text-sm ${insight.metric.trend === 'up' ? 'text-peak-green' : 'text-peak-red'}`}>
+                              {insight.metric.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                               {Math.abs(insight.metric.change)}%
                             </span>
                           </div>
                         )}
                       </div>
                       {insight.actionable && (
-                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition">
+                        <button
+                          onClick={() => takeAction(insight)}
+                          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-peak-primary-300 transition hover:bg-peak-primary/10"
+                        >
+                          {insight.lisaPrompt ? <Sparkles className="h-4 w-4" /> : null}
                           Take Action
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       )}
                     </div>
@@ -240,18 +262,18 @@ export default function AIInsightsPage() {
         </div>
 
         {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/ai/reports" className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
-            <BarChart3 className="w-5 h-5 text-purple-500" />
-            <span className="font-medium text-gray-900 dark:text-white">View Reports</span>
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Link href="/ai/reports" className="peak-glass peak-glass-hover flex items-center gap-3 p-4 transition">
+            <BarChart3 className="h-5 w-5 text-peak-primary-300" />
+            <span className="font-medium text-peak">View Reports</span>
           </Link>
-          <Link href="/ai/productivity" className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
-            <Clock className="w-5 h-5 text-purple-500" />
-            <span className="font-medium text-gray-900 dark:text-white">Productivity</span>
+          <Link href="/analytics" className="peak-glass peak-glass-hover flex items-center gap-3 p-4 transition">
+            <Clock className="h-5 w-5 text-peak-primary-300" />
+            <span className="font-medium text-peak">Analytics</span>
           </Link>
-          <Link href="/lisa" className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
-            <Brain className="w-5 h-5 text-purple-500" />
-            <span className="font-medium text-gray-900 dark:text-white">Ask Lisa</span>
+          <Link href="/lisa" className="peak-glass peak-glass-hover flex items-center gap-3 p-4 transition">
+            <Brain className="h-5 w-5 text-peak-primary-300" />
+            <span className="font-medium text-peak">Ask Lisa</span>
           </Link>
         </div>
       </div>

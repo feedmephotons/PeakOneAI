@@ -1,219 +1,280 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  FileText, Search, Bot, Clock, Star, MoreVertical,
-  FileCode, FileSpreadsheet, Presentation, Upload, Sparkles
+  FileText, Search, Bot, Star, MoreVertical,
+  FileCode, FileSpreadsheet, Presentation, Image as ImageIcon, Upload, Sparkles, Loader2,
 } from 'lucide-react'
+import {
+  MOCK_FILES,
+  FIXED_TODAY,
+  ACME_COMPANY,
+} from '@/lib/peak/mock'
+import type { FileItem, FileKind } from '@/lib/peak/types'
 
 interface AnalyzedDocument {
   id: string
   name: string
-  type: 'pdf' | 'doc' | 'spreadsheet' | 'presentation' | 'code'
+  kind: FileKind
   summary: string
   keyPoints: string[]
-  sentiment?: 'positive' | 'neutral' | 'negative'
-  analyzedAt: Date
+  owner: string
+  analyzedAt: string
   starred: boolean
 }
 
-const MOCK_DOCUMENTS: AnalyzedDocument[] = [
-  {
-    id: '1',
-    name: 'Q4 Sales Report.pdf',
-    type: 'pdf',
-    summary: 'Quarterly sales analysis showing 23% YoY growth with strong performance in enterprise segment.',
-    keyPoints: ['Revenue up 23% YoY', 'Enterprise deals increased by 45%', 'Customer churn reduced to 2.1%'],
-    sentiment: 'positive',
-    analyzedAt: new Date(Date.now() - 3600000),
-    starred: true
-  },
-  {
-    id: '2',
-    name: 'Marketing Strategy 2025.docx',
-    type: 'doc',
-    summary: 'Comprehensive marketing plan focusing on content marketing and community building.',
-    keyPoints: ['Focus on video content', 'Expand social presence', 'Launch ambassador program'],
-    sentiment: 'neutral',
-    analyzedAt: new Date(Date.now() - 86400000),
-    starred: true
-  },
-  {
-    id: '3',
-    name: 'Budget Forecast.xlsx',
-    type: 'spreadsheet',
-    summary: 'Annual budget projections with department-level breakdown and variance analysis.',
-    keyPoints: ['Total budget: $2.4M', 'Engineering: 45% allocation', 'Marketing: 25% allocation'],
-    sentiment: 'neutral',
-    analyzedAt: new Date(Date.now() - 172800000),
-    starred: false
-  },
-  {
-    id: '4',
-    name: 'Product Roadmap.pptx',
-    type: 'presentation',
-    summary: '2025 product roadmap with Q1 focus on AI features and Q2 mobile app launch.',
-    keyPoints: ['AI assistant launch Q1', 'Mobile app Q2', 'Enterprise features Q3'],
-    sentiment: 'positive',
-    analyzedAt: new Date(Date.now() - 259200000),
-    starred: false
-  },
-]
+/** Turn a canonical FileItem into the analyzed-document card shape. */
+function toDoc(f: FileItem): AnalyzedDocument {
+  // Derive 3 key points from the AI summary by splitting on sentences/clauses.
+  const summary = f.aiSummary || 'No AI summary available.'
+  const keyPoints =
+    (f.aiTags && f.aiTags.length > 0
+      ? f.aiTags.slice(0, 4).map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+      : summary.split(/[;.]\s+/).filter(Boolean).slice(0, 3))
+  return {
+    id: f.id,
+    name: f.name,
+    kind: f.kind,
+    summary,
+    keyPoints,
+    owner: f.owner.name,
+    analyzedAt: f.updatedAt,
+    starred: !!f.starred,
+  }
+}
 
 export default function AIDocumentsPage() {
-  const [documents, setDocuments] = useState<AnalyzedDocument[]>(MOCK_DOCUMENTS)
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [documents, setDocuments] = useState<AnalyzedDocument[]>(() => MOCK_FILES.map(toDoc))
   const [searchQuery, setSearchQuery] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
-  const filteredDocs = documents.filter(d =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.summary.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDocs = useMemo(
+    () =>
+      documents.filter(
+        (d) =>
+          d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          d.summary.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [documents, searchQuery],
   )
 
-  const getDocIcon = (type: AnalyzedDocument['type']) => {
-    const icons = {
+  const getDocIcon = (kind: FileKind) => {
+    const icons: Record<string, typeof FileText> = {
       pdf: FileText,
-      doc: FileText,
+      document: FileText,
       spreadsheet: FileSpreadsheet,
       presentation: Presentation,
-      code: FileCode
+      image: ImageIcon,
+      code: FileCode,
     }
-    return icons[type]
+    return icons[kind] || FileText
   }
 
-  const getDocColor = (type: AnalyzedDocument['type']) => {
-    const colors = {
-      pdf: 'text-red-500 bg-red-100 dark:bg-red-900/30',
-      doc: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-      spreadsheet: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-      presentation: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
-      code: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30'
+  const getDocColor = (kind: FileKind) => {
+    const colors: Record<string, string> = {
+      pdf: 'text-peak-red bg-peak-red/15',
+      document: 'text-peak-blue bg-peak-blue/15',
+      spreadsheet: 'text-peak-green bg-peak-green/15',
+      presentation: 'text-amber-300 bg-amber-400/15',
+      image: 'text-peak-primary-300 bg-peak-primary/15',
+      code: 'text-peak-primary-300 bg-peak-primary/15',
     }
-    return colors[type]
+    return colors[kind] || 'text-peak-blue bg-peak-blue/15'
   }
 
-  const formatTime = (date: Date) => {
-    const now = new Date()
+  const formatTime = (iso: string) => {
+    const date = new Date(iso)
+    const now = new Date(FIXED_TODAY)
     const diff = now.getTime() - date.getTime()
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
-
     if (hours < 1) return 'Just now'
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
-    return date.toLocaleDateString()
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const kindFromName = (name: string): FileKind => {
+    const ext = name.split('.').pop()?.toLowerCase()
+    if (ext === 'pdf') return 'pdf'
+    if (ext === 'xlsx' || ext === 'csv' || ext === 'xls') return 'spreadsheet'
+    if (ext === 'pptx' || ext === 'ppt' || ext === 'key') return 'presentation'
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
+    return 'document'
+  }
+
+  // Wire the upload input. In the demo we synthesize a Lisa-style analysis and
+  // prepend it. A real backend call would POST to /api/files/upload-with-ai.
+  // EXTERNAL: needs /api/files/upload-with-ai (Gemini file analysis) for true summaries.
+  const handleUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setAnalyzing(true)
+    const file = files[0]
+    // Simulate the analysis returning on the next tick (no real network in demo).
+    setTimeout(() => {
+      const newDoc: AnalyzedDocument = {
+        id: `upload-${file.name}-${file.size}`,
+        name: file.name,
+        kind: kindFromName(file.name),
+        summary: `Lisa analyzed "${file.name}". This document has been added to your ${ACME_COMPANY} workspace and linked to relevant missions. Open it in Files for the full breakdown.`,
+        keyPoints: ['Auto-summary generated', 'Indexed for search', 'Available to your team'],
+        owner: 'Sarah Chen',
+        analyzedAt: FIXED_TODAY,
+        starred: false,
+      }
+      setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)])
+      setAnalyzing(false)
+    }, 600)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const toggleStar = (id: string) => {
-    setDocuments(documents.map(d =>
-      d.id === id ? { ...d, starred: !d.starred } : d
-    ))
+    setDocuments((prev) => prev.map((d) => (d.id === id ? { ...d, starred: !d.starred } : d)))
+  }
+
+  const removeDoc = (id: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== id))
+    setOpenMenuId(null)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="peak-os min-h-screen p-6">
+      <div className="mx-auto max-w-5xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <FileText className="w-7 h-7 text-white" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-peak-primary/15">
+              <FileText className="h-7 w-7 text-peak-primary-300" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                AI Document Analysis
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Lisa AI summaries and insights from your documents
-              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-peak">AI Document Analysis</h1>
+              <p className="text-sm text-peak-muted">Lisa summaries and insights from your {ACME_COMPANY} documents</p>
             </div>
           </div>
-          <label className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition cursor-pointer">
-            <Upload className="w-4 h-4" />
-            Analyze Document
-            <input type="file" className="hidden" />
-          </label>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={analyzing}
+            className="flex items-center gap-2 rounded-xl bg-peak-primary px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_20px_var(--peak-glow)] transition hover:bg-peak-primary-600 disabled:opacity-60"
+          >
+            {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {analyzing ? 'Analyzing…' : 'Analyze Document'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.pptx"
+            onChange={(e) => handleUpload(e.target.files)}
+          />
         </div>
 
         {/* Search */}
         <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-peak-muted" />
           <input
             type="text"
-            placeholder="Search analyzed documents..."
+            placeholder="Search analyzed documents…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+            className="w-full rounded-xl border border-peak-border bg-white/[0.03] py-3 pl-12 pr-4 text-peak placeholder:text-peak-muted focus:border-peak-primary/50 focus:outline-none"
           />
         </div>
 
-        {/* Documents Grid */}
+        {/* Documents */}
         {filteredDocs.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">No documents analyzed yet</p>
-            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
-              Upload a document to get AI-powered insights
-            </p>
+          <div className="peak-glass py-16 text-center">
+            <FileText className="mx-auto mb-4 h-16 w-16 text-peak-dim" />
+            <p className="text-lg font-medium text-peak">No documents found</p>
+            <p className="mt-2 text-sm text-peak-muted">Try a different search, or analyze a new document.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredDocs.map(doc => {
-              const Icon = getDocIcon(doc.type)
-              const colorClass = getDocColor(doc.type)
-
+            {filteredDocs.map((doc) => {
+              const Icon = getDocIcon(doc.kind)
+              const colorClass = getDocColor(doc.kind)
               return (
-                <div
-                  key={doc.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition"
-                >
+                <div key={doc.id} className="peak-glass peak-glass-hover p-6 transition">
                   <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                      <Icon className="w-6 h-6" />
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {doc.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Bot className="w-3 h-3 text-purple-500" />
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Analyzed {formatTime(doc.analyzedAt)}
+                          <h3 className="font-semibold text-peak">{doc.name}</h3>
+                          <div className="mt-1 flex items-center gap-2">
+                            <Bot className="h-3 w-3 text-peak-primary-300" />
+                            <span className="text-xs text-peak-muted">
+                              Analyzed {formatTime(doc.analyzedAt)} · {doc.owner}
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="relative flex items-center gap-1">
                           <button
                             onClick={() => toggleStar(doc.id)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            title={doc.starred ? 'Unstar' : 'Star'}
+                            className="rounded-lg p-2 transition hover:bg-white/[0.06]"
                           >
-                            <Star className={`w-4 h-4 ${doc.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                            <Star className={`h-4 w-4 ${doc.starred ? 'fill-current text-amber-300' : 'text-peak-muted'}`} />
                           </button>
-                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                            <MoreVertical className="w-4 h-4 text-gray-400" />
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === doc.id ? null : doc.id)}
+                            title="More"
+                            className="rounded-lg p-2 transition hover:bg-white/[0.06]"
+                          >
+                            <MoreVertical className="h-4 w-4 text-peak-muted" />
                           </button>
+                          {openMenuId === doc.id && (
+                            <div className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-xl border border-peak-border bg-peak-2 py-1 shadow-xl">
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  router.push('/files')
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-peak transition hover:bg-white/[0.06]"
+                              >
+                                <FileText className="h-4 w-4 text-peak-muted" /> Open in Files
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  router.push(`/lisa?prompt=${encodeURIComponent(`Summarize ${doc.name}`)}`)
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-peak transition hover:bg-white/[0.06]"
+                              >
+                                <Sparkles className="h-4 w-4 text-peak-primary-300" /> Ask Lisa
+                              </button>
+                              <button
+                                onClick={() => removeDoc(doc.id)}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-peak-red transition hover:bg-peak-red/10"
+                              >
+                                <MoreVertical className="h-4 w-4" /> Remove
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* Summary */}
-                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Summary</span>
+                      <div className="mb-4 rounded-lg border border-peak-border bg-white/[0.02] p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-peak-muted" />
+                          <span className="text-sm font-medium text-peak-muted">Summary</span>
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 text-sm">
-                          {doc.summary}
-                        </p>
+                        <p className="text-sm text-peak">{doc.summary}</p>
                       </div>
 
                       {/* Key Points */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Key Points</h4>
+                        <h4 className="mb-2 text-sm font-medium text-peak-muted">Key Points</h4>
                         <ul className="space-y-1">
                           {doc.keyPoints.map((point, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                              <span className="w-1.5 h-1.5 bg-purple-500 rounded-full flex-shrink-0"></span>
+                            <li key={idx} className="flex items-center gap-2 text-sm text-peak-muted">
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-peak-primary-300" />
                               {point}
                             </li>
                           ))}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Building2, Users, Briefcase, GraduationCap, Heart } from 'lucide-react'
+import { ACME_COMPANY, MOCK_USER } from '@/lib/peak/mock'
 
 const organizationTypes = [
   { id: 'startup', label: 'Startup', icon: Building2, description: 'Small, fast-growing team' },
@@ -16,11 +17,13 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  // Prefill with the canonical Acme Corp workspace so the demo flow is
+  // populated end-to-end (team size 5 maps to the "2-10" bucket).
   const [formData, setFormData] = useState({
-    orgName: '',
-    orgType: '',
-    teamSize: '',
-    role: '',
+    orgName: ACME_COMPANY,
+    orgType: 'startup',
+    teamSize: '2-10',
+    role: MOCK_USER.role || 'Founder & CEO',
   })
 
 
@@ -29,14 +32,18 @@ export default function OnboardingPage() {
 
     setLoading(true)
 
-    // Store onboarding data in localStorage for later use
+    // Persist into the same key the org-selection screen reads so the chosen
+    // workspace name carries across the flow.
+    // EXTERNAL: needs real workspace-create API + Clerk org provisioning to
+    // persist server-side; for the demo we keep it in localStorage.
     if (typeof window !== 'undefined') {
       localStorage.setItem('onboardingData', JSON.stringify(formData))
+      localStorage.setItem('peak.activeWorkspaceName', formData.orgName)
     }
 
-    // Simulate organization creation
+    // Land on the dashboard once the (mock) workspace is ready.
     setTimeout(() => {
-      router.push('/files')
+      router.push('/')
     }, 500)
   }
 
@@ -47,7 +54,7 @@ export default function OnboardingPage() {
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome to SaasX</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome to Peak One</h1>
           </div>
           <div className="flex justify-center gap-2">
             {[1, 2, 3].map(num => (
@@ -84,7 +91,7 @@ export default function OnboardingPage() {
                   type="text"
                   value={formData.orgName}
                   onChange={(e) => setFormData({ ...formData, orgName: e.target.value })}
-                  placeholder="Acme Inc."
+                  placeholder="Acme Corp"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>

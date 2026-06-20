@@ -1,431 +1,176 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  FileText, MessageSquare, CheckCircle, Calendar, Upload, User,
-  Activity, Clock, Users, Download, RefreshCw,
-  Phone, Share2, ArrowUp, ArrowDown, Bot
+  FileText, MessageSquare, CheckCircle, Calendar, Upload,
+  Activity, Users, Download, RefreshCw,
+  Mail, AlertTriangle, StickyNote, ArrowUp, ArrowDown, ArrowUpRight,
 } from 'lucide-react'
+import {
+  getMockActivity,
+  getActivityHref,
+  FIXED_TODAY,
+  FIXED_TODAY_DATE,
+} from '@/lib/peak/mock'
+import type { ActivityItem } from '@/lib/peak/types'
 
-interface ActivityItem {
-  id: string
-  type: 'file' | 'message' | 'task' | 'meeting' | 'call' | 'ai' | 'share' | 'user'
-  action: string
-  target: string
-  user: {
-    name: string
-    avatar?: string
-    initials: string
-  }
-  timestamp: Date
-  metadata?: {
-    fileSize?: string
-    duration?: string
-    participants?: number
-    status?: 'completed' | 'in_progress' | 'cancelled'
-    preview?: string
-    aiSummary?: string
-    tags?: string[]
-  }
-}
+// FIXED_TODAY is an ISO string; derive a Date once for all time math.
+const NOW = new Date(FIXED_TODAY)
 
 interface Stats {
   totalActivities: number
   activeUsers: number
-  tasksCompleted: number
-  filesUploaded: number
+  tasksTouched: number
+  filesShared: number
   messagesSent: number
   trend: 'up' | 'down' | 'stable'
   percentChange: number
 }
 
+// Filters keyed on the canonical ActivityItem.entityType.
 const ACTIVITY_TYPES = [
   { id: 'all', label: 'All Activity', icon: Activity },
   { id: 'file', label: 'Files', icon: FileText },
   { id: 'message', label: 'Messages', icon: MessageSquare },
   { id: 'task', label: 'Tasks', icon: CheckCircle },
-  { id: 'meeting', label: 'Meetings', icon: Calendar },
-  { id: 'call', label: 'Calls', icon: Phone },
-  { id: 'ai', label: 'AI Interactions', icon: Bot }
+  { id: 'email', label: 'Email', icon: Mail },
+  { id: 'note', label: 'Notes', icon: StickyNote },
+  { id: 'mission', label: 'Missions', icon: Calendar },
 ]
 
 export default function ActivityPage() {
+  const router = useRouter()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [filteredActivities, setFilteredActivities] = useState<ActivityItem[]>([])
   const [filter, setFilter] = useState<string>('all')
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('today')
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('all')
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<Stats>({
     totalActivities: 0,
     activeUsers: 0,
-    tasksCompleted: 0,
-    filesUploaded: 0,
+    tasksTouched: 0,
+    filesShared: 0,
     messagesSent: 0,
     trend: 'up',
-    percentChange: 0
+    percentChange: 0,
   })
   const [refreshing, setRefreshing] = useState(false)
 
-  // Load activities from localStorage or create mock data
-  useEffect(() => {
-    const loadActivities = () => {
-      const savedActivities = localStorage.getItem('activities')
-      if (savedActivities) {
-        const parsed = JSON.parse(savedActivities)
-        const activities = parsed.map((a: ActivityItem) => ({
-          ...a,
-          timestamp: new Date(a.timestamp)
-        }))
-        setActivities(activities)
-        updateStats(activities)
-      } else {
-        // Create mock activities
-        const mockActivities: ActivityItem[] = [
-          {
-            id: '1',
-            type: 'file',
-            action: 'uploaded',
-            target: 'Q4 Sales Report.pdf',
-            user: { name: 'You', initials: 'YO' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 5),
-            metadata: {
-              fileSize: '2.3 MB',
-              aiSummary: 'Quarterly report showing 23% growth',
-              tags: ['sales', 'q4', 'report']
-            }
-          },
-          {
-            id: '2',
-            type: 'message',
-            action: 'sent message in',
-            target: '#general',
-            user: { name: 'Sarah Johnson', initials: 'SJ' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 15),
-            metadata: {
-              preview: 'Great work on the presentation!'
-            }
-          },
-          {
-            id: '3',
-            type: 'task',
-            action: 'completed',
-            target: 'Review marketing campaign',
-            user: { name: 'John Smith', initials: 'JS' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 30),
-            metadata: {
-              status: 'completed'
-            }
-          },
-          {
-            id: '4',
-            type: 'meeting',
-            action: 'scheduled',
-            target: 'Sprint Planning',
-            user: { name: 'Emily Chen', initials: 'EC' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 45),
-            metadata: {
-              participants: 8,
-              duration: '1 hour'
-            }
-          },
-          {
-            id: '5',
-            type: 'ai',
-            action: 'asked Lisa AI about',
-            target: 'Budget analysis',
-            user: { name: 'You', initials: 'YO' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 60),
-            metadata: {
-              preview: 'Analyze Q4 budget allocations',
-              aiSummary: 'Provided detailed breakdown of departmental spending'
-            }
-          },
-          {
-            id: '6',
-            type: 'call',
-            action: 'joined video call',
-            target: 'Team Standup',
-            user: { name: 'Mike Wilson', initials: 'MW' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 90),
-            metadata: {
-              duration: '15 minutes',
-              participants: 5
-            }
-          },
-          {
-            id: '7',
-            type: 'share',
-            action: 'shared',
-            target: 'Project Roadmap.xlsx',
-            user: { name: 'Lisa Park', initials: 'LP' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 120),
-            metadata: {
-              participants: 3
-            }
-          },
-          {
-            id: '8',
-            type: 'file',
-            action: 'edited',
-            target: 'Marketing Strategy.pptx',
-            user: { name: 'You', initials: 'YO' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 180),
-            metadata: {
-              fileSize: '5.1 MB'
-            }
-          },
-          {
-            id: '9',
-            type: 'task',
-            action: 'created',
-            target: 'Design new landing page',
-            user: { name: 'Sarah Johnson', initials: 'SJ' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 240),
-            metadata: {
-              status: 'in_progress'
-            }
-          },
-          {
-            id: '10',
-            type: 'message',
-            action: 'mentioned you in',
-            target: '#development',
-            user: { name: 'John Smith', initials: 'JS' },
-            timestamp: new Date(Date.now() - 1000 * 60 * 300),
-            metadata: {
-              preview: '@you Can you review the PR?'
-            }
-          }
-        ]
+  // Deterministic stats over the supplied feed. No Date.now(), no randomness:
+  // anchored to the fixed world clock so every load is identical/SSR-safe.
+  const computeStats = useCallback((items: ActivityItem[]): Stats => {
+    const startOfDay = new Date(FIXED_TODAY_DATE + 'T00:00:00.000Z').getTime()
+    const yesterdayStart = startOfDay - 24 * 60 * 60 * 1000
 
-        // Add more activities for different time ranges
-        for (let i = 11; i <= 30; i++) {
-          const types: ActivityItem['type'][] = ['file', 'message', 'task', 'meeting', 'call', 'ai', 'share', 'user']
-          const type = types[Math.floor(Math.random() * types.length)]
-          const hours = Math.floor(Math.random() * 72) + 1
+    const ts = (a: ActivityItem) => new Date(a.timestamp).getTime()
+    const todays = items.filter((a) => ts(a) >= startOfDay)
+    const yesterdays = items.filter((a) => ts(a) >= yesterdayStart && ts(a) < startOfDay)
 
-          mockActivities.push({
-            id: i.toString(),
-            type,
-            action: getActionForType(type),
-            target: getTargetForType(type),
-            user: getRandomUser(),
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * hours),
-            metadata: getMetadataForType(type)
-          })
-        }
+    const activeUsers = new Set(items.map((a) => a.actor).filter(Boolean)).size
+    const tasksTouched = items.filter((a) => a.entityType === 'task').length
+    const filesShared = items.filter((a) => a.entityType === 'file').length
+    const messagesSent = items.filter((a) => a.entityType === 'message' || a.entityType === 'email').length
 
-        setActivities(mockActivities)
-        updateStats(mockActivities)
-        localStorage.setItem('activities', JSON.stringify(mockActivities))
-      }
-      setLoading(false)
+    const change = todays.length - yesterdays.length
+    const percentChange = yesterdays.length > 0
+      ? Math.round((change / yesterdays.length) * 100)
+      : todays.length > 0
+        ? 100
+        : 0
+
+    return {
+      totalActivities: items.length,
+      activeUsers,
+      tasksTouched,
+      filesShared,
+      messagesSent,
+      trend: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
+      percentChange: Math.abs(percentChange),
     }
-
-    loadActivities()
-
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      const types: ActivityItem['type'][] = ['file', 'message', 'task', 'meeting', 'call', 'ai']
-      const type = types[Math.floor(Math.random() * types.length)]
-
-      const newActivity: ActivityItem = {
-        id: Date.now().toString(),
-        type,
-        action: getActionForType(type),
-        target: getTargetForType(type),
-        user: getRandomUser(),
-        timestamp: new Date(),
-        metadata: getMetadataForType(type)
-      }
-
-      setActivities(prev => {
-        const updated = [newActivity, ...prev].slice(0, 100) // Keep only last 100 activities
-        localStorage.setItem('activities', JSON.stringify(updated))
-        updateStats(updated)
-        return updated
-      })
-    }, 30000) // Add new activity every 30 seconds
-
-    return () => clearInterval(interval)
   }, [])
 
-  // Filter activities based on type and time range
+  // Load the deterministic canonical feed (newest first). No localStorage
+  // persistence and no setInterval injecting random events.
+  const loadActivities = useCallback(() => {
+    const feed = getMockActivity()
+    setActivities(feed)
+    setStats(computeStats(feed))
+    setLoading(false)
+  }, [computeStats])
+
+  useEffect(() => {
+    loadActivities()
+  }, [loadActivities])
+
+  // Filter activities by entityType and time range.
   useEffect(() => {
     let filtered = [...activities]
 
-    // Filter by type
     if (filter !== 'all') {
-      filtered = filtered.filter(a => a.type === filter)
+      filtered = filtered.filter((a) => a.entityType === filter)
     }
 
-    // Filter by time range
-    const now = new Date()
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfDay = new Date(FIXED_TODAY_DATE + 'T00:00:00.000Z').getTime()
+    const startOfWeek = NOW.getTime() - 7 * 24 * 60 * 60 * 1000
+    const startOfMonth = new Date(
+      Date.UTC(NOW.getUTCFullYear(), NOW.getUTCMonth(), 1)
+    ).getTime()
+    const ts = (a: ActivityItem) => new Date(a.timestamp).getTime()
 
     switch (timeRange) {
       case 'today':
-        filtered = filtered.filter(a => a.timestamp >= startOfDay)
+        filtered = filtered.filter((a) => ts(a) >= startOfDay)
         break
       case 'week':
-        filtered = filtered.filter(a => a.timestamp >= startOfWeek)
+        filtered = filtered.filter((a) => ts(a) >= startOfWeek)
         break
       case 'month':
-        filtered = filtered.filter(a => a.timestamp >= startOfMonth)
+        filtered = filtered.filter((a) => ts(a) >= startOfMonth)
         break
     }
 
     setFilteredActivities(filtered)
   }, [activities, filter, timeRange])
 
-  const updateStats = (activities: ActivityItem[]) => {
-    const now = new Date()
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const todaysActivities = activities.filter(a => a.timestamp >= startOfDay)
-
-    const uniqueUsers = new Set(todaysActivities.map(a => a.user.name)).size
-    const tasksCompleted = todaysActivities.filter(a => a.type === 'task' && a.metadata?.status === 'completed').length
-    const filesUploaded = todaysActivities.filter(a => a.type === 'file' && a.action === 'uploaded').length
-    const messagesSent = todaysActivities.filter(a => a.type === 'message').length
-
-    // Calculate trend (compare with yesterday)
-    const yesterday = new Date(startOfDay.getTime() - 24 * 60 * 60 * 1000)
-    const yesterdaysActivities = activities.filter(a =>
-      a.timestamp >= yesterday && a.timestamp < startOfDay
-    )
-
-    const change = todaysActivities.length - yesterdaysActivities.length
-    const percentChange = yesterdaysActivities.length > 0
-      ? Math.round((change / yesterdaysActivities.length) * 100)
-      : 100
-
-    setStats({
-      totalActivities: todaysActivities.length,
-      activeUsers: uniqueUsers,
-      tasksCompleted,
-      filesUploaded,
-      messagesSent,
-      trend: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
-      percentChange: Math.abs(percentChange)
-    })
-  }
-
+  // Refresh actually re-reads the feed and recomputes stats.
   const handleRefresh = () => {
     setRefreshing(true)
-    setTimeout(() => {
-      setRefreshing(false)
-    }, 1000)
+    loadActivities()
+    // brief spin for feedback (state only; no fake data mutation)
+    setTimeout(() => setRefreshing(false), 600)
   }
 
-  const getActionForType = (type: ActivityItem['type']) => {
-    const actions: Record<ActivityItem['type'], string[]> = {
-      file: ['uploaded', 'edited', 'deleted', 'moved', 'shared'],
-      message: ['sent message in', 'replied to', 'mentioned you in'],
-      task: ['created', 'completed', 'assigned', 'updated'],
-      meeting: ['scheduled', 'joined', 'cancelled', 'rescheduled'],
-      call: ['started call', 'joined video call', 'ended call'],
-      ai: ['asked Lisa AI about', 'received AI summary for'],
-      share: ['shared', 'received access to'],
-      user: ['joined the team', 'updated profile', 'changed settings']
-    }
-    const typeActions = actions[type]
-    return typeActions[Math.floor(Math.random() * typeActions.length)]
-  }
-
-  const getTargetForType = (type: ActivityItem['type']) => {
-    const targets: Record<ActivityItem['type'], string[]> = {
-      file: ['Report.pdf', 'Presentation.pptx', 'Budget.xlsx', 'Design.fig', 'Notes.doc'],
-      message: ['#general', '#development', '#marketing', 'Team Chat', 'Project Discussion'],
-      task: ['Review code', 'Update documentation', 'Fix bug', 'Create mockup', 'Deploy changes'],
-      meeting: ['Sprint Planning', 'Team Standup', 'Client Call', 'Design Review', '1:1 Meeting'],
-      call: ['Team Sync', 'Client Meeting', 'Support Call', 'Interview', 'Quick Chat'],
-      ai: ['data analysis', 'code review', 'document summary', 'task planning', 'email draft'],
-      share: ['Project Files', 'Meeting Notes', 'Design Assets', 'Code Repository', 'Documentation'],
-      user: ['workspace', 'notification settings', 'display preferences', 'security settings', 'team']
-    }
-    const typeTargets = targets[type]
-    return typeTargets[Math.floor(Math.random() * typeTargets.length)]
-  }
-
-  const getMetadataForType = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'file':
-        return {
-          fileSize: `${(Math.random() * 10).toFixed(1)} MB`,
-          tags: ['document', 'important']
-        }
-      case 'message':
-        return {
-          preview: 'This is a message preview...'
-        }
-      case 'task':
-        return {
-          status: ['completed', 'in_progress'][Math.floor(Math.random() * 2)] as 'completed' | 'in_progress'
-        }
-      case 'meeting':
-        return {
-          participants: Math.floor(Math.random() * 10) + 2,
-          duration: '1 hour'
-        }
-      case 'call':
-        return {
-          duration: `${Math.floor(Math.random() * 60)} minutes`,
-          participants: Math.floor(Math.random() * 5) + 2
-        }
-      case 'ai':
-        return {
-          aiSummary: 'AI provided helpful insights and recommendations'
-        }
-      default:
-        return {}
-    }
-  }
-
-  const getRandomUser = () => {
-    const users = [
-      { name: 'You', initials: 'YO' },
-      { name: 'Sarah Johnson', initials: 'SJ' },
-      { name: 'John Smith', initials: 'JS' },
-      { name: 'Emily Chen', initials: 'EC' },
-      { name: 'Mike Wilson', initials: 'MW' },
-      { name: 'Lisa Park', initials: 'LP' }
-    ]
-    return users[Math.floor(Math.random() * users.length)]
-  }
-
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    const icons = {
+  const getActivityIcon = (entityType?: string) => {
+    const icons: Record<string, typeof FileText> = {
       file: FileText,
       message: MessageSquare,
       task: CheckCircle,
-      meeting: Calendar,
-      call: Phone,
-      ai: Bot,
-      share: Share2,
-      user: User
+      email: Mail,
+      note: StickyNote,
+      mission: Calendar,
+      risk: AlertTriangle,
     }
-    return icons[type] || Activity
+    return (entityType && icons[entityType]) || Activity
   }
 
-  const getActivityColor = (type: ActivityItem['type']) => {
-    const colors = {
+  const getActivityColor = (entityType?: string) => {
+    const colors: Record<string, string> = {
       file: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
       message: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
       task: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-      meeting: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
-      call: 'text-red-500 bg-red-100 dark:bg-red-900/30',
-      ai: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
-      share: 'text-cyan-500 bg-cyan-100 dark:bg-cyan-900/30',
-      user: 'text-gray-500 bg-gray-100 dark:bg-gray-700'
+      email: 'text-cyan-500 bg-cyan-100 dark:bg-cyan-900/30',
+      note: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
+      mission: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+      risk: 'text-red-500 bg-red-100 dark:bg-red-900/30',
     }
-    return colors[type] || 'text-gray-500 bg-gray-100'
+    return (entityType && colors[entityType]) || 'text-gray-500 bg-gray-100 dark:bg-gray-700'
   }
 
-  const formatTime = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  // SSR-safe relative time anchored to FIXED_TODAY.
+  const formatTime = (iso: string) => {
+    const date = new Date(iso)
+    const diff = NOW.getTime() - date.getTime()
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
@@ -439,8 +184,8 @@ export default function ActivityPage() {
 
   const exportActivities = () => {
     const dataStr = JSON.stringify(filteredActivities, null, 2)
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-    const exportFileDefaultName = `activities_${new Date().toISOString()}.json`
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
+    const exportFileDefaultName = `acme-activity-${FIXED_TODAY_DATE}.json`
 
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
@@ -459,12 +204,13 @@ export default function ActivityPage() {
                 Activity Dashboard
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Real-time activity feed and analytics across your workspace
+                Activity feed and analytics across the Acme Corp workspace
               </p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
+                title="Refresh feed"
                 className={`p-2 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
                   refreshing ? 'animate-spin' : ''
                 }`}
@@ -473,6 +219,7 @@ export default function ActivityPage() {
               </button>
               <button
                 onClick={exportActivities}
+                title="Export activity (JSON)"
                 className="p-2 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
                 <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -506,7 +253,7 @@ export default function ActivityPage() {
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeUsers}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Active People</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -515,8 +262,8 @@ export default function ActivityPage() {
                 <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.tasksCompleted}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Tasks Done</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.tasksTouched}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Task Updates</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -525,8 +272,8 @@ export default function ActivityPage() {
                 <Upload className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.filesUploaded}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Files Uploaded</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.filesShared}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Files Shared</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -536,7 +283,7 @@ export default function ActivityPage() {
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.messagesSent}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Messages Sent</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Messages & Email</p>
           </div>
         </div>
 
@@ -551,7 +298,7 @@ export default function ActivityPage() {
               <div className="mb-6">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">Time Range</label>
                 <div className="space-y-2">
-                  {(['today', 'week', 'month', 'all'] as const).map(range => (
+                  {(['today', 'week', 'month', 'all'] as const).map((range) => (
                     <button
                       key={range}
                       onClick={() => setTimeRange(range)}
@@ -571,7 +318,7 @@ export default function ActivityPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">Activity Type</label>
                 <div className="space-y-2">
-                  {ACTIVITY_TYPES.map(type => {
+                  {ACTIVITY_TYPES.map((type) => {
                     const Icon = type.icon
                     return (
                       <button
@@ -622,13 +369,18 @@ export default function ActivityPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {filteredActivities.map(activity => {
-                      const Icon = getActivityIcon(activity.type)
-                      const colorClass = getActivityColor(activity.type)
+                  <div className="space-y-2">
+                    {filteredActivities.map((activity) => {
+                      const Icon = getActivityIcon(activity.entityType)
+                      const colorClass = getActivityColor(activity.entityType)
+                      const href = getActivityHref(activity)
 
                       return (
-                        <div key={activity.id} className="flex gap-4 group">
+                        <button
+                          key={activity.id}
+                          onClick={() => router.push(href)}
+                          className="w-full text-left flex gap-4 group p-3 -mx-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
+                        >
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
                             <Icon className="w-5 h-5" />
                           </div>
@@ -636,66 +388,32 @@ export default function ActivityPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
                                 <p className="text-sm text-gray-900 dark:text-white">
-                                  <span className="font-medium">{activity.user.name}</span>
-                                  {' '}
-                                  <span className="text-gray-600 dark:text-gray-400">{activity.action}</span>
-                                  {' '}
-                                  <span className="font-medium">{activity.target}</span>
+                                  {activity.actor && (
+                                    <>
+                                      <span className="font-medium">{activity.actor}</span>{' '}
+                                    </>
+                                  )}
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {activity.actor && activity.description.startsWith(activity.actor)
+                                      ? activity.description.slice(activity.actor.length).trim()
+                                      : activity.description}
+                                  </span>
                                 </p>
-                                {activity.metadata?.preview && (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    &quot;{activity.metadata.preview}&quot;
-                                  </p>
-                                )}
-                                {activity.metadata?.aiSummary && (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 italic">
-                                    AI: {activity.metadata.aiSummary}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-3 mt-2">
+                                <div className="flex items-center gap-3 mt-1">
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {formatTime(activity.timestamp)}
                                   </span>
-                                  {activity.metadata?.participants && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                      <Users className="w-3 h-3" />
-                                      {activity.metadata.participants}
-                                    </span>
-                                  )}
-                                  {activity.metadata?.duration && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      {activity.metadata.duration}
-                                    </span>
-                                  )}
-                                  {activity.metadata?.fileSize && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {activity.metadata.fileSize}
-                                    </span>
-                                  )}
-                                  {activity.metadata?.status && (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                      activity.metadata.status === 'completed'
-                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                                    }`}>
-                                      {activity.metadata.status}
+                                  {activity.entityType && (
+                                    <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded capitalize">
+                                      {activity.entityType}
                                     </span>
                                   )}
                                 </div>
-                                {activity.metadata?.tags && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {activity.metadata.tags.map(tag => (
-                                      <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
+                              <ArrowUpRight className="w-4 h-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0 mt-1" />
                             </div>
                           </div>
-                        </div>
+                        </button>
                       )
                     })}
                   </div>

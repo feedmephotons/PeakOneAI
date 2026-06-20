@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
-  MessageCircle, Mail, Phone, Clock, Send, ChevronDown,
+  MessageCircle, Mail, Phone, Clock, Send,
   HelpCircle, FileText, Bug, Lightbulb, AlertTriangle
 } from 'lucide-react'
+import { MOCK_USER } from '@/lib/peak/mock'
 
 const TICKET_TYPES = [
   { id: 'question', label: 'General Question', icon: HelpCircle },
@@ -22,23 +24,66 @@ const PRIORITIES = [
   { id: 'urgent', label: 'Urgent', color: 'text-red-500' },
 ]
 
+interface SupportTicket {
+  id: string
+  type: string
+  priority: string
+  subject: string
+  message: string
+  requesterName: string
+  requesterEmail: string
+  createdAt: string
+  status: 'OPEN'
+}
+
 export default function SupportPage() {
+  const router = useRouter()
   const [ticketType, setTicketType] = useState('')
   const [priority, setPriority] = useState('medium')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [ticketId, setTicketId] = useState<string | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate submission
+
+    const id = `TKT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+    const ticket: SupportTicket = {
+      id,
+      type: ticketType || 'question',
+      priority,
+      subject,
+      message,
+      requesterName: MOCK_USER.name,
+      requesterEmail: MOCK_USER.email ?? '',
+      createdAt: new Date().toISOString(),
+      status: 'OPEN',
+    }
+
+    // Persist the ticket so it survives a refresh and can be picked up by an
+    // internal queue. EXTERNAL: needs /api/email/send (Resend) or a real
+    // ticketing backend to actually notify the support team.
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('peak.supportTickets')
+        const list: SupportTicket[] = raw ? JSON.parse(raw) : []
+        list.unshift(ticket)
+        localStorage.setItem('peak.supportTickets', JSON.stringify(list))
+      } catch {
+        /* ignore storage errors */
+      }
+    }
+
+    setTicketId(id)
     setSubmitted(true)
     setTimeout(() => {
       setSubmitted(false)
+      setTicketId(null)
       setTicketType('')
       setSubject('')
       setMessage('')
-    }, 3000)
+    }, 4000)
   }
 
   return (
@@ -56,19 +101,22 @@ export default function SupportPage() {
 
         {/* Contact Options */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <button
+            onClick={() => router.push('/lisa')}
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center transition-all hover:border-purple-400 hover:shadow-md"
+          >
             <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-7 h-7 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Live Chat</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Chat with Lisa</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Chat with our support team in real-time
+              Get instant answers from your AI assistant
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               Available now
             </div>
-          </div>
+          </button>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
             <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -79,10 +127,10 @@ export default function SupportPage() {
               Get help via email
             </p>
             <a
-              href="mailto:support@peakone.ai"
+              href="mailto:support@peakone.app"
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
-              support@peakone.ai
+              support@peakone.app
             </a>
           </div>
 
@@ -95,7 +143,7 @@ export default function SupportPage() {
               Enterprise customers only
             </p>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              1-800-PEAK-ONE
+              1-800-732-5663
             </span>
           </div>
         </div>
@@ -137,7 +185,10 @@ export default function SupportPage() {
                 Ticket Submitted!
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                We&apos;ll get back to you as soon as possible.
+                {ticketId ? (
+                  <>Your ticket <span className="font-mono font-medium text-gray-900 dark:text-white">{ticketId}</span> is open. </>
+                ) : null}
+                We&apos;ll get back to you at {MOCK_USER.email} as soon as possible.
               </p>
             </div>
           ) : (

@@ -1,6 +1,11 @@
 'use client'
 
 import { Brain, Calendar, TrendingUp, Video, Plus, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  MOCK_MISSION_RECOMMENDATIONS,
+  MOCK_CALLS,
+} from '@/lib/peak/mock'
 
 interface AISuggestion {
   id: string
@@ -8,7 +13,6 @@ interface AISuggestion {
   title: string
   description: string
   confidence: number
-  action?: () => void
 }
 
 interface LinkedMeeting {
@@ -18,52 +22,46 @@ interface LinkedMeeting {
   actionItems: number
 }
 
-export default function AISuggestionsPanel() {
-  const suggestions: AISuggestion[] = [
-    {
-      id: '1',
-      type: 'task',
-      title: 'Follow up on Q4 hiring goals',
-      description: 'Mentioned in yesterday\'s strategy call',
-      confidence: 95
-    },
-    {
-      id: '2',
-      type: 'deadline',
-      title: 'Revenue forecast deadline approaching',
-      description: 'Due Jan 20 - mentioned in call with Sarah',
-      confidence: 88
-    },
-    {
-      id: '3',
-      type: 'priority',
-      title: 'Upgrade "API Documentation" to HIGH',
-      description: 'Multiple mentions across recent meetings',
-      confidence: 82
-    },
-    {
-      id: '4',
-      type: 'task',
-      title: 'Schedule product roadmap review',
-      description: 'Action item from Q4 planning call',
-      confidence: 90
-    }
-  ]
+interface AISuggestionsPanelProps {
+  /** Optional: turn a suggestion into a real task on the board. */
+  onAddTask?: (title: string) => void
+}
 
-  const linkedMeetings: LinkedMeeting[] = [
-    {
-      id: '1',
-      title: 'Q4 Planning Strategy Call',
-      date: new Date('2025-01-17T14:00:00'),
-      actionItems: 3
-    },
-    {
-      id: '2',
-      title: 'Weekly Team Sync',
-      date: new Date('2025-01-16T10:00:00'),
-      actionItems: 2
-    }
-  ]
+// Map a recommendation tone to a suggestion type + confidence so the canonical
+// "Ask Lisa" recommendations drive the panel instead of off-world placeholders.
+const TONE_TO_TYPE: Record<string, AISuggestion['type']> = {
+  red: 'priority',
+  amber: 'deadline',
+  green: 'task',
+}
+const TONE_TO_CONFIDENCE: Record<string, number> = {
+  red: 94,
+  amber: 88,
+  green: 91,
+}
+
+export default function AISuggestionsPanel({ onAddTask }: AISuggestionsPanelProps) {
+  const router = useRouter()
+
+  const suggestions: AISuggestion[] = MOCK_MISSION_RECOMMENDATIONS.map((rec) => ({
+    id: rec.id,
+    type: TONE_TO_TYPE[rec.tone || 'green'] || 'task',
+    title: rec.title,
+    description: rec.body,
+    confidence: TONE_TO_CONFIDENCE[rec.tone || 'green'] || 90,
+  }))
+
+  // Recent meetings = the calls that have action items, newest first (deterministic).
+  const linkedMeetings: LinkedMeeting[] = [...MOCK_CALLS]
+    .filter((c) => (c.actionItems?.length ?? 0) > 0)
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+    .slice(0, 3)
+    .map((c) => ({
+      id: c.id,
+      title: c.title,
+      date: new Date(c.startTime),
+      actionItems: c.actionItems?.length ?? 0,
+    }))
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -96,16 +94,31 @@ export default function AISuggestionsPanel() {
   }
 
   const handleAddSuggestion = (suggestion: AISuggestion) => {
-    alert(`Adding: ${suggestion.title}`)
+    if (onAddTask) {
+      onAddTask(suggestion.title)
+    } else {
+      // Fall back to opening the create-task modal pre-filled.
+      window.dispatchEvent(
+        new CustomEvent('createTaskFromSuggestion', { detail: { title: suggestion.title } })
+      )
+    }
   }
 
   const handleViewMeeting = (meetingId: string) => {
-    window.location.href = `/calls/summary/${meetingId}`
+    router.push(`/calls/summary/${meetingId}`)
   }
 
   const handleAddFromMeeting = () => {
-    alert('Opening meeting selector...')
+    // Jump to the most recent meeting summary, where action items can be turned
+    // into tasks.
+    if (linkedMeetings[0]) {
+      router.push(`/calls/summary/${linkedMeetings[0].id}`)
+    } else {
+      router.push('/calls')
+    }
   }
+
+  const totalActionItems = linkedMeetings.reduce((sum, m) => sum + m.actionItems, 0)
 
   return (
     <div className="space-y-6">
@@ -225,7 +238,7 @@ export default function AISuggestionsPanel() {
           <p className="text-xs text-peak-muted">Suggestions</p>
         </div>
         <div className="bg-peak-green/15 ring-1 ring-peak-green/30 rounded-xl p-3 border border-peak-border">
-          <p className="text-2xl font-bold text-peak">{linkedMeetings.reduce((sum, m) => sum + m.actionItems, 0)}</p>
+          <p className="text-2xl font-bold text-peak">{totalActionItems}</p>
           <p className="text-xs text-peak-muted">Action Items</p>
         </div>
       </div>

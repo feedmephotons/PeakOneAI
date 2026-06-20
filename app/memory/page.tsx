@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Brain,
   Users,
@@ -53,6 +54,60 @@ import type { Note, NoteBrain, NoteConnection, NoteEntityType, NoteType } from '
 // Frozen "now" so render-path time math is deterministic between SSR and the
 // first client render (avoids hydration mismatches). Mirrors app/page.tsx.
 const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
+// localStorage keys for client-side persistence (no notes write API in the
+// demo path). `LOCAL_NOTES` holds notes created locally; `NOTE_OVERRIDES`
+// holds field-level edits (title/body/starred) applied to any note by id.
+const LS_LOCAL_NOTES = 'peak.memory.localNotes'
+const LS_NOTE_OVERRIDES = 'peak.memory.noteOverrides'
+
+type NoteOverride = Partial<Pick<Note, 'title' | 'body' | 'starred' | 'updatedAt'>>
+
+function readLocalNotes(): Note[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(LS_LOCAL_NOTES)
+    return raw ? (JSON.parse(raw) as Note[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeLocalNotes(notes: Note[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(LS_LOCAL_NOTES, JSON.stringify(notes))
+  } catch {
+    /* ignore */
+  }
+}
+
+function readOverrides(): Record<string, NoteOverride> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(LS_NOTE_OVERRIDES)
+    return raw ? (JSON.parse(raw) as Record<string, NoteOverride>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeOverride(id: string, patch: NoteOverride) {
+  if (typeof window === 'undefined') return
+  try {
+    const all = readOverrides()
+    all[id] = { ...all[id], ...patch }
+    localStorage.setItem(LS_NOTE_OVERRIDES, JSON.stringify(all))
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyOverrides(notes: Note[]): Note[] {
+  const overrides = readOverrides()
+  if (Object.keys(overrides).length === 0) return notes
+  return notes.map((n) => (overrides[n.id] ? { ...n, ...overrides[n.id] } : n))
+}
 
 const BRAINS: { id: NoteBrain; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'MY', label: 'My Brain', icon: Brain },
@@ -188,10 +243,18 @@ function connectionSubtitle(type: NoteEntityType): string {
 // Page
 // ----------------------------------------------------------------------------
 
-export default function MemoryPage() {
+function MemoryPageInner() {
+  const searchParams = useSearchParams()
+  // Deep-link params from Company Brain: ?category=<tag> sets a tag filter;
+  // ?note=<id> selects a specific note.
+  const categoryParam = searchParams.get('category')
+  const noteParam = searchParams.get('note')
+
   const [brain, setBrain] = useState<NoteBrain>('MY')
   const [notes, setNotes] = useState<Note[]>(MOCK_NOTES)
-  const [selectedId, setSelectedId] = useState<string>('note-q2-marketing')
+  const [selectedId, setSelectedId] = useState<string>(noteParam || 'note-q2-marketing')
+  // Active tag filter from a category deep-link (null = no tag filter).
+  const [tagFilter, setTagFilter] = useState<string | null>(categoryParam)
   const [connections, setConnections] = useState<NoteConnection[]>(
     getMockNoteConnections('note-q2-marketing'),
   )
@@ -205,18 +268,23 @@ export default function MemoryPage() {
   // --- Load all notes (try API, fall back to mock) ------------------------
   // Exposed as a callback so the Refresh control can re-run it on demand.
   const loadNotes = useCallback(async () => {
+    const local = readLocalNotes()
     try {
       const res = await fetch('/api/memory/notes', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (Array.isArray(json?.data) && json.data.length > 0) {
-        setNotes(json.data as Note[])
+        // Merge: locally-created notes first, then server/mock notes, with
+        // field-level overrides applied on top.
+        setNotes(applyOverrides([...local, ...(json.data as Note[])]))
         setSource((json.source as 'db' | 'mock') || 'mock')
+        return
       }
     } catch {
-      // Graceful fallback — mock is already the initial state.
       setSource('mock')
     }
+    // Fallback path: mock + local + overrides.
+    setNotes(applyOverrides([...local, ...MOCK_NOTES]))
   }, [])
 
   useEffect(() => {
@@ -245,22 +313,56 @@ export default function MemoryPage() {
       updatedAt: now,
     }
     setNotes((prev) => [newNote, ...prev])
+    // Persist so the new note survives a refresh.
+    writeLocalNotes([newNote, ...readLocalNotes()])
     setTypeFilter(null)
     setSelectedId(id)
   }, [brain, noteCounter])
 
-  // --- Toggle the starred flag on a note (in local state) -----------------
+  // --- Toggle the starred flag on a note (persisted) ----------------------
   const toggleStar = useCallback((id: string) => {
+    setNotes((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, starred: !n.starred } : n))
+      const updated = next.find((n) => n.id === id)
+      if (updated) {
+        // Persist: locally-created notes update in place; everything else gets
+        // a field-level override.
+        const locals = readLocalNotes()
+        if (locals.some((n) => n.id === id)) {
+          writeLocalNotes(locals.map((n) => (n.id === id ? { ...n, starred: updated.starred } : n)))
+        } else {
+          writeOverride(id, { starred: updated.starred })
+        }
+      }
+      return next
+    })
+  }, [])
+
+  // --- Edit a note's title/body (persisted) -------------------------------
+  const updateNote = useCallback((id: string, patch: { title?: string; body?: string }) => {
+    const now = new Date().toISOString()
     setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, starred: !n.starred } : n)),
+      prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: now } : n)),
     )
+    const locals = readLocalNotes()
+    if (locals.some((n) => n.id === id)) {
+      writeLocalNotes(locals.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: now } : n)))
+    } else {
+      writeOverride(id, { ...patch, updatedAt: now })
+    }
   }, [])
 
   // --- Notes visible for the active brain + search + type filter ----------
   const brainNotes = useMemo(() => {
     const q = query.trim().toLowerCase()
     return notes.filter((n) => {
-      if (n.brain !== brain) return false
+      // A tag filter (from a category deep-link) spans all brains; otherwise
+      // scope to the active brain.
+      if (tagFilter) {
+        if (!n.tags.includes(tagFilter)) return false
+      } else if (n.brain !== brain) {
+        return false
+      }
       if (typeFilter && n.type !== typeFilter) return false
       if (!q) return true
       return (
@@ -269,7 +371,7 @@ export default function MemoryPage() {
         n.tags.some((t) => t.toLowerCase().includes(q))
       )
     })
-  }, [notes, brain, query, typeFilter])
+  }, [notes, brain, query, typeFilter, tagFilter])
 
   const pinnedNotes = useMemo(() => brainNotes.filter((n) => n.pinned), [brainNotes])
   const recentNotes = useMemo(
@@ -280,14 +382,22 @@ export default function MemoryPage() {
     [brainNotes],
   )
 
-  // When the brain changes, snap selection to the first available note.
+  // Honor a ?note=<id> deep-link once that note is present.
+  useEffect(() => {
+    if (noteParam && notes.some((n) => n.id === noteParam)) {
+      setSelectedId(noteParam)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteParam, notes.length])
+
+  // When the brain/tag filter changes, snap selection to the first available note.
   useEffect(() => {
     if (brainNotes.length === 0) return
     if (!brainNotes.some((n) => n.id === selectedId)) {
       setSelectedId(brainNotes[0].id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brain, brainNotes.length])
+  }, [brain, tagFilter, brainNotes.length])
 
   const selectedNote = useMemo(
     () => notes.find((n) => n.id === selectedId) || null,
@@ -481,11 +591,14 @@ export default function MemoryPage() {
             {/* Notes list */}
             <div className="peak-glass flex max-h-[calc(100vh-180px)] flex-col p-0">
               <div className="flex items-center justify-between border-b border-peak-border px-5 py-4">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-peak">
-                  {typeFilter ? NOTE_TYPE_LABEL[typeFilter] || 'Notes' : 'Notes'}
-                  {typeFilter && (
+                <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-peak">
+                  {tagFilter ? `#${tagFilter}` : typeFilter ? NOTE_TYPE_LABEL[typeFilter] || 'Notes' : 'Notes'}
+                  {(typeFilter || tagFilter) && (
                     <button
-                      onClick={() => setTypeFilter(null)}
+                      onClick={() => {
+                        setTypeFilter(null)
+                        setTagFilter(null)
+                      }}
                       className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] font-normal text-peak-muted transition-colors hover:text-peak"
                     >
                       Clear
@@ -552,6 +665,7 @@ export default function MemoryPage() {
                 <button
                   onClick={() => {
                     setTypeFilter(null)
+                    setTagFilter(null)
                     setQuery('')
                   }}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-peak-primary-300 hover:text-peak-primary"
@@ -566,9 +680,11 @@ export default function MemoryPage() {
             <div className="peak-glass min-h-[calc(100vh-180px)] p-0">
               {selectedNote ? (
                 <NoteView
+                  key={selectedNote.id}
                   note={selectedNote}
                   onToggleStar={() => toggleStar(selectedNote.id)}
                   onBack={() => setSelectedId('')}
+                  onUpdate={(patch) => updateNote(selectedNote.id, patch)}
                 />
               ) : (
                 <div className="flex h-full min-h-[400px] items-center justify-center text-sm text-peak-muted">
@@ -605,6 +721,15 @@ export default function MemoryPage() {
         </aside>
       </div>
     </div>
+  )
+}
+
+// useSearchParams requires a Suspense boundary in the App Router.
+export default function MemoryPage() {
+  return (
+    <Suspense fallback={<div className="peak-os min-h-screen" />}>
+      <MemoryPageInner />
+    </Suspense>
   )
 }
 
@@ -694,15 +819,30 @@ function NoteView({
   note,
   onToggleStar,
   onBack,
+  onUpdate,
 }: {
   note: Note
   onToggleStar: () => void
   onBack: () => void
+  onUpdate: (patch: { title?: string; body?: string }) => void
 }) {
   const isQ2 = note.id === 'note-q2-marketing'
-  // Local comment draft. Send is intentionally a no-op stub (no comment
-  // backend yet); it stays disabled until there's text, then clears.
+  // Local comment draft. Send appends to a per-note local comments list
+  // (persisted in component state; a full fix needs a comments model).
   const [comment, setComment] = useState('')
+  const [comments, setComments] = useState<{ id: string; body: string }[]>([])
+  // Editable title — commits on blur / Enter.
+  const [titleDraft, setTitleDraft] = useState(note.title)
+  // Editable body for free-form notes (the Q2 note has a hand-tuned layout).
+  const [bodyDraft, setBodyDraft] = useState(note.body || '')
+
+  const commitTitle = () => {
+    const t = titleDraft.trim() || 'Untitled note'
+    if (t !== note.title) onUpdate({ title: t })
+  }
+  const commitBody = () => {
+    if (bodyDraft !== (note.body || '')) onUpdate({ body: bodyDraft })
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -717,7 +857,19 @@ function NoteView({
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-2xl font-semibold tracking-tight text-peak">{note.title}</h2>
+            <input
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  ;(e.target as HTMLInputElement).blur()
+                }
+              }}
+              aria-label="Note title"
+              className="min-w-0 flex-1 rounded-lg bg-transparent text-2xl font-semibold tracking-tight text-peak focus:bg-white/[0.03] focus:outline-none focus:ring-1 focus:ring-peak-primary/30"
+            />
             <button
               onClick={onToggleStar}
               aria-label={note.starred ? 'Unstar note' : 'Star note'}
@@ -774,16 +926,30 @@ function NoteView({
         {isQ2 ? (
           <Q2Body />
         ) : (
-          <div className="prose-peak max-w-none space-y-4 text-[15px] leading-relaxed text-peak-muted">
-            {(note.body || '').split('\n\n').map((block, i) => (
-              <NoteBlock key={i} block={block} />
-            ))}
-          </div>
+          <textarea
+            value={bodyDraft}
+            onChange={(e) => setBodyDraft(e.target.value)}
+            onBlur={commitBody}
+            placeholder="Start writing… Use ## for headings, - for bullets, **bold** for emphasis."
+            className="min-h-[280px] w-full resize-none rounded-xl bg-transparent text-[15px] leading-relaxed text-peak-muted placeholder:text-peak-dim focus:bg-white/[0.02] focus:outline-none focus:ring-1 focus:ring-peak-primary/20"
+          />
         )}
       </div>
 
       {/* Comment bar */}
       <div className="border-t border-peak-border px-7 py-4">
+        {comments.length > 0 && (
+          <ul className="mb-3 space-y-2">
+            {comments.map((c) => (
+              <li key={c.id} className="flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-peak-primary to-peak-primary-600 text-[10px] font-semibold text-white">
+                  SC
+                </span>
+                <span className="flex-1 rounded-xl bg-white/[0.03] px-3 py-2 text-sm text-peak">{c.body}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-peak-primary to-peak-primary-600 text-xs font-semibold text-white">
             SC
@@ -792,6 +958,13 @@ function NoteView({
             <input
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && comment.trim()) {
+                  e.preventDefault()
+                  setComments((prev) => [...prev, { id: `c-${prev.length + 1}`, body: comment.trim() }])
+                  setComment('')
+                }
+              }}
               placeholder="Add a comment..."
               className="w-full bg-transparent text-sm text-peak placeholder:text-peak-muted focus:outline-none"
             />
@@ -802,9 +975,13 @@ function NoteView({
               <Smile className="h-4 w-4" />
             </div>
           </div>
-          {/* No comment backend yet — Send clears the draft (no-op send). */}
+          {/* Appends to the local comments list (no comment backend yet). */}
           <button
-            onClick={() => setComment('')}
+            onClick={() => {
+              if (!comment.trim()) return
+              setComments((prev) => [...prev, { id: `c-${prev.length + 1}`, body: comment.trim() }])
+              setComment('')
+            }}
             disabled={!comment.trim()}
             aria-label="Send comment"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-peak-primary text-white transition-colors hover:bg-peak-primary-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-peak-primary"

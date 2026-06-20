@@ -1,22 +1,68 @@
 'use client'
 
-import { useState } from 'react'
-import { Shield, Key, Smartphone, Monitor, Clock, AlertTriangle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Key, Smartphone, Monitor, AlertTriangle, Check } from 'lucide-react'
+import { MOCK_USER } from '@/lib/peak/mock'
 
-const SESSIONS = [
-  { id: '1', device: 'Chrome on macOS', location: 'San Francisco, CA', current: true, lastActive: 'Now' },
-  { id: '2', device: 'Safari on iPhone', location: 'San Francisco, CA', current: false, lastActive: '2 hours ago' },
-  { id: '3', device: 'Chrome on Windows', location: 'New York, NY', current: false, lastActive: '3 days ago' },
+// Shared 2FA source of truth with the main /settings page (Account tab).
+const TWO_FACTOR_KEY = 'security2FA'
+
+// Sessions tied to Sarah Chen / San Francisco (Acme HQ). Demo data, deterministic.
+const INITIAL_SESSIONS = [
+  { id: 'sess-1', device: 'Chrome on macOS', location: 'San Francisco, CA', current: true, lastActive: 'Now' },
+  { id: 'sess-2', device: 'Safari on iPhone', location: 'San Francisco, CA', current: false, lastActive: '2 hours ago' },
+  { id: 'sess-3', device: 'Chrome on iPad', location: 'San Francisco, CA', current: false, lastActive: '3 days ago' },
 ]
 
 export default function SecuritySettingsPage() {
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true)
+  const router = useRouter()
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [sessions, setSessions] = useState(INITIAL_SESSIONS)
+  const [toast, setToast] = useState<string | null>(null)
+
+  // Read shared 2FA flag so this page and /settings agree.
+  useEffect(() => {
+    const stored = localStorage.getItem(TWO_FACTOR_KEY)
+    if (stored !== null) setTwoFactorEnabled(stored === 'true')
+  }, [])
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const toggle2FA = () => {
+    // EXTERNAL: needs Clerk MFA enrollment. Demo path persists to the shared localStorage flag.
+    const next = !twoFactorEnabled
+    setTwoFactorEnabled(next)
+    localStorage.setItem(TWO_FACTOR_KEY, String(next))
+    showToast(next ? 'Two-factor authentication enabled.' : 'Two-factor authentication disabled.')
+  }
+
+  const changePassword = () => {
+    // Deep-link to the main settings Account tab where the password form lives.
+    router.push('/settings')
+  }
+
+  const signOutSession = (id: string) => {
+    // EXTERNAL: needs Clerk session revocation. Demo path removes the session row locally.
+    setSessions((prev) => prev.filter((s) => s.id !== id))
+    showToast('Session signed out.')
+  }
+
+  const signOutAllOthers = () => {
+    setSessions((prev) => prev.filter((s) => s.current))
+    showToast('Signed out of all other sessions.')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Security</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">Manage your account security settings</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          Manage security settings for {MOCK_USER.name} ({MOCK_USER.email})
+        </p>
 
         {/* Password */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
@@ -30,7 +76,10 @@ export default function SecuritySettingsPage() {
                 <p className="text-sm text-gray-500">Last changed 30 days ago</p>
               </div>
             </div>
-            <button className="px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition">
+            <button
+              onClick={changePassword}
+              className="px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition"
+            >
               Change Password
             </button>
           </div>
@@ -51,10 +100,11 @@ export default function SecuritySettingsPage() {
               </div>
             </div>
             <button
-              onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
+              onClick={toggle2FA}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                 twoFactorEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}
+              aria-label="Toggle two-factor authentication"
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
                 twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
@@ -67,10 +117,14 @@ export default function SecuritySettingsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="font-semibold text-gray-900 dark:text-white">Active Sessions</h2>
-            <button className="text-sm text-red-600 hover:underline">Sign out all other sessions</button>
+            {sessions.some((s) => !s.current) && (
+              <button onClick={signOutAllOthers} className="text-sm text-red-600 hover:underline">
+                Sign out all other sessions
+              </button>
+            )}
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
-            {SESSIONS.map(session => (
+            {sessions.map(session => (
               <div key={session.id} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <Monitor className="w-5 h-5 text-gray-400" />
@@ -83,14 +137,16 @@ export default function SecuritySettingsPage() {
                   </div>
                 </div>
                 {!session.current && (
-                  <button className="text-sm text-red-600 hover:underline">Sign out</button>
+                  <button onClick={() => signOutSession(session.id)} className="text-sm text-red-600 hover:underline">
+                    Sign out
+                  </button>
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Security Log */}
+        {/* Security Tip */}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800 p-4">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
@@ -103,6 +159,13 @@ export default function SecuritySettingsPage() {
           </div>
         </div>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg shadow-lg">
+          <Check className="w-4 h-4 text-green-400" />
+          <span className="text-sm">{toast}</span>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,405 +1,583 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Users, FolderOpen, MessageSquare, CheckSquare, Clock, Plus,
-  ArrowRight, Activity, Briefcase, FileText, Sparkles, UserPlus
+  ArrowRight, Activity, Briefcase, FileText, UserPlus, X, Target,
 } from 'lucide-react'
+import { PeakShell, GlassPanel, SectionLabel } from '@/components/peak'
+import {
+  MOCK_USER,
+  MOCK_TEAM,
+  MOCK_MISSIONS,
+  MOCK_PEOPLE,
+  ACME_COMPANY,
+  ACME_TEAM_SIZE,
+  getMockActivity,
+  getActivityHref,
+  getMockTasks,
+  getMockFiles,
+  getMockThreads,
+} from '@/lib/peak/mock'
+import type { Mission, UserRef, ActivityItem } from '@/lib/peak/types'
 
-// --- Types ---
+// ---------------------------------------------------------------------------
+// Helpers — deterministic, SSR-safe (no Date.now / random in render)
+// ---------------------------------------------------------------------------
 
-interface Workspace {
+const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+/** Deterministic purple-tinted avatar gradient seeded off the name. */
+function avatarStyle(name: string): React.CSSProperties {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360
+  const a = 250 + ((h % 30) - 15) // keep it in the violet band
+  const b = (a + 40) % 360
+  return { backgroundImage: `linear-gradient(135deg, hsl(${a} 70% 55%), hsl(${b} 65% 42%))` }
+}
+
+function relativeTime(iso?: string | null): string {
+  if (!iso) return ''
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ''
+  const mins = Math.floor((PEAK_NOW - then) / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days}d ago`
+  return `${Math.floor(days / 7)}w ago`
+}
+
+const STATUS_META: Record<string, { label: string; tone: string; bar: string; ring: string }> = {
+  ON_TRACK: { label: 'On track', tone: 'text-peak-green', bar: 'bg-peak-green', ring: 'ring-peak-green/20 bg-peak-green/10' },
+  AT_RISK: { label: 'At risk', tone: 'text-peak-amber', bar: 'bg-peak-amber', ring: 'ring-peak-amber/20 bg-peak-amber/10' },
+  BLOCKED: { label: 'Blocked', tone: 'text-peak-red', bar: 'bg-peak-red', ring: 'ring-peak-red/20 bg-peak-red/10' },
+  COMPLETED: { label: 'Done', tone: 'text-peak-primary-300', bar: 'bg-peak-primary', ring: 'ring-peak-primary/20 bg-peak-primary/10' },
+}
+
+function statusMeta(status: string) {
+  return STATUS_META[status] ?? STATUS_META.ON_TRACK
+}
+
+/**
+ * Team members map to relationship profiles where one exists (contact-*),
+ * otherwise deep-link by their own user id. /people/[id] handles unknown ids
+ * gracefully so this never 404s.
+ */
+function profileHrefFor(member: UserRef): string {
+  const contact = MOCK_PEOPLE.find(
+    (p) => p.name.toLowerCase() === member.name.toLowerCase(),
+  )
+  return `/people/${contact?.id ?? member.id}`
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+interface NewWorkspaceDraft {
   id: string
   name: string
   description: string
-  color: string
-  headerGradient: string
-  memberCount: number
-  members: { initials: string; colorFrom: string; colorTo: string }[]
-  tasks: number
-  files: number
-  threads: number
-  lastActivity: string
+  owner: string
 }
 
-interface TeamMember {
-  id: string
-  name: string
-  initials: string
-  role: string
-  department: string
-  colorFrom: string
-  colorTo: string
-}
+export default function TeamsPage() {
+  const router = useRouter()
 
-interface ActivityItem {
-  id: string
-  icon: React.ReactNode
-  text: string
-  workspace: string
-  time: string
-}
+  // Locally-created workspaces persist for the session (demo path).
+  // EXTERNAL: needs a missions/workspaces API for real persistence.
+  const [drafts, setDrafts] = useState<NewWorkspaceDraft[]>([])
+  const [showCreate, setShowCreate] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newDesc, setNewDesc] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteSent, setInviteSent] = useState<string | null>(null)
 
-// --- Data ---
+  // --- Canonical data ---------------------------------------------------
 
-const WORKSPACES: Workspace[] = [
-  {
-    id: 'ws-1',
-    name: 'Product Launch Q2',
-    description: 'Cross-functional workspace for Q2 product release',
-    color: 'blue',
-    headerGradient: 'from-blue-500 to-blue-600',
-    memberCount: 6,
-    members: [
-      { initials: 'SJ', colorFrom: 'from-blue-500', colorTo: 'to-blue-600' },
-      { initials: 'EC', colorFrom: 'from-pink-500', colorTo: 'to-pink-600' },
-      { initials: 'MW', colorFrom: 'from-cyan-500', colorTo: 'to-cyan-600' },
-      { initials: 'LP', colorFrom: 'from-violet-500', colorTo: 'to-violet-600' },
-    ],
-    tasks: 12,
-    files: 8,
-    threads: 3,
-    lastActivity: '5 min ago',
-  },
-  {
-    id: 'ws-2',
-    name: 'Engineering Sprint',
-    description: 'Current sprint planning and execution',
-    color: 'green',
-    headerGradient: 'from-green-500 to-green-600',
-    memberCount: 8,
-    members: [
-      { initials: 'JS', colorFrom: 'from-green-500', colorTo: 'to-green-600' },
-      { initials: 'MW', colorFrom: 'from-emerald-500', colorTo: 'to-emerald-600' },
-      { initials: 'AR', colorFrom: 'from-teal-500', colorTo: 'to-teal-600' },
-      { initials: 'DK', colorFrom: 'from-lime-500', colorTo: 'to-lime-600' },
-    ],
-    tasks: 24,
-    files: 5,
-    threads: 7,
-    lastActivity: '12 min ago',
-  },
-  {
-    id: 'ws-3',
-    name: 'Client Onboarding',
-    description: 'New client setup and handoff processes',
-    color: 'purple',
-    headerGradient: 'from-purple-500 to-purple-600',
-    memberCount: 4,
-    members: [
-      { initials: 'SJ', colorFrom: 'from-purple-500', colorTo: 'to-purple-600' },
-      { initials: 'CU', colorFrom: 'from-fuchsia-500', colorTo: 'to-fuchsia-600' },
-      { initials: 'LP', colorFrom: 'from-indigo-500', colorTo: 'to-indigo-600' },
-    ],
-    tasks: 8,
-    files: 12,
-    threads: 2,
-    lastActivity: '1 hr ago',
-  },
-  {
-    id: 'ws-4',
-    name: 'Marketing Campaign',
-    description: 'Brand awareness campaign for 2026',
-    color: 'orange',
-    headerGradient: 'from-orange-500 to-orange-600',
-    memberCount: 5,
-    members: [
-      { initials: 'LP', colorFrom: 'from-orange-500', colorTo: 'to-orange-600' },
-      { initials: 'EC', colorFrom: 'from-amber-500', colorTo: 'to-amber-600' },
-      { initials: 'JD', colorFrom: 'from-yellow-500', colorTo: 'to-yellow-600' },
-    ],
-    tasks: 15,
-    files: 20,
-    threads: 4,
-    lastActivity: '2 hr ago',
-  },
-  {
-    id: 'ws-5',
-    name: 'Sales Pipeline',
-    description: 'Deal tracking and prospect management',
-    color: 'red',
-    headerGradient: 'from-red-500 to-red-600',
-    memberCount: 3,
-    members: [
-      { initials: 'AR', colorFrom: 'from-red-500', colorTo: 'to-red-600' },
-      { initials: 'MW', colorFrom: 'from-rose-500', colorTo: 'to-rose-600' },
-    ],
-    tasks: 6,
-    files: 3,
-    threads: 5,
-    lastActivity: '3 hr ago',
-  },
-]
+  const tasks = useMemo(() => getMockTasks(), [])
+  const files = useMemo(() => getMockFiles(), [])
+  const threads = useMemo(() => getMockThreads(), [])
+  const activity = useMemo<ActivityItem[]>(() => getMockActivity(6), [])
 
-const TEAM_MEMBERS: TeamMember[] = [
-  { id: 'm1', name: 'Sarah Johnson', initials: 'SJ', role: 'Admin', department: 'Product', colorFrom: 'from-blue-500', colorTo: 'to-blue-600' },
-  { id: 'm2', name: 'John Smith', initials: 'JS', role: 'Admin', department: 'Engineering', colorFrom: 'from-green-500', colorTo: 'to-green-600' },
-  { id: 'm3', name: 'Emily Chen', initials: 'EC', role: 'Member', department: 'Design', colorFrom: 'from-pink-500', colorTo: 'to-pink-600' },
-  { id: 'm4', name: 'Mike Wilson', initials: 'MW', role: 'Member', department: 'Engineering', colorFrom: 'from-cyan-500', colorTo: 'to-cyan-600' },
-  { id: 'm5', name: 'Lisa Park', initials: 'LP', role: 'Member', department: 'Marketing', colorFrom: 'from-violet-500', colorTo: 'to-violet-600' },
-  { id: 'm6', name: 'Alex Rivera', initials: 'AR', role: 'Member', department: 'Sales', colorFrom: 'from-red-500', colorTo: 'to-red-600' },
-  { id: 'm7', name: 'Jordan Davis', initials: 'JD', role: 'Member', department: 'Operations', colorFrom: 'from-amber-500', colorTo: 'to-amber-600' },
-  { id: 'm8', name: 'Diana Kim', initials: 'DK', role: 'Member', department: 'Engineering', colorFrom: 'from-teal-500', colorTo: 'to-teal-600' },
-  { id: 'm9', name: 'Chris Patel', initials: 'CP', role: 'Guest', department: 'Client', colorFrom: 'from-gray-500', colorTo: 'to-gray-600' },
-  { id: 'm10', name: 'You', initials: 'YO', role: 'Owner', department: 'Leadership', colorFrom: 'from-indigo-500', colorTo: 'to-indigo-600' },
-]
+  // Per-mission counts derived from the canonical fixtures.
+  const missionCounts = useMemo(() => {
+    const map = new Map<string, { tasks: number; files: number; threads: number }>()
+    for (const m of MOCK_MISSIONS) {
+      const t = tasks.filter((task) => task.missionId === m.id).length
+      const f = files.filter((file) => file.missionId === m.id).length
+      // Threads aren't mission-tagged; attribute the launch thread to the launch mission.
+      const th = threads.filter((thread) =>
+        m.id === 'mission-launch-product-x'
+          ? /product.?x|launch/i.test(thread.name ?? '')
+          : false,
+      ).length
+      map.set(m.id, {
+        tasks: t || m.taskCount || 0,
+        files: f,
+        threads: th,
+      })
+    }
+    return map
+  }, [tasks, files, threads])
 
-const ROLE_BADGE_COLORS: Record<string, string> = {
-  Owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  Admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  Member: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  Guest: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-}
+  // --- Stats (computed from arrays, not hardcoded) ----------------------
 
-// --- Component ---
-
-export default function WorkspacesPage() {
-  const [hoveredWorkspace, setHoveredWorkspace] = useState<string | null>(null)
-
-  const ACTIVITY_FEED: ActivityItem[] = [
-    {
-      id: 'a1',
-      icon: <FolderOpen className="w-4 h-4 text-blue-500" />,
-      text: "Sarah shared 'Q2 Roadmap.pdf'",
-      workspace: 'Product Launch Q2',
-      time: '2m ago',
-    },
-    {
-      id: 'a2',
-      icon: <CheckSquare className="w-4 h-4 text-green-500" />,
-      text: "Mike completed 'API integration tests'",
-      workspace: 'Engineering Sprint',
-      time: '15m ago',
-    },
-    {
-      id: 'a3',
-      icon: <UserPlus className="w-4 h-4 text-purple-500" />,
-      text: 'Jordan added 3 new contacts',
-      workspace: 'Client Onboarding',
-      time: '1h ago',
-    },
-    {
-      id: 'a4',
-      icon: <Sparkles className="w-4 h-4 text-orange-500" />,
-      text: 'Lisa AI generated meeting summary',
-      workspace: 'Marketing Campaign',
-      time: '2h ago',
-    },
-    {
-      id: 'a5',
-      icon: <CheckSquare className="w-4 h-4 text-red-500" />,
-      text: "Alex created task 'Update pricing page'",
-      workspace: 'Sales Pipeline',
-      time: '3h ago',
-    },
-  ]
-
+  const openTasks = tasks.filter((t) => t.status !== 'DONE').length
   const stats = [
-    { label: 'Total Workspaces', value: '5', icon: <Briefcase className="w-5 h-5 text-indigo-500" /> },
-    { label: 'Active Members', value: '12', icon: <Users className="w-5 h-5 text-green-500" /> },
-    { label: 'Open Tasks', value: '65', icon: <CheckSquare className="w-5 h-5 text-amber-500" /> },
-    { label: 'Files Shared', value: '48', icon: <FileText className="w-5 h-5 text-blue-500" /> },
+    { label: 'Workspaces', value: String(MOCK_MISSIONS.length + drafts.length), icon: <Briefcase className="w-5 h-5" />, tone: 'primary' as const },
+    { label: 'Team members', value: String(ACME_TEAM_SIZE), icon: <Users className="w-5 h-5" />, tone: 'green' as const },
+    { label: 'Open tasks', value: String(openTasks), icon: <CheckSquare className="w-5 h-5" />, tone: 'amber' as const },
+    { label: 'Files shared', value: String(files.length), icon: <FileText className="w-5 h-5" />, tone: 'blue' as const },
   ]
+
+  // --- Handlers ---------------------------------------------------------
+
+  function handleCreate() {
+    const name = newName.trim()
+    if (!name) return
+    const id = `ws-draft-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    setDrafts((d) => [
+      ...d,
+      { id, name, description: newDesc.trim() || 'New collaborative workspace', owner: MOCK_USER.name },
+    ])
+    setNewName('')
+    setNewDesc('')
+    setShowCreate(false)
+  }
+
+  function handleInvite() {
+    const email = inviteEmail.trim()
+    if (!email) return
+    // EXTERNAL: needs an invites API / email send to actually deliver.
+    setInviteSent(email)
+    setInviteEmail('')
+  }
+
+  function openMission(id: string) {
+    router.push(`/missions/${id}`)
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Hero / Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              Workspaces
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Collaborate with your team in dedicated project spaces
-            </p>
+    <PeakShell>
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-wider text-peak-primary-300">
+            {ACME_COMPANY}
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm self-start sm:self-auto">
-            <Plus className="w-4 h-4" />
-            Create Workspace
-          </button>
+          <h1 className="mt-1 text-4xl font-semibold tracking-tight text-peak">
+            Team <span className="text-peak-primary-300">Workspaces</span>
+          </h1>
+          <p className="mt-2 text-sm text-peak-muted">
+            Every mission is a shared workspace. Collaborate with the {ACME_COMPANY} team across tasks, files, and threads.
+          </p>
         </div>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="inline-flex items-center gap-2 self-start rounded-xl bg-peak-primary px-5 py-2.5 text-sm font-medium text-white shadow-peak-glow transition-colors hover:bg-peak-primary-600 sm:self-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Create Workspace
+        </button>
+      </div>
 
-        {/* Quick Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3"
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {stats.map((s) => (
+          <GlassPanel key={s.label} className="flex items-center gap-3 p-4">
+            <span
+              className={[
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1',
+                s.tone === 'primary' ? 'bg-peak-primary/15 text-peak-primary-300 ring-peak-primary/20' : '',
+                s.tone === 'green' ? 'bg-peak-green/15 text-peak-green ring-peak-green/20' : '',
+                s.tone === 'amber' ? 'bg-peak-amber/15 text-peak-amber ring-peak-amber/20' : '',
+                s.tone === 'blue' ? 'bg-peak-blue/15 text-peak-blue ring-peak-blue/20' : '',
+              ].join(' ')}
             >
-              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
-              </div>
+              {s.icon}
+            </span>
+            <div>
+              <p className="text-2xl font-semibold leading-none tracking-tight text-peak">{s.value}</p>
+              <p className="mt-1 text-xs text-peak-muted">{s.label}</p>
             </div>
-          ))}
-        </div>
+          </GlassPanel>
+        ))}
+      </div>
 
-        {/* Main content: Workspaces grid + Activity sidebar */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-10">
-
-          {/* Active Workspaces Grid */}
-          <div className="xl:col-span-3">
-            <div className="flex items-center gap-2 mb-4">
-              <Briefcase className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active Workspaces</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {WORKSPACES.map((ws) => (
-                <div
-                  key={ws.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden cursor-pointer group transition-all hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600"
-                  onMouseEnter={() => setHoveredWorkspace(ws.id)}
-                  onMouseLeave={() => setHoveredWorkspace(null)}
-                >
-                  {/* Color-coded header strip */}
-                  <div className={`h-2 bg-gradient-to-r ${ws.headerGradient}`} />
-
-                  <div className="p-5">
-                    {/* Name + description */}
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {ws.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                      {ws.description}
-                    </p>
-
-                    {/* Member avatars */}
-                    <div className="flex items-center mb-4">
-                      <div className="flex -space-x-2">
-                        {ws.members.map((m, i) => (
-                          <div
-                            key={i}
-                            className={`w-8 h-8 rounded-full bg-gradient-to-br ${m.colorFrom} ${m.colorTo} flex items-center justify-center text-white text-xs font-medium ring-2 ring-white dark:ring-gray-800`}
-                          >
-                            {m.initials}
-                          </div>
-                        ))}
-                        {ws.memberCount > ws.members.length && (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium ring-2 ring-white dark:ring-gray-800">
-                            +{ws.memberCount - ws.members.length}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quick stats row */}
-                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <span className="flex items-center gap-1">
-                        <CheckSquare className="w-3.5 h-3.5" />
-                        {ws.tasks} tasks
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FolderOpen className="w-3.5 h-3.5" />
-                        {ws.files} files
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        {ws.threads} threads
-                      </span>
-                    </div>
-
-                    {/* Last activity + Open button */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        {ws.lastActivity}
-                      </span>
-                      <button
-                        className={`flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all ${
-                          hoveredWorkspace === ws.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'
-                        }`}
-                      >
-                        Open
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Workspace Activity Feed (sidebar) */}
-          <div className="xl:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h2>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
-              <div className="space-y-4">
-                {ACTIVITY_FEED.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="mt-0.5 shrink-0">{item.icon}</div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
-                        {item.text}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        in <span className="font-medium text-gray-500 dark:text-gray-400">{item.workspace}</span>{' '}
-                        &middot; {item.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="w-full mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition flex items-center justify-center gap-1">
-                View all activity
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Team Members Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h2>
-              <span className="text-sm text-gray-400 dark:text-gray-500">({TEAM_MEMBERS.length})</span>
-            </div>
-            <button className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">
-              <UserPlus className="w-4 h-4" />
-              Invite
-            </button>
-          </div>
-
-          {/* Horizontal scroll on small screens, grid on large */}
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 lg:grid lg:grid-cols-5 lg:overflow-visible">
-            {TEAM_MEMBERS.map((member) => (
-              <div
-                key={member.id}
-                className="flex-shrink-0 w-48 lg:w-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition"
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div
-                    className={`w-12 h-12 rounded-full bg-gradient-to-br ${member.colorFrom} ${member.colorTo} flex items-center justify-center text-white font-semibold text-sm mb-2`}
-                  >
-                    {member.initials}
-                  </div>
-                  <p className="font-medium text-sm text-gray-900 dark:text-white truncate w-full">
-                    {member.name}
-                  </p>
-                  <span
-                    className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      ROLE_BADGE_COLORS[member.role] || ROLE_BADGE_COLORS.Member
-                    }`}
-                  >
-                    {member.role}
-                  </span>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{member.department}</p>
-                </div>
-              </div>
+      {/* Main grid: workspaces + activity */}
+      <div className="mb-10 grid grid-cols-1 gap-6 xl:grid-cols-4">
+        {/* Workspaces */}
+        <div className="xl:col-span-3">
+          <SectionLabel className="mb-4">Active Workspaces</SectionLabel>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {MOCK_MISSIONS.map((m) => (
+              <WorkspaceCard key={m.id} mission={m} counts={missionCounts.get(m.id)} onOpen={() => openMission(m.id)} />
+            ))}
+            {drafts.map((d) => (
+              <DraftCard key={d.id} draft={d} />
             ))}
           </div>
         </div>
 
+        {/* Activity feed */}
+        <div className="xl:col-span-1">
+          <SectionLabel className="mb-4">Activity</SectionLabel>
+          <GlassPanel className="p-5">
+            <div className="space-y-4">
+              {activity.map((item) => (
+                <Link
+                  key={item.id}
+                  href={getActivityHref(item)}
+                  className="-mx-2 flex gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[0.04]"
+                >
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-peak-primary" />
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug text-peak">{item.description}</p>
+                    <p className="mt-0.5 text-xs text-peak-dim">{relativeTime(item.timestamp)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link
+              href="/activity"
+              className="mt-4 flex items-center justify-center gap-1 border-t border-peak-border pt-3 text-xs font-medium text-peak-primary-300 transition-colors hover:text-peak-primary"
+            >
+              View all activity
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </GlassPanel>
+        </div>
       </div>
+
+      {/* Team members */}
+      <div className="mb-6">
+        <SectionLabel
+          className="mb-4"
+          action={
+            <button
+              onClick={() => setShowInvite(true)}
+              className="inline-flex items-center gap-1.5 text-peak-primary-300 transition-colors hover:text-peak-primary"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Invite
+            </button>
+          }
+        >
+          Team Members ({MOCK_TEAM.length})
+        </SectionLabel>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {MOCK_TEAM.map((member) => (
+            <Link key={member.id} href={profileHrefFor(member)} className="group block">
+              <GlassPanel className="peak-glass-hover flex flex-col items-center p-4 text-center transition-colors">
+                <div
+                  className="mb-2 flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white"
+                  style={avatarStyle(member.name)}
+                >
+                  {initials(member.name)}
+                </div>
+                <p className="w-full truncate text-sm font-medium text-peak group-hover:text-peak-primary-300">
+                  {member.name}
+                </p>
+                <span className="mt-1.5 inline-block rounded-full bg-peak-primary/10 px-2 py-0.5 text-[11px] font-medium text-peak-primary-300 ring-1 ring-peak-primary/20">
+                  {member.id === MOCK_USER.id ? 'Owner' : member.role}
+                </span>
+              </GlassPanel>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Create Workspace modal */}
+      {showCreate && (
+        <Modal title="Create Workspace" onClose={() => setShowCreate(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-peak-muted">Name</label>
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="e.g. Customer Advisory Board"
+                className="w-full rounded-xl border border-peak-border bg-white/[0.04] px-3.5 py-2.5 text-sm text-peak placeholder:text-peak-dim focus:border-peak-primary/50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-peak-muted">Description</label>
+              <textarea
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                rows={3}
+                placeholder="What is this workspace for?"
+                className="w-full resize-none rounded-xl border border-peak-border bg-white/[0.04] px-3.5 py-2.5 text-sm text-peak placeholder:text-peak-dim focus:border-peak-primary/50 focus:outline-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-peak-muted transition-colors hover:text-peak"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+                className="rounded-xl bg-peak-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-peak-primary-600 disabled:opacity-40"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Invite modal */}
+      {showInvite && (
+        <Modal
+          title="Invite teammate"
+          onClose={() => {
+            setShowInvite(false)
+            setInviteSent(null)
+          }}
+        >
+          {inviteSent ? (
+            <div className="space-y-4">
+              <p className="text-sm text-peak">
+                Invite queued for <span className="font-medium text-peak-primary-300">{inviteSent}</span>.
+              </p>
+              <p className="text-xs text-peak-dim">
+                {/* EXTERNAL: needs an invites API / email send to actually deliver. */}
+                They will receive a link to join the {ACME_COMPANY} workspace.
+              </p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowInvite(false)
+                    setInviteSent(null)
+                  }}
+                  className="rounded-xl bg-peak-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-peak-primary-600"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-peak-muted">Email address</label>
+                <input
+                  autoFocus
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+                  placeholder="name@acmecorp.com"
+                  className="w-full rounded-xl border border-peak-border bg-white/[0.04] px-3.5 py-2.5 text-sm text-peak placeholder:text-peak-dim focus:border-peak-primary/50 focus:outline-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setShowInvite(false)}
+                  className="rounded-xl px-4 py-2 text-sm font-medium text-peak-muted transition-colors hover:text-peak"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleInvite}
+                  disabled={!inviteEmail.trim()}
+                  className="rounded-xl bg-peak-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-peak-primary-600 disabled:opacity-40"
+                >
+                  Send invite
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </PeakShell>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Workspace card (mission-backed)
+// ---------------------------------------------------------------------------
+
+function WorkspaceCard({
+  mission,
+  counts,
+  onOpen,
+}: {
+  mission: Mission
+  counts?: { tasks: number; files: number; threads: number }
+  onOpen: () => void
+}) {
+  const meta = statusMeta(mission.status)
+  const members = mission.members ?? []
+  return (
+    <GlassPanel
+      onClick={onOpen}
+      className="peak-glass-hover group cursor-pointer overflow-hidden p-0 transition-colors"
+    >
+      <div className={`h-1 ${meta.bar}`} />
+      <div className="p-5">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-peak transition-colors group-hover:text-peak-primary-300">
+            {mission.name}
+          </h3>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${meta.ring} ${meta.tone}`}
+          >
+            {meta.label}
+          </span>
+        </div>
+        <p className="mb-4 line-clamp-2 text-sm text-peak-muted">{mission.description}</p>
+
+        {/* Progress */}
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="text-peak-dim">Progress</span>
+            <span className={`font-medium ${meta.tone}`}>{mission.progress}%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+            <div className={`h-full rounded-full ${meta.bar}`} style={{ width: `${mission.progress}%` }} />
+          </div>
+        </div>
+
+        {/* Members */}
+        <div className="mb-4 flex -space-x-2">
+          {members.slice(0, 4).map((mm) => (
+            <div
+              key={mm.id}
+              title={mm.user.name}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-medium text-white ring-2 ring-peak-bg"
+              style={avatarStyle(mm.user.name)}
+            >
+              {initials(mm.user.name)}
+            </div>
+          ))}
+          {members.length > 4 && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-[11px] font-medium text-peak-muted ring-2 ring-peak-bg">
+              +{members.length - 4}
+            </div>
+          )}
+        </div>
+
+        {/* Counts */}
+        <div className="mb-3 flex items-center gap-4 text-xs text-peak-muted">
+          <span className="flex items-center gap-1">
+            <CheckSquare className="h-3.5 w-3.5" />
+            {counts?.tasks ?? 0} tasks
+          </span>
+          <span className="flex items-center gap-1">
+            <FolderOpen className="h-3.5 w-3.5" />
+            {counts?.files ?? 0} files
+          </span>
+          <span className="flex items-center gap-1">
+            <MessageSquare className="h-3.5 w-3.5" />
+            {counts?.threads ?? 0} threads
+          </span>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-peak-border pt-3">
+          <span className="flex items-center gap-1 text-xs text-peak-dim">
+            <Clock className="h-3.5 w-3.5" />
+            {relativeTime(mission.updatedAt)}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpen()
+            }}
+            className="flex items-center gap-1 text-xs font-medium text-peak-primary-300 transition-colors hover:text-peak-primary"
+          >
+            Open
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </GlassPanel>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Locally-created workspace draft card
+// ---------------------------------------------------------------------------
+
+function DraftCard({ draft }: { draft: NewWorkspaceDraft }) {
+  return (
+    <GlassPanel className="overflow-hidden p-0">
+      <div className="h-1 bg-peak-primary" />
+      <div className="p-5">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-peak">{draft.name}</h3>
+          <span className="shrink-0 rounded-full bg-peak-primary/10 px-2 py-0.5 text-[10px] font-medium text-peak-primary-300 ring-1 ring-peak-primary/20">
+            New
+          </span>
+        </div>
+        <p className="mb-4 line-clamp-2 text-sm text-peak-muted">{draft.description}</p>
+        <div className="flex items-center gap-2 text-xs text-peak-dim">
+          <Target className="h-3.5 w-3.5" />
+          Owned by {draft.owner}
+        </div>
+        <div className="mt-4 flex items-center justify-between border-t border-peak-border pt-3">
+          <span className="flex items-center gap-1 text-xs text-peak-dim">
+            <Clock className="h-3.5 w-3.5" />
+            just now
+          </span>
+          <span className="text-xs text-peak-dim">Setup in progress</span>
+        </div>
+      </div>
+    </GlassPanel>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Modal
+// ---------------------------------------------------------------------------
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <GlassPanel className="relative z-10 w-full max-w-md p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-peak">{title}</h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-peak-muted transition-colors hover:bg-white/[0.06] hover:text-peak"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
+      </GlassPanel>
     </div>
   )
 }

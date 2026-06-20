@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users,
   Video, Calendar, Bell, X, Trash2, RefreshCw
 } from 'lucide-react'
 import { GlassPanel, SectionLabel, AskLisaBar } from '@/components/peak'
+import { MOCK_CALENDAR_EVENTS, FIXED_TODAY_DATE } from '@/lib/peak/mock'
 
 interface Event {
   id: string
@@ -20,10 +22,44 @@ interface Event {
   color: string
   isAllDay?: boolean
   recurring?: 'none' | 'daily' | 'weekly' | 'monthly'
+  /** /video/room/[id] join link for meeting-type events. */
+  joinUrl?: string
+  /** Back-reference to the source meeting for /meeting/[id]. */
+  meetingId?: string
+}
+
+// Canonical Acme Corp seed events derived from MOCK_CALENDAR_EVENTS, pinned to
+// the fixed 2026-06-18 world (no runtime-relative dates).
+function seedEventsFromCanon(): Event[] {
+  return MOCK_CALENDAR_EVENTS.map((e) => {
+    const date = e.start.split('T')[0]
+    const startTime = e.start.slice(11, 16)
+    const endTime = e.end ? e.end.slice(11, 16) : startTime
+    const type: Event['type'] =
+      e.type === 'MEETING' ? 'meeting' : e.type === 'DEADLINE' ? 'task' : e.type === 'REMINDER' ? 'reminder' : 'meeting'
+    return {
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      date,
+      startTime,
+      endTime,
+      type,
+      participants: (e.attendees || []).map((a) => a.name),
+      location: e.location || undefined,
+      color: 'bg-peak-primary',
+      isAllDay: e.type === 'DEADLINE' || !e.end,
+      recurring: e.id === 'evt-standup-eng' ? 'daily' : 'none',
+      joinUrl: e.joinUrl || undefined,
+      meetingId: e.meetingId || undefined,
+    }
+  })
 }
 
 export default function CalendarPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date())
+  const router = useRouter()
+  // Pin to the fixed 2026-06-18 world so SSR and client agree (no Date.now()).
+  const [selectedDate, setSelectedDate] = useState(() => new Date(FIXED_TODAY_DATE))
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [events, setEvents] = useState<Event[]>([])
   const [showEventModal, setShowEventModal] = useState(false)
@@ -44,8 +80,16 @@ export default function CalendarPage() {
         setSyncStatus('conflict')
         setSyncMessage(data.error || 'Conflict detected')
       } else if (res.ok) {
+        // Merge any synced events that aren't already present (dedupe by id).
+        if (Array.isArray(data.events)) {
+          setEvents((prev) => {
+            const have = new Set(prev.map((e) => e.id))
+            const merged = [...prev, ...data.events.filter((e: Event) => !have.has(e.id))]
+            return merged
+          })
+        }
         setSyncStatus('success')
-        setSyncMessage('Google Calendar synced successfully.')
+        setSyncMessage(`Google Calendar synced — ${data.count ?? 0} events.`)
       } else {
         setSyncStatus('error')
         setSyncMessage(data.error || 'Failed to sync')
@@ -75,42 +119,8 @@ export default function CalendarPage() {
     if (savedEvents) {
       setEvents(JSON.parse(savedEvents))
     } else {
-      // Sample events
-      const sampleEvents: Event[] = [
-        {
-          id: '1',
-          title: 'Team Standup',
-          date: new Date().toISOString().split('T')[0],
-          startTime: '10:00',
-          endTime: '10:30',
-          type: 'meeting',
-          participants: ['John', 'Sarah', 'Mike'],
-          color: 'bg-blue-500',
-          recurring: 'daily'
-        },
-        {
-          id: '2',
-          title: 'Client Presentation',
-          date: new Date().toISOString().split('T')[0],
-          startTime: '14:00',
-          endTime: '15:00',
-          type: 'meeting',
-          participants: ['Client Team'],
-          location: 'Conference Room A',
-          color: 'bg-green-500'
-        },
-        {
-          id: '3',
-          title: 'Project Deadline',
-          date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          startTime: '17:00',
-          endTime: '17:00',
-          type: 'task',
-          color: 'bg-red-500',
-          isAllDay: true
-        }
-      ]
-      setEvents(sampleEvents)
+      // Seed from the canonical Acme Corp calendar (pinned to 2026-06-18).
+      setEvents(seedEventsFromCanon())
     }
     setIsLoaded(true)
   }, [])
@@ -137,7 +147,7 @@ export default function CalendarPage() {
   }
 
   const goToToday = () => {
-    setSelectedDate(new Date())
+    setSelectedDate(new Date(FIXED_TODAY_DATE))
   }
 
   const generateCalendarDays = () => {
@@ -240,8 +250,25 @@ export default function CalendarPage() {
   const timeSlots = generateTimeSlots()
 
   const getEventsForDate = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0]
-    return events.filter(e => e.date === dateString)
+    // Use local Y-M-D so the grid (built from local Date objects) matches the
+    // stored event dates regardless of timezone.
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const dateString = `${y}-${m}-${d}`
+
+    return events.filter((e) => {
+      if (e.date === dateString) return true
+      // Recurring expansion: an event repeats on/after its start date.
+      if (!e.recurring || e.recurring === 'none') return false
+      const start = new Date(`${e.date}T00:00:00`)
+      const target = new Date(`${dateString}T00:00:00`)
+      if (target <= start) return false
+      if (e.recurring === 'daily') return true
+      if (e.recurring === 'weekly') return target.getDay() === start.getDay()
+      if (e.recurring === 'monthly') return target.getDate() === start.getDate()
+      return false
+    })
   }
 
   const typeIcons = {
@@ -376,7 +403,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-7">
               {calendarDays.map((date, index) => {
                 const isCurrentMonth = date.getMonth() === selectedDate.getMonth()
-                const isToday = date.toDateString() === new Date().toDateString()
+                const isToday = date.toDateString() === new Date(FIXED_TODAY_DATE).toDateString()
                 const dayEvents = getEventsForDate(date)
 
                 return (
@@ -432,7 +459,7 @@ export default function CalendarPage() {
                 Time
               </div>
               {weekDays.map((date, index) => {
-                const isToday = date.toDateString() === new Date().toDateString()
+                const isToday = date.toDateString() === new Date(FIXED_TODAY_DATE).toDateString()
                 return (
                   <div
                     key={index}
@@ -545,7 +572,7 @@ export default function CalendarPage() {
           <SectionLabel className="mb-4">Upcoming Events</SectionLabel>
           <div className="space-y-2">
             {events
-              .filter(e => new Date(e.date) >= new Date())
+              .filter(e => new Date(`${e.date}T00:00:00`) >= new Date(FIXED_TODAY_DATE.slice(0, 10) + 'T00:00:00'))
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
               .slice(0, 5)
               .map((event) => (
@@ -643,6 +670,22 @@ export default function CalendarPage() {
                   onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
                   className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-peak-muted mb-1">
+                  Repeat
+                </label>
+                <select
+                  value={newEvent.recurring}
+                  onChange={(e) => setNewEvent({ ...newEvent, recurring: e.target.value as Event['recurring'] })}
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-peak-border rounded-lg text-peak focus:outline-none focus:border-peak-primary/50"
+                >
+                  <option value="none">Does not repeat</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
               </div>
 
               <div className="flex items-center gap-4">
@@ -785,19 +828,44 @@ export default function CalendarPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 mt-6">
+            <div className="flex items-center justify-between gap-3 mt-6">
               <button
                 onClick={() => handleDeleteEvent(selectedEvent.id)}
                 className="px-4 py-2 text-peak-red hover:bg-peak-red/10 rounded-lg transition"
+                title="Delete event"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setShowEventDetails(false)}
-                className="px-6 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-xl hover:bg-white/[0.08] transition"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-3">
+                {selectedEvent.type === 'meeting' && (
+                  <button
+                    onClick={() => {
+                      const target =
+                        selectedEvent.joinUrl ||
+                        `/video/room/${selectedEvent.meetingId || selectedEvent.id}`
+                      router.push(target)
+                    }}
+                    className="px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 shadow-peak-glow transition font-semibold flex items-center gap-2"
+                  >
+                    <Video className="w-4 h-4" />
+                    Join Video
+                  </button>
+                )}
+                {selectedEvent.meetingId && (
+                  <button
+                    onClick={() => router.push(`/meeting/${selectedEvent.meetingId}`)}
+                    className="px-4 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-xl hover:bg-white/[0.08] transition"
+                  >
+                    Details
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowEventDetails(false)}
+                  className="px-6 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-xl hover:bg-white/[0.08] transition"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

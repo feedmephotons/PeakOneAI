@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   User, Camera, Shield, Bell, Moon, Sun,
@@ -8,7 +9,8 @@ import {
   Save, Eye, EyeOff, Settings2, ChevronRight,
   Database, CreditCard, Check, PanelLeft, LayoutGrid, Menu
 } from 'lucide-react'
-import { useAppStore, type NavStyle } from '@/stores/app-store'
+import { useAppStore } from '@/stores/app-store'
+import { MOCK_USER, MOCK_ORG_IDENTITY, ACME_COMPANY } from '@/lib/peak/mock'
 
 interface UserProfile {
   id: string
@@ -71,6 +73,7 @@ const TABS = [
 ]
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('profile')
   const { navStyle, setNavStyle } = useAppStore()
   const [profile, setProfile] = useState<UserProfile>({
@@ -135,19 +138,19 @@ export default function SettingsPage() {
     if (savedProfile) {
       setProfile(JSON.parse(savedProfile))
     } else {
-      // Set default profile
+      // Set default profile from the canonical Acme identity (Sarah Chen / Founder & CEO).
       const defaultProfile = {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1 (555) 123-4567',
-        avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=6366f1&color=fff',
-        bio: 'Product manager and tech enthusiast. Building amazing things with amazing people.',
+        id: MOCK_USER.id,
+        name: MOCK_USER.name,
+        email: MOCK_USER.email ?? '',
+        phone: '+1 (415) 555-0142',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(MOCK_USER.name)}&background=6366f1&color=fff`,
+        bio: 'Founder & CEO at Acme Corp. Building Product X to turn scattered company knowledge into action.',
         location: 'San Francisco, CA',
-        website: 'https://johndoe.com',
-        company: 'SaasX Inc.',
-        role: 'Product Manager',
-        joinDate: new Date('2024-01-15')
+        website: 'https://acmecorp.com',
+        company: ACME_COMPANY,
+        role: MOCK_USER.role ?? 'Founder & CEO',
+        joinDate: '2026-01-15T00:00:00.000Z'
       }
       setProfile(defaultProfile)
       localStorage.setItem('userProfile', JSON.stringify(defaultProfile))
@@ -162,6 +165,15 @@ export default function SettingsPage() {
     // Apply theme
     const theme = savedSettings ? JSON.parse(savedSettings).theme : 'system'
     applyTheme(theme)
+
+    // Sync 2FA from the shared source of truth used by /settings/security.
+    const shared2FA = localStorage.getItem('security2FA')
+    if (shared2FA !== null) {
+      setSettings((prev) => ({
+        ...prev,
+        security: { ...prev.security, twoFactorEnabled: shared2FA === 'true' },
+      }))
+    }
   }, [])
 
   const applyTheme = (theme: string) => {
@@ -199,19 +211,42 @@ export default function SettingsPage() {
     }
   }
 
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
   const handlePasswordChange = () => {
     if (newPassword !== confirmPassword) {
-      alert('Passwords do not match')
+      setPasswordMessage({ type: 'err', text: 'Passwords do not match.' })
       return
     }
     if (newPassword.length < 8) {
-      alert('Password must be at least 8 characters')
+      setPasswordMessage({ type: 'err', text: 'Password must be at least 8 characters.' })
       return
     }
-    alert('Password changed successfully')
+    // EXTERNAL: needs Clerk (user.updatePassword). Demo path records the change time locally.
+    localStorage.setItem('passwordChangedAt', new Date().toISOString())
+    setPasswordMessage({ type: 'ok', text: 'Password updated.' })
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
+    setTimeout(() => setPasswordMessage(null), 3000)
+  }
+
+  const handleClearCache = () => {
+    // Clear non-essential cached keys; keep profile + settings intact.
+    const keep = new Set(['userProfile', 'userSettings'])
+    Object.keys(localStorage)
+      .filter((k) => !keep.has(k) && (k.startsWith('cache') || k.startsWith('peak:cache')))
+      .forEach((k) => localStorage.removeItem(k))
+    setShowSuccess(true)
+    setTimeout(() => setShowSuccess(false), 3000)
+  }
+
+  const handleDeleteAccount = () => {
+    // EXTERNAL: needs Clerk/Supabase account deletion. Demo path clears local state and returns home.
+    if (!confirm('Permanently delete your account and all local data? This cannot be undone.')) return
+    localStorage.removeItem('userProfile')
+    localStorage.removeItem('userSettings')
+    router.push('/')
   }
 
   const handleExportData = () => {
@@ -222,7 +257,7 @@ export default function SettingsPage() {
     }
     const dataStr = JSON.stringify(data, null, 2)
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-    const exportFileDefaultName = `saasx_settings_${new Date().toISOString()}.json`
+    const exportFileDefaultName = `acme_settings_${new Date().toISOString()}.json`
 
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
@@ -248,13 +283,13 @@ export default function SettingsPage() {
     }
   }
 
-  const calculateStorageUsed = () => {
-    const total = 10 * 1024 * 1024 * 1024 // 10 GB
-    const used = Math.random() * 5 * 1024 * 1024 * 1024 // Random between 0-5 GB
-    return { used, total, percent: (used / total) * 100 }
+  // Stable storage figure sourced from the canonical org identity (no Math.random in render).
+  const GB = 1024 * 1024 * 1024
+  const storage = {
+    used: MOCK_ORG_IDENTITY.storageUsedGb * GB,
+    total: MOCK_ORG_IDENTITY.storageTotalGb * GB,
+    percent: (MOCK_ORG_IDENTITY.storageUsedGb / MOCK_ORG_IDENTITY.storageTotalGb) * 100,
   }
-
-  const storage = calculateStorageUsed()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -276,7 +311,11 @@ export default function SettingsPage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      // Billing has a dedicated page; deep-link instead of a dead panel.
+                      if (tab.id === 'billing') { router.push('/settings/billing'); return }
+                      setActiveTab(tab.id)
+                    }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
                       activeTab === tab.id
                         ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
@@ -485,12 +524,19 @@ export default function SettingsPage() {
                         />
                       </div>
 
-                      <button
-                        onClick={handlePasswordChange}
-                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                      >
-                        Update Password
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handlePasswordChange}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        >
+                          Update Password
+                        </button>
+                        {passwordMessage && (
+                          <span className={`text-sm ${passwordMessage.type === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {passwordMessage.text}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -507,10 +553,14 @@ export default function SettingsPage() {
                         <input
                           type="checkbox"
                           checked={settings.security.twoFactorEnabled}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            security: { ...settings.security, twoFactorEnabled: e.target.checked }
-                          })}
+                          onChange={(e) => {
+                            // Persist to the shared key so /settings/security stays in sync.
+                            localStorage.setItem('security2FA', String(e.target.checked))
+                            setSettings({
+                              ...settings,
+                              security: { ...settings.security, twoFactorEnabled: e.target.checked }
+                            })
+                          }}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -548,7 +598,10 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       Permanently delete your account and all of your data. This action cannot be undone.
                     </p>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    >
                       <Trash2 className="w-4 h-4" />
                       Delete Account
                     </button>
@@ -562,7 +615,7 @@ export default function SettingsPage() {
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Appearance</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                      Customize how SaasX looks and feels
+                      Customize how Peak One looks and feels
                     </p>
                   </div>
 
@@ -869,7 +922,10 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       Clear cached data to free up storage space
                     </p>
-                    <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <button
+                      onClick={handleClearCache}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    >
                       Clear Cache
                     </button>
                   </div>

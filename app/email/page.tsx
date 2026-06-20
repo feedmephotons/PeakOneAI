@@ -7,9 +7,13 @@ import {
   MoreVertical, Search, RefreshCw, Paperclip, X, Edit, Sparkles,
   Brain, Users, FileText, Zap, CheckCircle, ChevronDown, ChevronUp
 } from 'lucide-react'
+import { MOCK_EMAILS, MOCK_USER, FIXED_TODAY } from '@/lib/peak/mock'
+
+type EmailFolder = 'inbox' | 'sent' | 'archive' | 'trash'
 
 interface Email {
   id: string
+  folder: EmailFolder
   from: {
     name: string
     email: string
@@ -26,17 +30,45 @@ interface Email {
   labels?: string[]
 }
 
+// Build the canonical inbox from the shared Acme Corp fixtures (sarah.chen@acmecorp.com).
+function seedEmails(): Email[] {
+  return MOCK_EMAILS.map((e) => ({
+    id: e.id,
+    folder: e.folder === 'starred' ? 'inbox' : (e.folder as EmailFolder),
+    from: { name: e.from.name, email: e.from.email || '' },
+    to: e.to.map((t) => t.email || t.name),
+    subject: e.subject,
+    body: e.body,
+    timestamp: new Date(e.date),
+    read: e.read,
+    starred: e.starred,
+    threadId: e.missionId || undefined,
+    // The BrightPath MOU and a couple of others reference attachments in their bodies.
+    attachments:
+      e.id === 'email-jenna-mou'
+        ? [{ name: 'BrightPath-co-marketing-MOU-draft.pdf', size: 184320 }]
+        : e.id === 'email-arch-spec'
+        ? [{ name: 'Product-X-spec-v3.pdf', size: 421000 }]
+        : undefined,
+  }))
+}
+
 export default function EmailPage() {
   const [emails, setEmails] = useState<Email[]>([])
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null)
-  const [folder, setFolder] = useState<'inbox' | 'sent' | 'archive' | 'trash'>('inbox')
+  const [folder, setFolder] = useState<EmailFolder | 'starred'>('inbox')
   const [isComposing, setIsComposing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [composerInitialTo, setComposerInitialTo] = useState<string>('')
   const [composerInitialToTimestamp, setComposerInitialToTimestamp] = useState<number>(0)
+  const [composerInitialSubject, setComposerInitialSubject] = useState<string>('')
+  const [composerInitialBody, setComposerInitialBody] = useState<string>('')
+  const [showMore, setShowMore] = useState(false)
 
   const handleAddContactToComposer = (email: string) => {
     setComposerInitialTo(email)
+    setComposerInitialSubject('')
+    setComposerInitialBody('')
     setComposerInitialToTimestamp(Date.now())
     setIsComposing(true)
   }
@@ -44,70 +76,56 @@ export default function EmailPage() {
   const handleCloseComposer = () => {
     setIsComposing(false)
     setComposerInitialTo('')
+    setComposerInitialSubject('')
+    setComposerInitialBody('')
     setComposerInitialToTimestamp(0)
   }
 
   useEffect(() => {
-    const savedEmails = localStorage.getItem('emails')
+    const savedEmails = localStorage.getItem('peak-emails')
     if (savedEmails) {
-      const parsed = JSON.parse(savedEmails)
-      setEmails(parsed.map((e: Email) => ({ ...e, timestamp: new Date(e.timestamp) })))
-    } else {
-      const mockEmails: Email[] = [
-        {
-          id: '1',
-          from: { name: 'Sarah Johnson', email: 'sarah@company.com' },
-          to: ['you@saasx.com'],
-          subject: 'Q4 Budget Review Meeting',
-          body: 'Hi team,\n\nLet\'s schedule a meeting to review the Q4 budget proposals. I\'ve prepared a detailed analysis of our spending patterns.\n\nBest regards,\nSarah',
-          timestamp: new Date(Date.now() - 3600000),
-          read: false,
-          starred: true,
-          threadId: 'thread-1',
-          labels: ['work', 'urgent']
-        },
-        {
-          id: '2',
-          from: { name: 'Product Updates', email: 'updates@saasx.com' },
-          to: ['you@saasx.com'],
-          subject: 'New Features Released!',
-          body: 'We\'re excited to announce new features in our latest release...',
-          timestamp: new Date(Date.now() - 7200000),
-          read: true,
-          starred: false,
-          attachments: [{ name: 'release-notes.pdf', size: 245000 }]
-        },
-        {
-          id: '3',
-          from: { name: 'Michael Chen', email: 'michael@partner.com' },
-          to: ['you@saasx.com'],
-          cc: ['team@saasx.com'],
-          subject: 'Partnership Proposal',
-          body: 'I hope this email finds you well. I wanted to reach out regarding a potential partnership opportunity...',
-          timestamp: new Date(Date.now() - 86400000),
-          read: false,
-          starred: false,
-          labels: ['business']
-        }
-      ]
-      setEmails(mockEmails)
-      localStorage.setItem('emails', JSON.stringify(mockEmails))
+      try {
+        const parsed = JSON.parse(savedEmails)
+        setEmails(parsed.map((e: Email) => ({ ...e, timestamp: new Date(e.timestamp) })))
+        return
+      } catch {
+        // fall through to reseed
+      }
     }
+    const seeded = seedEmails()
+    setEmails(seeded)
+    localStorage.setItem('peak-emails', JSON.stringify(seeded))
   }, [])
 
   useEffect(() => {
     if (emails.length > 0) {
-      localStorage.setItem('emails', JSON.stringify(emails))
+      localStorage.setItem('peak-emails', JSON.stringify(emails))
     }
   }, [emails])
+
+  // Re-read from the canonical fixtures (Refresh button).
+  const handleRefresh = () => {
+    const seeded = seedEmails()
+    setEmails(seeded)
+    setSelectedEmail(null)
+    localStorage.setItem('peak-emails', JSON.stringify(seeded))
+  }
 
   const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          email.from.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          email.body.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFolder = folder === 'inbox' // Simplified for now
+    const matchesFolder =
+      folder === 'starred'
+        ? email.starred && email.folder !== 'trash'
+        : email.folder === folder
     return matchesSearch && matchesFolder
   })
+
+  // Keep the open email in sync with the live array (star/read changes reflect immediately).
+  const activeEmail = selectedEmail
+    ? emails.find(e => e.id === selectedEmail.id) || selectedEmail
+    : null
 
   const handleMarkRead = (emailId: string) => {
     setEmails(emails.map(e => e.id === emailId ? { ...e, read: true } : e))
@@ -117,27 +135,74 @@ export default function EmailPage() {
     setEmails(emails.map(e => e.id === emailId ? { ...e, starred: !e.starred } : e))
   }
 
+  const handleMarkUnread = (emailId: string) => {
+    setEmails(emails.map(e => e.id === emailId ? { ...e, read: false } : e))
+  }
+
   const handleDelete = (emailId: string) => {
-    if (confirm('Move email to trash?')) {
-      setEmails(emails.filter(e => e.id !== emailId))
-      setSelectedEmail(null)
-    }
+    // Move to trash (don't hard-delete so the Trash folder is demoable).
+    setEmails(emails.map(e => e.id === emailId ? { ...e, folder: 'trash' as EmailFolder } : e))
+    setSelectedEmail(null)
+  }
+
+  const handleArchive = (emailId: string) => {
+    setEmails(emails.map(e => e.id === emailId ? { ...e, folder: 'archive' as EmailFolder } : e))
+    setSelectedEmail(null)
   }
 
   const handleSendEmail = (emailData: Partial<Email>) => {
     const newEmail: Email = {
-      id: Date.now().toString(),
-      from: { name: 'You', email: 'you@saasx.com' },
+      id: `email-sent-${Date.now()}`,
+      folder: 'sent',
+      from: { name: MOCK_USER.name, email: MOCK_USER.email || 'sarah.chen@acmecorp.com' },
       to: emailData.to || [],
       cc: emailData.cc,
       subject: emailData.subject || '(No Subject)',
       body: emailData.body || '',
-      timestamp: new Date(),
+      timestamp: new Date(FIXED_TODAY),
       read: true,
-      starred: false
+      starred: false,
+      attachments: emailData.attachments
     }
     setEmails([newEmail, ...emails])
+    setFolder('sent')
     handleCloseComposer()
+  }
+
+  const handleReply = (email: Email) => {
+    setComposerInitialTo(email.from.email)
+    setComposerInitialSubject(email.subject.startsWith('Re:') ? email.subject : `Re: ${email.subject}`)
+    setComposerInitialBody(
+      `\n\n----- On ${email.timestamp.toLocaleString()}, ${email.from.name} wrote: -----\n${email.body}`
+    )
+    setComposerInitialToTimestamp(Date.now())
+    setIsComposing(true)
+  }
+
+  const handleForward = (email: Email) => {
+    setComposerInitialTo('')
+    setComposerInitialSubject(email.subject.startsWith('Fwd:') ? email.subject : `Fwd: ${email.subject}`)
+    setComposerInitialBody(
+      `\n\n----- Forwarded message from ${email.from.name} <${email.from.email}> -----\nSubject: ${email.subject}\n\n${email.body}`
+    )
+    setComposerInitialToTimestamp(Date.now())
+    setIsComposing(true)
+  }
+
+  // Download an attachment as a generated text stub (no real binary in the demo dataset).
+  const handleDownloadAttachment = (name: string) => {
+    const blob = new Blob(
+      [`Peak One demo attachment: ${name}\n\nThis is a placeholder generated for the demo dataset.`],
+      { type: 'text/plain' }
+    )
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const formatTime = (date: Date) => {
@@ -184,7 +249,7 @@ export default function EmailPage() {
             <Inbox className="w-4 h-4" />
             <span>Inbox</span>
             <span className="ml-auto text-xs bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full">
-              {filteredEmails.filter(e => !e.read).length}
+              {emails.filter(e => e.folder === 'inbox' && !e.read).length}
             </span>
           </button>
           <button
@@ -199,7 +264,12 @@ export default function EmailPage() {
             <span>Sent</span>
           </button>
           <button
-            className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
+            onClick={() => setFolder('starred')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${
+              folder === 'starred'
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
           >
             <Star className="w-4 h-4" />
             <span>Starred</span>
@@ -245,7 +315,11 @@ export default function EmailPage() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+          <button
+            onClick={handleRefresh}
+            title="Refresh"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          >
             <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
@@ -294,64 +368,97 @@ export default function EmailPage() {
 
       {/* Email Content */}
       <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
-        {selectedEmail ? (
+        {activeEmail ? (
           <>
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  {selectedEmail.subject}
+                  {activeEmail.subject}
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleToggleStar(selectedEmail.id)}
+                    onClick={() => handleToggleStar(activeEmail.id)}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                   >
-                    <Star className={`w-4 h-4 ${selectedEmail.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                    <Star className={`w-4 h-4 ${activeEmail.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                  <button
+                    onClick={() => handleArchive(activeEmail.id)}
+                    title="Archive"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  >
                     <Archive className="w-4 h-4 text-gray-400" />
                   </button>
                   <button
-                    onClick={() => handleDelete(selectedEmail.id)}
+                    onClick={() => handleDelete(activeEmail.id)}
+                    title="Move to trash"
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                   >
                     <Trash2 className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-                    <MoreVertical className="w-4 h-4 text-gray-400" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMore(v => !v)}
+                      title="More"
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    </button>
+                    {showMore && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-10 overflow-hidden">
+                        <button
+                          onClick={() => { handleMarkUnread(activeEmail.id); setShowMore(false) }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                          Mark as unread
+                        </button>
+                        <button
+                          onClick={() => { handleToggleStar(activeEmail.id); setShowMore(false) }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                          {activeEmail.starred ? 'Remove star' : 'Add star'}
+                        </button>
+                        <button
+                          onClick={() => { handleForward(activeEmail); setShowMore(false) }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                          Forward
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {selectedEmail.from.name.charAt(0)}
+                  {activeEmail.from.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-white">{selectedEmail.from.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">{selectedEmail.from.email}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{activeEmail.from.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{activeEmail.from.email}</div>
                 </div>
               </div>
 
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                <div>To: {selectedEmail.to.join(', ')}</div>
-                {selectedEmail.cc && <div>Cc: {selectedEmail.cc.join(', ')}</div>}
-                <div className="mt-1">{selectedEmail.timestamp.toLocaleString()}</div>
+                <div>To: {activeEmail.to.join(', ')}</div>
+                {activeEmail.cc && <div>Cc: {activeEmail.cc.join(', ')}</div>}
+                <div className="mt-1">{activeEmail.timestamp.toLocaleString()}</div>
               </div>
             </div>
 
             <div className="flex-1 p-6 overflow-auto">
               <div className="prose dark:prose-invert max-w-none">
                 <pre className="whitespace-pre-wrap font-sans text-gray-900 dark:text-gray-100">
-                  {selectedEmail.body}
+                  {activeEmail.body}
                 </pre>
               </div>
 
-              {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+              {activeEmail.attachments && activeEmail.attachments.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Attachments</h3>
                   <div className="space-y-2">
-                    {selectedEmail.attachments.map((attachment, index) => (
+                    {activeEmail.attachments.map((attachment, index) => (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <Paperclip className="w-4 h-4 text-gray-400" />
                         <div className="flex-1">
@@ -360,7 +467,10 @@ export default function EmailPage() {
                             {(attachment.size / 1024).toFixed(1)} KB
                           </div>
                         </div>
-                        <button className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition">
+                        <button
+                          onClick={() => handleDownloadAttachment(attachment.name)}
+                          className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition"
+                        >
                           Download
                         </button>
                       </div>
@@ -371,11 +481,17 @@ export default function EmailPage() {
             </div>
 
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <button
+                onClick={() => handleReply(activeEmail)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
                 <Reply className="w-4 h-4" />
                 Reply
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+              <button
+                onClick={() => handleForward(activeEmail)}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
                 <Forward className="w-4 h-4" />
                 Forward
               </button>
@@ -398,6 +514,8 @@ export default function EmailPage() {
           onClose={handleCloseComposer}
           initialTo={composerInitialTo}
           initialToTimestamp={composerInitialToTimestamp}
+          initialSubject={composerInitialSubject}
+          initialBody={composerInitialBody}
         />
       )}
     </div>
@@ -522,12 +640,23 @@ interface EmailComposerProps {
   onClose: () => void
   initialTo?: string
   initialToTimestamp?: number
+  initialSubject?: string
+  initialBody?: string
 }
 
-function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0 }: EmailComposerProps) {
+function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0, initialSubject = '', initialBody = '' }: EmailComposerProps) {
   const [to, setTo] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [attachments, setAttachments] = useState<{ name: string; size: number }[]>([])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Prefill on open / when reply/forward injects content (keyed by initialToTimestamp).
+  useEffect(() => {
+    if (initialSubject) setSubject(initialSubject)
+    if (initialBody) setBody(initialBody)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialToTimestamp])
 
   useEffect(() => {
     if (!initialTo) return
@@ -536,11 +665,11 @@ function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0
       const currentEmails = prev
         ? prev.split(',').map(e => e.trim()).filter(Boolean)
         : []
-      
+
       if (currentEmails.includes(initialTo)) {
         return prev
       }
-      
+
       const newEmails = [...currentEmails, initialTo]
       return newEmails.join(', ')
     })
@@ -672,9 +801,10 @@ function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0
 
   const handleSend = () => {
     onSend({
-      to: to.split(',').map(e => e.trim()),
+      to: to.split(',').map(e => e.trim()).filter(Boolean),
       subject,
-      body
+      body,
+      attachments: attachments.length > 0 ? attachments : undefined
     })
   }
 
@@ -865,9 +995,44 @@ function EmailComposer({ onSend, onClose, initialTo = '', initialToTimestamp = 0
               />
             </div>
 
+            {/* Attachments chips */}
+            {attachments.length > 0 && (
+              <div className="px-4 pb-2 flex flex-wrap gap-2">
+                {attachments.map((att, idx) => (
+                  <span
+                    key={idx}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
+                  >
+                    <Paperclip className="w-3 h-3" />
+                    {att.name}
+                    <button
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="hover:text-red-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Footer */}
             <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
-              <button className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || [])
+                  setAttachments(prev => [...prev, ...files.map(f => ({ name: f.name, size: f.size }))])
+                  e.target.value = ''
+                }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
                 <Paperclip className="w-4 h-4" />
                 Attach
               </button>

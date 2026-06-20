@@ -8,6 +8,7 @@ import {
   Circle, Languages, ListChecks, Link2
 } from 'lucide-react'
 import MeetingToTaskConverter from '@/components/meetings/MeetingToTaskConverter'
+import { getMockMeetingDetail, MOCK_USER, FIXED_TODAY } from '@/lib/peak/mock'
 
 interface Participant {
   id: string
@@ -37,11 +38,18 @@ interface Note {
   timestamp: Date
 }
 
+// Deterministic base instant for the fixed 2026-06-18 world (avoids Date.now()).
+const FIXED_NOW = new Date(FIXED_TODAY).getTime()
+
 export default function MeetingRoomPage() {
   const params = useParams()
   const router = useRouter()
   const meetingId = params.id as string
   const localVideoRef = useRef<HTMLVideoElement>(null)
+
+  // Canonical meeting fixture (transcript / summary / action items / attendees).
+  const detail = getMockMeetingDetail(meetingId)
+  const meetingTitle = detail?.title ?? 'Live Meeting'
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [isMuted, setIsMuted] = useState(false)
@@ -49,80 +57,80 @@ export default function MeetingRoomPage() {
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'speaker'>('grid')
   const [showAIPanel, setShowAIPanel] = useState(true)
+  const [showParticipantsPanel, setShowParticipantsPanel] = useState(false)
   const [aiPanelTab, setAiPanelTab] = useState<'transcript' | 'actions' | 'notes'>('transcript')
   const [showTaskConverter, setShowTaskConverter] = useState(false)
+  // Cycle the active speaker deterministically across transcript lines.
+  const [speakingIndex, setSpeakingIndex] = useState(0)
 
-  // Mock participants
-  const [participants] = useState<Participant[]>([
-    { id: '1', name: 'Sarah Chen', isMuted: false, isVideoOff: false, isSpeaking: false },
-    { id: '2', name: 'Mike Johnson', isMuted: true, isVideoOff: false },
-    { id: '3', name: 'Alex Kim', isMuted: false, isVideoOff: true },
-  ])
+  // Participants: the meeting's real attendees (minus the local user "You").
+  const [participants] = useState<Participant[]>(() => {
+    const attendees = detail?.attendees ?? []
+    return attendees
+      .filter((a) => a.id !== MOCK_USER.id)
+      .map((a, i) => ({
+        id: a.id,
+        name: a.name,
+        isMuted: i % 2 === 1,
+        isVideoOff: i === 1,
+        isSpeaking: false,
+      }))
+  })
 
-  // Mock transcript
-  const [transcript, setTranscript] = useState<TranscriptLine[]>([
-    {
-      id: '1',
-      speaker: 'Sarah Chen',
-      text: 'Good morning everyone! Thanks for joining. Let\'s start by reviewing the Q4 roadmap.',
-      timestamp: new Date(Date.now() - 300000)
-    },
-    {
-      id: '2',
-      speaker: 'You',
-      text: 'Sounds good. I have the latest figures ready to share.',
-      timestamp: new Date(Date.now() - 240000)
-    },
-    {
-      id: '3',
-      speaker: 'Mike Johnson',
-      text: 'Perfect. I think we should prioritize the API integration first.',
-      timestamp: new Date(Date.now() - 180000)
-    },
-    {
-      id: '4',
-      speaker: 'Alex Kim',
-      text: 'Agreed. That will unlock the mobile features we\'ve been planning.',
-      timestamp: new Date(Date.now() - 120000)
-    }
-  ])
-
-  // Mock action items
-  const [actionItems, setActionItems] = useState<ActionItem[]>([
-    { id: '1', text: 'Review Q4 roadmap priorities', assignee: 'Sarah', completed: false },
-    { id: '2', text: 'Prepare API integration timeline', assignee: 'Mike', completed: false },
-    { id: '3', text: 'Draft mobile feature specifications', assignee: 'Alex', completed: false }
-  ])
-
-  // Mock notes
-  const [notes, setNotes] = useState<Note[]>([
-    { id: '1', text: 'Q4 focus: API integration → Mobile features → Analytics dashboard', timestamp: new Date(Date.now() - 180000) },
-    { id: '2', text: 'Target launch: End of Q1 2025', timestamp: new Date(Date.now() - 120000) }
-  ])
-
-  // Simulate live transcription
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const speakers = ['Sarah Chen', 'Mike Johnson', 'Alex Kim', 'You']
-      const sampleTexts = [
-        'Let\'s make sure we\'re all aligned on the timeline.',
-        'I can have the initial design ready by next week.',
-        'We should schedule a follow-up to review progress.',
-        'Great point. Let\'s add that to our action items.'
+  // Transcript: from the canonical fixture, with deterministic timestamps.
+  const [transcript, setTranscript] = useState<TranscriptLine[]>(() => {
+    const lines = detail?.transcript ?? []
+    if (lines.length === 0) {
+      return [
+        {
+          id: 't-1',
+          speaker: MOCK_USER.name,
+          text: 'Joining now — Lisa is recording, transcribing and summarizing this session.',
+          timestamp: new Date(FIXED_NOW),
+        },
       ]
+    }
+    return lines.map((l, i) => ({
+      id: `t-${i + 1}`,
+      speaker: l.speaker,
+      text: l.text,
+      timestamp: new Date(FIXED_NOW - (lines.length - i) * 60000),
+    }))
+  })
 
-      const newLine: TranscriptLine = {
-        id: Date.now().toString(),
-        speaker: speakers[Math.floor(Math.random() * speakers.length)],
-        text: sampleTexts[Math.floor(Math.random() * sampleTexts.length)],
-        timestamp: new Date()
-      }
+  // Action items: from the fixture's AI-extracted action items.
+  const [actionItems, setActionItems] = useState<ActionItem[]>(() => {
+    const items = detail?.actionItems ?? []
+    return items.map((text, i) => ({
+      id: `a-${i + 1}`,
+      text,
+      completed: false,
+    }))
+  })
 
-      setTranscript(prev => [...prev, newLine])
-    }, 20000)
+  // Notes: the AI summary, split into bullet lines.
+  const [notes] = useState<Note[]>(() => {
+    const summary = detail?.aiSummary
+    if (!summary) return []
+    return summary
+      .split(/(?<=\.)\s+/)
+      .filter((s) => s.trim().length > 0)
+      .slice(0, 4)
+      .map((text, i) => ({
+        id: `n-${i + 1}`,
+        text: text.trim(),
+        timestamp: new Date(FIXED_NOW - (4 - i) * 60000),
+      }))
+  })
 
+  // Deterministically advance the active-speaker indicator (no random()).
+  useEffect(() => {
+    if (transcript.length === 0) return
+    const interval = setInterval(() => {
+      setSpeakingIndex((prev) => (prev + 1) % Math.max(participants.length, 1))
+    }, 4000)
     return () => clearInterval(interval)
-  }, [])
+  }, [transcript.length, participants.length])
 
   useEffect(() => {
     const startLocalStream = async () => {
@@ -172,7 +180,7 @@ export default function MeetingRoomPage() {
     if (!isScreenSharing) {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: 'always' },
+          video: true,
           audio: false
         })
 
@@ -211,8 +219,9 @@ export default function MeetingRoomPage() {
   const exportSummary = () => {
     const summary = {
       meetingId,
-      date: new Date().toISOString(),
-      participants: ['You', ...participants.map(p => p.name)],
+      title: meetingTitle,
+      date: FIXED_TODAY,
+      participants: [MOCK_USER.name, ...participants.map(p => p.name)],
       transcript,
       actionItems,
       notes
@@ -238,7 +247,7 @@ export default function MeetingRoomPage() {
       <div className="bg-gray-800 px-6 py-3 flex items-center justify-between border-b border-gray-700">
         <div className="flex items-center gap-4">
           <div>
-            <h2 className="text-white font-semibold">Meeting ID: {meetingId}</h2>
+            <h2 className="text-white font-semibold">{meetingTitle}</h2>
             <p className="text-gray-400 text-sm">{participants.length + 1} participants</p>
           </div>
           {/* Meeting capability badges */}
@@ -270,7 +279,22 @@ export default function MeetingRoomPage() {
           >
             <Brain className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition">
+          <button
+            onClick={() => setShowParticipantsPanel((v) => !v)}
+            className={`p-2 rounded-lg transition ${
+              showParticipantsPanel
+                ? 'bg-indigo-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+            title="Participants"
+          >
+            <Users className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => router.push('/settings')}
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"
+            title="Settings"
+          >
             <Settings className="w-5 h-5" />
           </button>
         </div>
@@ -307,7 +331,9 @@ export default function MeetingRoomPage() {
             </div>
 
             {/* Remote Participants */}
-            {participants.map((participant) => (
+            {participants.map((participant, idx) => {
+              const isSpeaking = idx === speakingIndex && !participant.isMuted
+              return (
               <div key={participant.id} className="relative bg-gray-800 rounded-lg overflow-hidden">
                 {participant.isVideoOff ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
@@ -325,11 +351,12 @@ export default function MeetingRoomPage() {
                 <div className="absolute bottom-3 left-3 bg-black/50 px-3 py-1 rounded-lg text-white text-sm backdrop-blur-sm">
                   {participant.name} {participant.isMuted && <span className="ml-2">🔇</span>}
                 </div>
-                {participant.isSpeaking && (
+                {isSpeaking && (
                   <div className="absolute inset-0 border-4 border-green-500 rounded-lg pointer-events-none" />
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -493,6 +520,47 @@ export default function MeetingRoomPage() {
             </div>
           </div>
         )}
+
+        {/* Participants Panel */}
+        {showParticipantsPanel && (
+          <div className="w-72 bg-gray-800 border-l border-gray-700 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <Users className="w-4 h-4" /> Participants ({participants.length + 1})
+              </h3>
+              <button
+                onClick={() => setShowParticipantsPanel(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              <div className="flex items-center gap-3 bg-gray-700 rounded-lg p-3">
+                <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+                  {MOCK_USER.name.split(' ').map((n) => n[0]).join('')}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-white font-medium">{MOCK_USER.name} (You)</p>
+                  <p className="text-xs text-gray-400">{MOCK_USER.role || 'Host'}</p>
+                </div>
+                {isMuted && <MicOff className="w-4 h-4 text-red-400" />}
+              </div>
+              {participants.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 bg-gray-700 rounded-lg p-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white text-sm font-bold">
+                    {p.name.split(' ').map((n) => n[0]).join('')}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-medium">{p.name}</p>
+                    <p className="text-xs text-gray-400">{p.isVideoOff ? 'Camera off' : 'In call'}</p>
+                  </div>
+                  {p.isMuted && <MicOff className="w-4 h-4 text-red-400" />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -528,7 +596,13 @@ export default function MeetingRoomPage() {
             <ScreenShare className="w-6 h-6" />
           </button>
 
-          <button className="p-4 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition" title="Participants">
+          <button
+            onClick={() => setShowParticipantsPanel((v) => !v)}
+            className={`p-4 rounded-full transition ${
+              showParticipantsPanel ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'
+            }`}
+            title="Participants"
+          >
             <Users className="w-6 h-6" />
           </button>
 
@@ -548,7 +622,7 @@ export default function MeetingRoomPage() {
       {showTaskConverter && (
         <MeetingToTaskConverter
           meetingId={meetingId}
-          meetingTitle={`Meeting ${meetingId}`}
+          meetingTitle={meetingTitle}
           actionItems={actionItems.map(item => ({
             id: item.id,
             text: item.text,

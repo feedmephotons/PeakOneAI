@@ -4,19 +4,89 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Star, FileText, FolderOpen, MessageSquare, Calendar, CheckSquare,
-  Users, Video, Bot, Search, Grid, List, MoreVertical, X
+  Users, Bot, Search, Grid, List, X, Target, Phone, StickyNote
 } from 'lucide-react'
+import { FIXED_TODAY } from '@/lib/peak/mock'
+import {
+  type FavoriteItem,
+  type FavoriteType,
+  getFavorites,
+  saveFavorites,
+  removeFavorite as removeFavoriteFromStore,
+} from '@/lib/peak/favorites'
 
-interface FavoriteItem {
-  id: string
-  type: 'file' | 'folder' | 'channel' | 'meeting' | 'task' | 'contact' | 'conversation'
-  name: string
-  description?: string
-  url: string
-  icon?: string
-  addedAt: Date
-  lastAccessed?: Date
+// Canonical Acme Corp seed favorites — deep-linked to specific entities.
+// addedAt offsets are computed deterministically from FIXED_TODAY (SSR-safe).
+function daysBefore(days: number): string {
+  return new Date(new Date(FIXED_TODAY).getTime() - days * 86400000).toISOString()
 }
+
+const SEED_FAVORITES: FavoriteItem[] = [
+  {
+    id: 'mission-launch-product-x',
+    type: 'mission',
+    name: 'Launch Product X',
+    description: '72% · On track',
+    url: '/missions/mission-launch-product-x',
+    addedAt: daysBefore(2),
+  },
+  {
+    id: 'mission-q2-growth',
+    type: 'mission',
+    name: 'Q2 Growth Engine',
+    description: '48% · At risk',
+    url: '/missions/mission-q2-growth',
+    addedAt: daysBefore(5),
+  },
+  {
+    id: 'file-board-deck',
+    type: 'file',
+    name: 'Q2 Board Deck.pptx',
+    description: 'Owned by Sarah Chen',
+    url: '/files',
+    addedAt: daysBefore(1),
+  },
+  {
+    id: 'thread-product-x',
+    type: 'channel',
+    name: '#product-x',
+    description: 'Launch coordination channel',
+    url: '/messages?thread=thread-product-x',
+    addedAt: daysBefore(10),
+  },
+  {
+    id: 'contact-brian-miller',
+    type: 'contact',
+    name: 'Brian Miller',
+    description: 'Investor · Summit Ventures',
+    url: '/people/contact-brian-miller',
+    addedAt: daysBefore(7),
+  },
+  {
+    id: 'call-q2-campaign',
+    type: 'call',
+    name: 'Q2 Campaign Sync',
+    description: 'Call recap with action items',
+    url: '/calls/summary/call-q2-campaign',
+    addedAt: daysBefore(1),
+  },
+  {
+    id: 'note-product-launch-plan',
+    type: 'note',
+    name: 'Product Launch Plan',
+    description: 'Memory note · Launch Product X',
+    url: '/memory',
+    addedAt: daysBefore(3),
+  },
+  {
+    id: 'thread-dm-lisa',
+    type: 'conversation',
+    name: 'Lisa AI',
+    description: 'Your AI assistant conversation',
+    url: '/lisa',
+    addedAt: daysBefore(1),
+  },
+]
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([])
@@ -25,118 +95,52 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const saved = localStorage.getItem('favorites')
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      setFavorites(parsed.map((f: FavoriteItem) => ({
-        ...f,
-        addedAt: new Date(f.addedAt),
-        lastAccessed: f.lastAccessed ? new Date(f.lastAccessed) : undefined
-      })))
+    const existing = getFavorites()
+    if (existing.length > 0) {
+      setFavorites(existing)
     } else {
-      const mockFavorites: FavoriteItem[] = [
-        {
-          id: '1',
-          type: 'file',
-          name: 'Q4 Sales Report.pdf',
-          description: 'Quarterly sales analysis with projections',
-          url: '/files',
-          addedAt: new Date(Date.now() - 86400000 * 2),
-          lastAccessed: new Date(Date.now() - 3600000)
-        },
-        {
-          id: '2',
-          type: 'folder',
-          name: 'Project Documents',
-          description: '12 files',
-          url: '/files',
-          addedAt: new Date(Date.now() - 86400000 * 5)
-        },
-        {
-          id: '3',
-          type: 'channel',
-          name: '#general',
-          description: 'Team-wide discussions',
-          url: '/messages',
-          addedAt: new Date(Date.now() - 86400000 * 10)
-        },
-        {
-          id: '4',
-          type: 'meeting',
-          name: 'Weekly Standup',
-          description: 'Every Monday at 9:00 AM',
-          url: '/calendar',
-          addedAt: new Date(Date.now() - 86400000 * 3)
-        },
-        {
-          id: '5',
-          type: 'task',
-          name: 'Review Marketing Campaign',
-          description: 'Due in 2 days',
-          url: '/tasks',
-          addedAt: new Date(Date.now() - 86400000)
-        },
-        {
-          id: '6',
-          type: 'contact',
-          name: 'Sarah Johnson',
-          description: 'Product Manager',
-          url: '/messages',
-          addedAt: new Date(Date.now() - 86400000 * 7)
-        },
-        {
-          id: '7',
-          type: 'conversation',
-          name: 'Lisa AI - Budget Analysis',
-          description: 'AI conversation from yesterday',
-          url: '/lisa',
-          addedAt: new Date(Date.now() - 86400000)
-        },
-        {
-          id: '8',
-          type: 'file',
-          name: 'Brand Guidelines.pdf',
-          description: 'Official brand standards',
-          url: '/files',
-          addedAt: new Date(Date.now() - 86400000 * 14)
-        }
-      ]
-      setFavorites(mockFavorites)
-      localStorage.setItem('favorites', JSON.stringify(mockFavorites))
+      // First visit: seed the shared store with canonical favorites.
+      saveFavorites(SEED_FAVORITES)
+      setFavorites(SEED_FAVORITES)
     }
     setLoading(false)
   }, [])
 
-  const getIcon = (type: FavoriteItem['type']) => {
-    const icons = {
+  const getIcon = (type: FavoriteType) => {
+    const icons: Record<FavoriteType, typeof FileText> = {
       file: FileText,
       folder: FolderOpen,
       channel: MessageSquare,
       meeting: Calendar,
       task: CheckSquare,
       contact: Users,
-      conversation: Bot
+      mission: Target,
+      note: StickyNote,
+      call: Phone,
+      conversation: Bot,
     }
     return icons[type] || Star
   }
 
-  const getIconColor = (type: FavoriteItem['type']) => {
-    const colors = {
+  const getIconColor = (type: FavoriteType) => {
+    const colors: Record<FavoriteType, string> = {
       file: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
       folder: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30',
       channel: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
       meeting: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
       task: 'text-green-500 bg-green-100 dark:bg-green-900/30',
       contact: 'text-pink-500 bg-pink-100 dark:bg-pink-900/30',
-      conversation: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30'
+      mission: 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30',
+      note: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
+      call: 'text-cyan-500 bg-cyan-100 dark:bg-cyan-900/30',
+      conversation: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
     }
     return colors[type] || 'text-gray-500 bg-gray-100'
   }
 
   const removeFavorite = (id: string) => {
-    const updated = favorites.filter(f => f.id !== id)
+    const updated = removeFavoriteFromStore(id)
     setFavorites(updated)
-    localStorage.setItem('favorites', JSON.stringify(updated))
   }
 
   const filteredFavorites = favorites.filter(f =>
@@ -144,12 +148,13 @@ export default function FavoritesPage() {
     f.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const formatDate = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  // Deterministic relative date vs FIXED_TODAY (SSR-safe).
+  const formatDate = (iso: string) => {
+    const date = new Date(iso)
+    const diff = new Date(FIXED_TODAY).getTime() - date.getTime()
     const days = Math.floor(diff / 86400000)
 
-    if (days === 0) return 'Today'
+    if (days <= 0) return 'Today'
     if (days === 1) return 'Yesterday'
     if (days < 7) return `${days} days ago`
     return date.toLocaleDateString()
@@ -241,6 +246,7 @@ export default function FavoritesPage() {
                         removeFavorite(favorite.id)
                       }}
                       className="p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                      aria-label={`Remove ${favorite.name} from favorites`}
                     >
                       <X className="w-4 h-4 text-gray-400" />
                     </button>
@@ -301,6 +307,7 @@ export default function FavoritesPage() {
                           removeFavorite(favorite.id)
                         }}
                         className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                        aria-label={`Remove ${favorite.name} from favorites`}
                       >
                         <X className="w-4 h-4 text-gray-400" />
                       </button>

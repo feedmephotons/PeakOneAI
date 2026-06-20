@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Calendar, Flag } from 'lucide-react'
+import { X, Calendar, Flag, User } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
 import TagSelector from '@/components/tags/TagSelector'
 import TemplateSelector from '@/components/templates/TemplateSelector'
 import TemplateManager from '@/components/templates/TemplateManager'
+import { MOCK_TEAM } from '@/lib/peak/mock'
+
+type NewTaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments' | 'comments'>
 
 interface CreateTaskModalProps {
   onClose: () => void
-  onCreate: (task: Partial<Task>) => void
+  onCreate: (task: NewTaskInput) => void
 }
 
 export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalProps) {
@@ -19,6 +22,7 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
     status: 'TODO' as Task['status'],
     priority: 'MEDIUM' as Task['priority'],
     dueDate: '',
+    assigneeId: '' as string,
     tagIds: [] as string[],
   })
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false)
@@ -41,12 +45,17 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
     e.preventDefault()
     if (!formData.title.trim()) return
 
+    const member = MOCK_TEAM.find((m) => m.id === formData.assigneeId)
+
     onCreate({
       title: formData.title,
       description: formData.description,
       status: formData.status,
       priority: formData.priority,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      assignee: member
+        ? { id: member.id, name: member.name, avatar: member.avatarUrl ?? undefined }
+        : undefined,
       tags: formData.tagIds || [], // Pass tag IDs
     })
   }
@@ -166,6 +175,29 @@ export default function CreateTaskModal({ onClose, onCreate }: CreateTaskModalPr
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
               />
+            </div>
+
+            {/* Assignee */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <span className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Assignee
+                </span>
+              </label>
+              <select
+                id="task-assignee"
+                value={formData.assigneeId}
+                onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Unassigned</option>
+                {MOCK_TEAM.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}{member.role ? ` — ${member.role}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Tags */}

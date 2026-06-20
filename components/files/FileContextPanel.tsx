@@ -1,6 +1,7 @@
 'use client'
 
 import { Video, CheckSquare, Calendar, Users, ExternalLink, Clock, Brain, TrendingUp } from 'lucide-react'
+import { getMockCalls, getMockTasks, getMockMission, MOCK_FILES } from '@/lib/peak/mock'
 
 const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
 
@@ -29,67 +30,75 @@ interface FileContext {
   recentActivity: { user: string; action: string; time: Date }[]
 }
 
-export default function FileContextPanel({ file }: { file?: { name: string; id: string } }) {
-  // Mock data - in production this would come from the AI context system
+interface FilePanelProps {
+  name: string
+  id: string
+  missionId?: string | null
+  aiSummary?: string
+  aiTags?: string[]
+  lastModifiedBy?: string
+}
+
+export default function FileContextPanel({ file }: { file?: FilePanelProps }) {
+  // Derive context from the canonical Acme Corp dataset, scoped to the file's mission.
+  // Fall back to the default canonical board file when nothing is selected.
+  const seedFile = MOCK_FILES.find((f) => f.id === 'file-board-deck')
+  const missionId = (file?.missionId ?? seedFile?.missionId) || 'mission-launch-product-x'
+  const mission = getMockMission(missionId)
+  const seedSummary = seedFile?.aiSummary || 'Lisa has indexed this document for fast retrieval.'
+  const seedOwnerName = seedFile?.owner?.name || 'Sarah Chen'
+
+  const calls = getMockCalls()
+    .filter((c) => c.missionId === missionId)
+    .slice(0, 3)
+    .map<MeetingReference>((c) => ({
+      id: c.id,
+      title: c.title,
+      date: new Date(c.startTime ?? PEAK_NOW),
+      type: 'call',
+      context: (c.aiSummary || c.actionItems?.[0] || 'Discussed in this call.').slice(0, 140),
+      timestamp: c.durationLabel || '',
+    }))
+
+  const statusMap: Record<string, RelatedTask['status']> = {
+    TODO: 'TODO', IN_PROGRESS: 'IN_PROGRESS', IN_REVIEW: 'IN_PROGRESS', DONE: 'COMPLETED', COMPLETED: 'COMPLETED',
+  }
+  const priorityMap: Record<string, RelatedTask['priority']> = {
+    LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH', URGENT: 'HIGH',
+  }
+  const tasks = getMockTasks({ missionId })
+    .slice(0, 3)
+    .map<RelatedTask>((t) => ({
+      id: t.id,
+      title: t.title,
+      status: statusMap[t.status] ?? 'TODO',
+      priority: priorityMap[t.priority] ?? 'MEDIUM',
+    }))
+
+  const aiInsights = (file?.aiTags && file.aiTags.length
+    ? [file?.aiSummary || '', ...(mission ? [`Linked to mission "${mission.name}" (${mission.progress ?? ''}% ${mission.status ?? ''})`] : [])]
+    : [
+        mission ? `Linked to mission "${mission.name}"` : 'Owned by the Acme Corp team',
+        seedSummary,
+        'Recommended action: review with the mission owner before the next sync',
+      ]
+  ).filter(Boolean) as string[]
+
+  const owner = file?.lastModifiedBy || seedOwnerName
+  const memberNames = (mission?.members || []).map((m) => m.user?.name).filter(Boolean) as string[]
+  const collaborators = Array.from(new Set([owner, ...memberNames])).slice(0, 4)
+
   const context: FileContext = {
-    fileName: file?.name || 'Q4 Sales Report.pdf',
-    meetingReferences: [
-      {
-        id: '1',
-        title: 'Q4 Planning Strategy Call',
-        date: new Date('2025-01-17T14:00:00'),
-        type: 'call',
-        context: 'Sarah mentioned the revenue forecast needs to be updated based on this report',
-        timestamp: '14:23'
-      },
-      {
-        id: '2',
-        title: 'Weekly Team Sync',
-        date: new Date('2025-01-16T10:00:00'),
-        type: 'meeting',
-        context: 'Mike requested everyone review the Q4 numbers before Friday',
-        timestamp: '10:15'
-      },
-      {
-        id: '3',
-        title: 'Finance Review',
-        date: new Date('2025-01-15T15:00:00'),
-        type: 'call',
-        context: 'Team discussed regional performance metrics from pages 12-15',
-        timestamp: '15:42'
-      }
-    ],
-    relatedTasks: [
-      {
-        id: '1',
-        title: 'Review Q4 sales analysis',
-        status: 'IN_PROGRESS',
-        priority: 'HIGH'
-      },
-      {
-        id: '2',
-        title: 'Update revenue forecast',
-        status: 'TODO',
-        priority: 'HIGH'
-      },
-      {
-        id: '3',
-        title: 'Prepare presentation slides',
-        status: 'COMPLETED',
-        priority: 'MEDIUM'
-      }
-    ],
-    aiInsights: [
-      '23% YoY growth - highest in the East region',
-      'Q3 marketing campaign drove 40% of new leads',
-      'Recommended action: Increase Q1 budget by 15%'
-    ],
-    collaborators: ['Sarah Chen', 'Mike Johnson', 'Alex Kim'],
+    fileName: file?.name || seedFile?.name || 'Q2 Board Update.pptx',
+    meetingReferences: calls,
+    relatedTasks: tasks,
+    aiInsights,
+    collaborators,
     recentActivity: [
-      { user: 'Sarah Chen', action: 'Commented on page 3', time: new Date(PEAK_NOW - 3600000) },
-      { user: 'Mike Johnson', action: 'Downloaded', time: new Date(PEAK_NOW - 7200000) },
-      { user: 'You', action: 'Uploaded version 3', time: new Date(PEAK_NOW - 86400000) }
-    ]
+      { user: owner, action: 'Updated this file', time: new Date(PEAK_NOW - 3600000) },
+      { user: collaborators[1] || 'Mike Wilson', action: 'Downloaded', time: new Date(PEAK_NOW - 7200000) },
+      { user: 'Sarah Chen', action: 'Shared with the team', time: new Date(PEAK_NOW - 86400000) },
+    ],
   }
 
   const getTypeIcon = (type: 'call' | 'meeting') => {

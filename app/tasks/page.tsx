@@ -8,6 +8,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { notifications } from '@/lib/notifications'
 import TagFilter from '@/components/tags/TagFilter'
 import TagManager from '@/components/tags/TagManager'
+import TagSelector from '@/components/tags/TagSelector'
 import { tagManager } from '@/lib/tags'
 import BulkActionBar from '@/components/bulk/BulkActionBar'
 import { bulkOperationUtils } from '@/lib/bulk-operations'
@@ -20,6 +21,7 @@ import { automationEngine } from '@/lib/automation'
 import AISuggestionsPanel from '@/components/tasks/AISuggestionsPanel'
 import { createClient } from '@/lib/supabase/client'
 import { GlassPanel, AskLisaBar } from '@/components/peak'
+import { MOCK_TASKS, MOCK_TASK_TAGS, FIXED_TODAY } from '@/lib/peak/mock'
 
 interface SyncAction {
   type: 'CREATE' | 'UPDATE' | 'DELETE'
@@ -92,6 +94,85 @@ const COLUMNS = [
   { id: 'COMPLETED', title: 'Completed', color: 'bg-peak-green' },
 ]
 
+// Map the canonical tag hex colors onto the TagManager's Tailwind color classes
+// so seeded tags render with the right swatch in the filter/selector/cards.
+const TAG_HEX_TO_CLASS: Record<string, string> = {
+  '#7c3aed': 'bg-purple-500',
+  '#2563eb': 'bg-blue-500',
+  '#db2777': 'bg-pink-500',
+  '#ea580c': 'bg-orange-500',
+  '#dc2626': 'bg-red-500',
+  '#16a34a': 'bg-green-500',
+  '#0891b2': 'bg-teal-500',
+  '#9333ea': 'bg-purple-500',
+  '#64748b': 'bg-gray-500',
+}
+
+/**
+ * Seed the canonical Acme task tags (tag-launch, tag-eng, …) into the
+ * TagManager localStorage store on first load. The Tag filter, TagSelector and
+ * TaskCard labels all read from this store, so without seeding the canonical
+ * tag IDs would have no labels/colors and the filter would show nothing.
+ */
+function seedCanonicalTags() {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = JSON.parse(localStorage.getItem('user_tags') || '[]') as Array<{
+      id: string
+      name: string
+      color: string
+      createdAt: string
+    }>
+    const haveIds = new Set(existing.map((t) => t.id))
+    let changed = false
+    for (const tag of MOCK_TASK_TAGS) {
+      if (!haveIds.has(tag.id)) {
+        existing.push({
+          id: tag.id,
+          name: tag.label,
+          color: TAG_HEX_TO_CLASS[tag.color] || 'bg-purple-500',
+          createdAt: FIXED_TODAY,
+        })
+        changed = true
+      }
+    }
+    if (changed) localStorage.setItem('user_tags', JSON.stringify(existing))
+  } catch (e) {
+    console.error('Failed to seed canonical tags:', e)
+  }
+}
+
+// Map a canonical MOCK_TASKS record to the page's local Task shape.
+// Canon status 'DONE' maps to the board's 'COMPLETED' column.
+function fromMockTask(t: (typeof MOCK_TASKS)[number]): Task {
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description ?? undefined,
+    status: t.status === 'DONE' ? 'COMPLETED' : (t.status as Task['status']),
+    priority: t.priority,
+    assignee: t.assignee
+      ? { id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatarUrl ?? undefined }
+      : undefined,
+    dueDate: t.dueDate ? new Date(t.dueDate) : undefined,
+    tags: t.tags,
+    attachments: 0,
+    comments: 0,
+    createdAt: new Date(t.createdAt),
+    updatedAt: new Date(t.updatedAt),
+  }
+}
+
+function getSeedTasks(): Task[] {
+  // Also register the canonical tag→task mappings so getItemTags works app-wide.
+  if (typeof window !== 'undefined') {
+    for (const t of MOCK_TASKS) {
+      if (t.tags.length) tagManager.setItemTags(t.id, 'task', t.tags)
+    }
+  }
+  return MOCK_TASKS.map(fromMockTask)
+}
+
 export default function TasksPage() {
   const { showNotification } = useNotifications()
   const [tasks, setTasks] = useState<Task[]>([])
@@ -106,6 +187,8 @@ export default function TasksPage() {
   const [isAutomationManagerOpen, setIsAutomationManagerOpen] = useState(false)
   const [activeSearchQuery, setActiveSearchQuery] = useState<SearchQuery | null>(null)
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
+  const [isBulkTagOpen, setIsBulkTagOpen] = useState(false)
+  const [bulkTagIds, setBulkTagIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [syncStatus, setSyncStatus] = useState<'synced' | 'demo'>('demo')
@@ -125,6 +208,10 @@ export default function TasksPage() {
   }
 
   const checkAuthAndLoad = useCallback(async () => {
+    // Ensure the canonical task tags exist in the TagManager store so the Tag
+    // filter, selector, and card labels resolve for seeded tasks.
+    seedCanonicalTags()
+
     let isAuth = false
     try {
       const supabase = createClient()
@@ -206,60 +293,8 @@ export default function TasksPage() {
           updatedAt: new Date(task.updatedAt)
         }))
       } else {
-        // Sample tasks for demo
-        const sampleTasks: Task[] = [
-          {
-            id: '1',
-            title: 'Design new landing page',
-            description: 'Create wireframes and mockups for the new marketing site',
-            status: 'IN_PROGRESS',
-            priority: 'HIGH',
-            assignee: { id: '1', name: 'John Doe' },
-            dueDate: new Date(Date.now() + 86400000 * 3),
-            tags: ['design', 'marketing'],
-            attachments: 3,
-            comments: 5,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: '2',
-            title: 'Fix authentication bug',
-            description: 'Users unable to login with Google OAuth',
-            status: 'TODO',
-            priority: 'URGENT',
-            tags: ['bug', 'auth'],
-            attachments: 0,
-            comments: 2,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: '3',
-            title: 'Code review: Payment integration',
-            status: 'IN_REVIEW',
-            priority: 'MEDIUM',
-            assignee: { id: '2', name: 'Jane Smith' },
-            tags: ['review', 'payments'],
-            attachments: 1,
-            comments: 8,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: '4',
-            title: 'Update documentation',
-            description: 'Add API endpoints documentation',
-            status: 'COMPLETED',
-            priority: 'LOW',
-            tags: ['docs'],
-            attachments: 0,
-            comments: 0,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]
-        baseTasks = sampleTasks
+        // Canonical Acme Corp demo board, seeded from MOCK_TASKS.
+        baseTasks = getSeedTasks()
       }
 
       let pendingActions: SyncAction[] = []
@@ -925,7 +960,34 @@ export default function TasksPage() {
   }
 
   const handleBulkTag = () => {
-    setIsTagManagerOpen(true)
+    setBulkTagIds([])
+    setIsBulkTagOpen(true)
+  }
+
+  // Apply the chosen tags to every selected task: persist the tag→item mapping
+  // in the TagManager and merge the tag IDs onto each task in state.
+  const handleApplyBulkTags = () => {
+    if (bulkTagIds.length === 0) {
+      setIsBulkTagOpen(false)
+      return
+    }
+    const ids = Array.from(selectedTasks)
+    setTasks(prev =>
+      prev.map(t => {
+        if (!selectedTasks.has(t.id)) return t
+        const merged = Array.from(new Set([...(t.tags || []), ...bulkTagIds]))
+        tagManager.setItemTags(t.id, 'task', merged)
+        return { ...t, tags: merged, updatedAt: new Date() }
+      })
+    )
+    showNotification({
+      type: 'success',
+      title: 'Tags applied',
+      message: `Tagged ${ids.length} task(s)`
+    })
+    setIsBulkTagOpen(false)
+    setBulkTagIds([])
+    setSelectedTasks(new Set())
   }
 
   const handleAdvancedSearch = (query: SearchQuery) => {
@@ -944,7 +1006,7 @@ export default function TasksPage() {
 
   // Filter tasks based on search and priority
   const filteredTasks = activeSearchQuery
-    ? advancedSearch.search(tasks as SearchableItem[], activeSearchQuery) as Task[]
+    ? advancedSearch.search(tasks as unknown as SearchableItem[], activeSearchQuery) as unknown as Task[]
     : tasks.filter(task => {
         const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               task.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1110,7 +1172,17 @@ export default function TasksPage() {
           {/* Suggestions Sidebar */}
           <div className="hidden xl:block w-80 flex-shrink-0">
             <GlassPanel className="sticky top-24 p-6">
-              <AISuggestionsPanel />
+              <AISuggestionsPanel
+                onAddTask={(title) =>
+                  handleCreateTask({
+                    title,
+                    description: 'Added from a Lisa suggestion.',
+                    status: 'TODO',
+                    priority: 'MEDIUM',
+                    tags: [],
+                  })
+                }
+              />
             </GlassPanel>
           </div>
         </div>
@@ -1137,6 +1209,47 @@ export default function TasksPage() {
           isOpen={isTagManagerOpen}
           onClose={() => setIsTagManagerOpen(false)}
         />
+
+        {/* Bulk Tag Modal */}
+        {isBulkTagOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <GlassPanel className="w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-peak">
+                  Tag {selectedTasks.size} task{selectedTasks.size > 1 ? 's' : ''}
+                </h2>
+                <button
+                  onClick={() => setIsBulkTagOpen(false)}
+                  className="text-peak-dim hover:text-peak transition"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-sm text-peak-muted mb-3">
+                Choose tags to apply to the selected tasks.
+              </p>
+              <TagSelector
+                selectedTagIds={bulkTagIds}
+                onChange={setBulkTagIds}
+                placeholder="Select tags to apply…"
+              />
+              <div className="flex items-center justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setIsBulkTagOpen(false)}
+                  className="px-4 py-2 border border-peak-border rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleApplyBulkTags}
+                  className="px-4 py-2 bg-peak-primary text-white rounded-lg shadow-peak-glow hover:bg-peak-primary-600 transition-colors"
+                >
+                  Apply Tags
+                </button>
+              </div>
+            </GlassPanel>
+          </div>
+        )}
 
         {/* Template Manager Modal */}
         <TemplateManager

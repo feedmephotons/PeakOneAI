@@ -9,6 +9,23 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { io } from 'socket.io-client'
+import { MOCK_USER, MOCK_TEAM, MOCK_PEOPLE } from '@/lib/peak/mock'
+
+// Canonical Acme directory for the New Message compose modal (team + external contacts).
+const DIRECTORY = [
+  ...MOCK_TEAM.filter((m) => m.id !== MOCK_USER.id).map((m) => ({
+    id: m.id,
+    name: m.name,
+    email: m.email || '',
+    role: m.role || 'Team',
+  })),
+  ...MOCK_PEOPLE.filter((p) => !MOCK_TEAM.some((m) => m.email === p.email)).map((p) => ({
+    id: p.id,
+    name: p.name,
+    email: p.email || '',
+    role: p.title || p.company || 'Contact',
+  })),
+]
 
 interface Message {
   id: string
@@ -54,6 +71,9 @@ export default function MessagesPage() {
   const [isOffline, setIsOffline] = useState(false)
   const [socketConnected, setSocketConnected] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [showCompose, setShowCompose] = useState(false)
+  const [composeSearch, setComposeSearch] = useState('')
+  const [showThreadMenu, setShowThreadMenu] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -98,11 +118,12 @@ export default function MessagesPage() {
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null
           }
         } else {
+          // Demo fallback — align to the canonical Acme Corp user (Sarah Chen).
           profile = {
             id: 'demo-user-id',
-            email: 'sarah.chen@peakone.ai',
-            name: 'Sarah Chen',
-            avatarUrl: null
+            email: MOCK_USER.email,
+            name: MOCK_USER.name,
+            avatarUrl: MOCK_USER.avatarUrl || null
           }
         }
         setCurrentUser(profile)
@@ -111,10 +132,31 @@ export default function MessagesPage() {
         const response = await fetch('/api/conversations')
         if (response.ok) {
           const data = await response.json()
-          setConversations(data.conversations || [])
-          
-          if (data.conversations && data.conversations.length > 0) {
-            setSelectedConversation(data.conversations[0])
+          let convs: Conversation[] = data.conversations || []
+
+          // Merge persisted pin/mute prefs from localStorage.
+          try {
+            const raw = localStorage.getItem('messages_conv_prefs')
+            if (raw) {
+              const prefs = JSON.parse(raw)
+              convs = convs.map((c) =>
+                prefs[c.id]
+                  ? {
+                      ...c,
+                      isPinned: prefs[c.id].pinned ?? c.isPinned,
+                      isMuted: prefs[c.id].muted ?? c.isMuted,
+                    }
+                  : c
+              )
+            }
+          } catch {
+            /* ignore */
+          }
+
+          setConversations(convs)
+
+          if (convs.length > 0) {
+            setSelectedConversation(convs[0])
           }
         }
       } catch (err) {
@@ -204,9 +246,10 @@ export default function MessagesPage() {
     }
   }, [selectedConversation, currentUser, socketConnected])
 
-  // Clear typing users when conversation changes
+  // Clear typing users and close the options menu when conversation changes
   useEffect(() => {
     setTypingUsers({})
+    setShowThreadMenu(false)
   }, [selectedConversation])
 
   // 6. Listen to incoming socket events
@@ -558,16 +601,107 @@ export default function MessagesPage() {
     await sendMessage('', type, fileUrl, fileName)
   }
 
+  // Start (or open) a direct conversation with a directory contact.
+  const startConversationWith = async (contact: { id: string; name: string; email: string }) => {
+    // If a DM thread with this person already exists, just select it.
+    const existing = conversations.find(
+      (c) => c.type === 'direct' && c.name.toLowerCase() === contact.name.toLowerCase()
+    )
+    if (existing) {
+      setSelectedConversation(existing)
+      setShowCompose(false)
+      setComposeSearch('')
+      return
+    }
+
+    let created: Conversation | null = null
+    try {
+      const res = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'direct', participantEmails: [contact.email] }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const conv = data.conversation
+        if (conv) {
+          created = {
+            id: conv.id,
+            type: 'direct',
+            name: conv.name && !conv.name.includes('@') ? conv.name : contact.name,
+            lastMessage: conv.lastMessage || '',
+            lastMessageTime: conv.lastMessageTime ? new Date(conv.lastMessageTime) : new Date(),
+            unreadCount: 0,
+            participants: conv.participants || [currentUser?.id, contact.id],
+            isOnline: true,
+            isPinned: false,
+            isMuted: false,
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to create conversation:', err)
+    }
+
+    // Demo fallback — build the conversation locally if the API did not return one.
+    if (!created) {
+      created = {
+        id: `thread-new-${contact.id}`,
+        type: 'direct',
+        name: contact.name,
+        lastMessage: '',
+        lastMessageTime: undefined,
+        unreadCount: 0,
+        participants: [currentUser?.id || 'user', contact.id],
+        isOnline: true,
+        isPinned: false,
+        isMuted: false,
+      }
+    }
+
+    setConversations((prev) => {
+      if (prev.some((c) => c.id === created!.id)) return prev
+      return [created!, ...prev]
+    })
+    setSelectedConversation(created)
+    setShowCompose(false)
+    setComposeSearch('')
+  }
+
+  const leaveConversation = (convId: string) => {
+    setConversations((prev) => prev.filter((c) => c.id !== convId))
+    setSelectedConversation((prev) => (prev?.id === convId ? null : prev))
+    setShowThreadMenu(false)
+  }
+
+  // Persist pin/mute prefs to localStorage so they survive reloads (no API).
+  const persistPref = (convId: string, key: 'pinned' | 'muted', value: boolean) => {
+    try {
+      const raw = localStorage.getItem('messages_conv_prefs')
+      const prefs = raw ? JSON.parse(raw) : {}
+      prefs[convId] = { ...(prefs[convId] || {}), [key]: value }
+      localStorage.setItem('messages_conv_prefs', JSON.stringify(prefs))
+    } catch {
+      /* ignore */
+    }
+  }
+
   const togglePinConversation = (convId: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === convId ? { ...conv, isPinned: !conv.isPinned } : conv
-    ))
+    setConversations(prev => prev.map(conv => {
+      if (conv.id !== convId) return conv
+      const next = !conv.isPinned
+      persistPref(convId, 'pinned', next)
+      return { ...conv, isPinned: next }
+    }))
   }
 
   const toggleMuteConversation = (convId: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === convId ? { ...conv, isMuted: !conv.isMuted } : conv
-    ))
+    setConversations(prev => prev.map(conv => {
+      if (conv.id !== convId) return conv
+      const next = !conv.isMuted
+      persistPref(convId, 'muted', next)
+      return { ...conv, isMuted: next }
+    }))
   }
 
   const filteredConversations = conversations.filter(conv =>
@@ -601,7 +735,10 @@ export default function MessagesPage() {
               className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-peak-border text-peak placeholder:text-peak-dim rounded-xl focus:outline-none focus:border-peak-primary/50"
             />
           </div>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-peak-primary hover:bg-peak-primary-600 text-white rounded-xl transition-colors">
+          <button
+            onClick={() => { setShowCompose(true); setComposeSearch('') }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-peak-primary hover:bg-peak-primary-600 text-white rounded-xl transition-colors"
+          >
             <Plus className="w-4 h-4" />
             <span>New Message</span>
           </button>
@@ -732,9 +869,51 @@ export default function MessagesPage() {
                 >
                   <Video className="w-5 h-5 text-peak-muted" />
                 </Link>
-                <button className="p-2 hover:bg-white/[0.04] rounded-lg transition">
-                  <MoreVertical className="w-5 h-5 text-peak-muted" />
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowThreadMenu((v) => !v)}
+                    className="p-2 hover:bg-white/[0.04] rounded-lg transition"
+                    title="Conversation options"
+                  >
+                    <MoreVertical className="w-5 h-5 text-peak-muted" />
+                  </button>
+                  {showThreadMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowThreadMenu(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-52 bg-peak-glass border border-peak-border rounded-xl shadow-lg py-1 z-20">
+                        <button
+                          onClick={() => { togglePinConversation(selectedConversation.id); setShowThreadMenu(false) }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-peak hover:bg-white/[0.06] transition"
+                        >
+                          <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'text-peak-amber fill-current' : 'text-peak-dim'}`} />
+                          {selectedConversation.isPinned ? 'Unpin conversation' : 'Pin conversation'}
+                        </button>
+                        <button
+                          onClick={() => { toggleMuteConversation(selectedConversation.id); setShowThreadMenu(false) }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-peak hover:bg-white/[0.06] transition"
+                        >
+                          <BellOff className={`w-4 h-4 ${selectedConversation.isMuted ? 'text-peak-primary' : 'text-peak-dim'}`} />
+                          {selectedConversation.isMuted ? 'Unmute' : 'Mute notifications'}
+                        </button>
+                        <button
+                          onClick={() => markAsReadAPI(selectedConversation.id)}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-peak hover:bg-white/[0.06] transition"
+                        >
+                          <MessageSquare className="w-4 h-4 text-peak-dim" />
+                          Mark as read
+                        </button>
+                        <div className="my-1 border-t border-peak-border" />
+                        <button
+                          onClick={() => leaveConversation(selectedConversation.id)}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-peak-red hover:bg-white/[0.06] transition"
+                        >
+                          <File className="w-4 h-4" />
+                          Leave conversation
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -845,7 +1024,17 @@ export default function MessagesPage() {
                   </div>
                 )}
               </div>
-              <button className="p-2 hover:bg-white/[0.04] rounded-lg transition">
+              <button
+                onClick={() => {
+                  // EXTERNAL: needs Web Speech API / audio capture for real voice notes.
+                  // Demo path: drop a voice-note placeholder into the composer.
+                  if (offlineActive) return
+                  setNewMessage((m) => (m ? m + ' ' : '') + '🎤 Voice note (0:08)')
+                }}
+                className="p-2 hover:bg-white/[0.04] rounded-lg transition disabled:opacity-40"
+                disabled={offlineActive}
+                title="Record voice note"
+              >
                 <Mic className="w-5 h-5 text-peak-muted" />
               </button>
               <button
@@ -871,6 +1060,70 @@ export default function MessagesPage() {
             <p className="text-peak-muted">
               Choose a conversation from the sidebar to start messaging
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* New Message compose modal — start a DM with anyone in the Acme directory. */}
+      {showCompose && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-24"
+          onClick={() => setShowCompose(false)}
+        >
+          <div
+            className="w-full max-w-md bg-peak-glass border border-peak-border rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-peak-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-peak">New Message</h3>
+              <button
+                onClick={() => setShowCompose(false)}
+                className="text-peak-dim hover:text-peak text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 border-b border-peak-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-peak-dim" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={composeSearch}
+                  onChange={(e) => setComposeSearch(e.target.value)}
+                  placeholder="Search people..."
+                  className="w-full pl-9 pr-4 py-2 bg-white/[0.04] border border-peak-border text-peak placeholder:text-peak-dim rounded-xl focus:outline-none focus:border-peak-primary/50"
+                />
+              </div>
+            </div>
+            <div className="max-h-72 overflow-y-auto py-1">
+              {DIRECTORY.filter(
+                (p) =>
+                  p.name.toLowerCase().includes(composeSearch.toLowerCase()) ||
+                  p.email.toLowerCase().includes(composeSearch.toLowerCase())
+              ).map((person) => (
+                <button
+                  key={person.id}
+                  onClick={() => startConversationWith(person)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] transition text-left"
+                >
+                  <div className="w-9 h-9 bg-peak-primary rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    {person.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-peak truncate">{person.name}</p>
+                    <p className="text-xs text-peak-muted truncate">{person.role} · {person.email}</p>
+                  </div>
+                </button>
+              ))}
+              {DIRECTORY.filter(
+                (p) =>
+                  p.name.toLowerCase().includes(composeSearch.toLowerCase()) ||
+                  p.email.toLowerCase().includes(composeSearch.toLowerCase())
+              ).length === 0 && (
+                <p className="px-4 py-6 text-center text-sm text-peak-muted">No people found</p>
+              )}
+            </div>
           </div>
         </div>
       )}

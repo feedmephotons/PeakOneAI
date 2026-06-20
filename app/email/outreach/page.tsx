@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Sparkles, Mail, Send, Copy, ChevronRight, RefreshCw,
+  Sparkles, Mail, Send, Copy, RefreshCw,
   Plus, Trash2, Save, ArrowLeft, Check, Zap, Target,
-  Users, BarChart3, Clock, Edit3
+  Users, BarChart3, Clock, Edit3, FolderOpen
 } from 'lucide-react'
+import { MOCK_USER, ACME_COMPANY } from '@/lib/peak/mock'
 
 type ToneType = 'formal' | 'neutral' | 'casual'
 
@@ -36,11 +37,11 @@ const TONE_OPTIONS: { value: ToneType; label: string; description: string; emoji
 ]
 
 const EXAMPLE_PROMPTS = [
+  'Product leaders evaluating launch platforms',
+  'Growth marketers scaling Q2 demand gen',
+  'Ops teams needing reliability tooling',
   'Founders/CTOs needing development tools',
-  'Marketing managers looking for automation',
-  'HR directors seeking recruitment software',
-  'Sales teams wanting CRM solutions',
-  'Startup founders raising Series A',
+  'VCs tracking Series A SaaS metrics',
 ]
 
 export default function EmailOutreachPage() {
@@ -58,13 +59,46 @@ export default function EmailOutreachPage() {
   const [sendTo, setSendTo] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null)
+  // Seed sender defaults from the canonical Acme Corp user (Sarah Chen).
   const [personalizationVars, setPersonalizationVars] = useState({
     firstName: '',
     lastName: '',
     company: '',
-    senderName: '',
-    calendar_link: ''
+    senderName: MOCK_USER.name,
+    calendar_link: 'https://cal.com/sarah-chen-acme'
   })
+
+  // Saved campaign reader (localStorage-backed).
+  const [savedCampaigns, setSavedCampaigns] = useState<Campaign[]>([])
+  const [showCampaigns, setShowCampaigns] = useState(false)
+
+  const loadCampaigns = () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('email-campaigns') || '[]')
+      setSavedCampaigns(raw as Campaign[])
+    } catch {
+      setSavedCampaigns([])
+    }
+  }
+
+  useEffect(() => {
+    loadCampaigns()
+  }, [])
+
+  const handleLoadCampaign = (campaign: Campaign) => {
+    setTargetAudience(campaign.targetAudience)
+    setSelectedTone(campaign.tone)
+    setOutreachGoal(campaign.goal)
+    setGeneratedEmails(campaign.emails)
+    setSelectedEmailIndex(0)
+    setShowCampaigns(false)
+  }
+
+  const handleDeleteCampaign = (id: string) => {
+    const next = savedCampaigns.filter(c => c.id !== id)
+    setSavedCampaigns(next)
+    localStorage.setItem('email-campaigns', JSON.stringify(next))
+  }
 
   const generateEmailSequence = async () => {
     if (!targetAudience.trim()) return
@@ -133,18 +167,67 @@ export default function EmailOutreachPage() {
   }
 
   const regenerateEmail = async (index: number) => {
+    if (!targetAudience.trim()) return
     setIsGenerating(true)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    const newEmails = [...generatedEmails]
-    // In production, call Gemini API for regeneration
-    newEmails[index] = {
-      ...newEmails[index],
-      body: newEmails[index].body + '\n\n[Regenerated with new variation]',
-      generated: true
+    try {
+      const response = await fetch('/api/ai/email-outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetAudience,
+          tone: selectedTone,
+          goal: outreachGoal,
+          emailCount: 1
+        }),
+      })
+      if (!response.ok) throw new Error('Failed to regenerate email')
+      const data = await response.json()
+      const fresh = data.emails?.[0]
+      if (fresh) {
+        const newEmails = [...generatedEmails]
+        newEmails[index] = {
+          ...newEmails[index],
+          subject: fresh.subject || newEmails[index].subject,
+          body: fresh.body || newEmails[index].body,
+          generated: true
+        }
+        setGeneratedEmails(newEmails)
+      }
+    } catch (error) {
+      // EXTERNAL: needs Gemini (GEMINI_API_KEY). Fall back to a deterministic variation.
+      console.error('Failed to regenerate email:', error)
+      const newEmails = [...generatedEmails]
+      const tone = { formal: 'Dear', neutral: 'Hi', casual: 'Hey' }[selectedTone]
+      newEmails[index] = {
+        ...newEmails[index],
+        body: `${tone} {{firstName}},\n\nFollowing up on ${targetAudience.toLowerCase()} — ${outreachGoal ? outreachGoal.toLowerCase() : 'I would love to connect'}. Worth a quick 15 minutes this week?\n\nBest,\n{{senderName}}`,
+        generated: true
+      }
+      setGeneratedEmails(newEmails)
+    } finally {
+      setIsGenerating(false)
     }
-    setGeneratedEmails(newEmails)
-    setIsGenerating(false)
+  }
+
+  const addEmailToSequence = () => {
+    const tone = { formal: 'Dear', neutral: 'Hi', casual: 'Hey' }[selectedTone]
+    const newEmail: EmailSequence = {
+      id: `seq-${Date.now()}`,
+      subject: 'New follow-up',
+      body: `${tone} {{firstName}},\n\n[Write your follow-up here]\n\nBest,\n{{senderName}}`,
+      delay: 3,
+      generated: false
+    }
+    const next = [...generatedEmails, newEmail]
+    setGeneratedEmails(next)
+    setSelectedEmailIndex(next.length - 1)
+  }
+
+  const removeEmailFromSequence = (index: number) => {
+    if (generatedEmails.length <= 1) return
+    const next = generatedEmails.filter((_, i) => i !== index)
+    setGeneratedEmails(next)
+    setSelectedEmailIndex(Math.max(0, Math.min(selectedEmailIndex, next.length - 1)))
   }
 
   const copyToClipboard = (text: string) => {
@@ -165,7 +248,9 @@ export default function EmailOutreachPage() {
 
     // Save to localStorage
     const existing = JSON.parse(localStorage.getItem('email-campaigns') || '[]')
-    localStorage.setItem('email-campaigns', JSON.stringify([...existing, campaign]))
+    const next = [...existing, campaign]
+    localStorage.setItem('email-campaigns', JSON.stringify(next))
+    setSavedCampaigns(next as Campaign[])
 
     setShowSaveModal(false)
     setCampaignName('')
@@ -241,15 +326,29 @@ export default function EmailOutreachPage() {
               </div>
             </div>
 
-            {generatedEmails.length > 0 && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowSaveModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                onClick={() => { loadCampaigns(); setShowCampaigns(true) }}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
-                <Save className="w-4 h-4" />
-                Save Campaign
+                <FolderOpen className="w-4 h-4" />
+                Saved Campaigns
+                {savedCampaigns.length > 0 && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                    {savedCampaigns.length}
+                  </span>
+                )}
               </button>
-            )}
+              {generatedEmails.length > 0 && (
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Campaign
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -430,6 +529,7 @@ export default function EmailOutreachPage() {
                     </button>
                   ))}
                   <button
+                    onClick={addEmailToSequence}
                     className="px-4 py-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     title="Add email to sequence"
                   >
@@ -506,6 +606,16 @@ export default function EmailOutreachPage() {
                         <Copy className="w-4 h-4" />
                         Copy
                       </button>
+                      {generatedEmails.length > 1 && (
+                        <button
+                          onClick={() => removeEmailFromSequence(selectedEmailIndex)}
+                          className="flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                          title="Remove this email from the sequence"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Remove
+                        </button>
+                      )}
                     </div>
 
                     <button
@@ -658,7 +768,7 @@ export default function EmailOutreachPage() {
                       type="text"
                       value={personalizationVars.company}
                       onChange={(e) => setPersonalizationVars(prev => ({ ...prev, company: e.target.value }))}
-                      placeholder="Acme Inc"
+                      placeholder={ACME_COMPANY}
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
@@ -710,6 +820,63 @@ export default function EmailOutreachPage() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Campaigns Modal */}
+      {showCampaigns && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-indigo-500" />
+                Saved Campaigns
+              </h3>
+              <button
+                onClick={() => setShowCampaigns(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-gray-500 dark:text-gray-400"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6 space-y-3">
+              {savedCampaigns.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  <Mail className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                  <p>No saved campaigns yet. Generate a sequence and click Save Campaign.</p>
+                </div>
+              ) : (
+                savedCampaigns.map((campaign) => (
+                  <div
+                    key={campaign.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500 transition"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 dark:text-white truncate">{campaign.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {campaign.targetAudience} · {campaign.emails.length} emails · <span className="capitalize">{campaign.tone}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                      <button
+                        onClick={() => handleLoadCampaign(campaign)}
+                        className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                        title="Delete campaign"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -1,27 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plug, Check, Plus, ExternalLink } from 'lucide-react'
 import { GlassPanel } from '@/components/peak'
+import { MOCK_ORG_IDENTITY } from '@/lib/peak/mock'
 
+// emoji icons are demo-fidelity. EXTERNAL: swap for brand SVG logos when assets are available.
 const INTEGRATIONS = [
-  { id: '1', name: 'Slack', description: 'Send notifications to Slack channels', icon: '💬', connected: true },
-  { id: '2', name: 'Google Calendar', description: 'Sync your calendar events', icon: '📅', connected: true },
-  { id: '3', name: 'GitHub', description: 'Link repositories and track issues', icon: '🐙', connected: false },
-  { id: '4', name: 'Jira', description: 'Sync tasks and projects', icon: '📋', connected: false },
-  { id: '5', name: 'Notion', description: 'Import and export documents', icon: '📝', connected: false },
-  { id: '6', name: 'Figma', description: 'Embed design files', icon: '🎨', connected: true },
-  { id: '7', name: 'Zoom', description: 'Start meetings directly', icon: '📹', connected: false },
-  { id: '8', name: 'Salesforce', description: 'Sync CRM data', icon: '☁️', connected: false },
+  { id: 'slack', name: 'Slack', description: 'Send notifications to Slack channels', icon: '💬', connected: true },
+  { id: 'gcal', name: 'Google Calendar', description: 'Sync your calendar events', icon: '📅', connected: true },
+  { id: 'github', name: 'GitHub', description: 'Link repositories and track issues', icon: '🐙', connected: false },
+  { id: 'jira', name: 'Jira', description: 'Sync tasks and projects', icon: '📋', connected: false },
+  { id: 'notion', name: 'Notion', description: 'Import and export documents', icon: '📝', connected: false },
+  { id: 'figma', name: 'Figma', description: 'Embed design files', icon: '🎨', connected: true },
+  { id: 'zoom', name: 'Zoom', description: 'Start meetings directly', icon: '📹', connected: false },
+  { id: 'salesforce', name: 'Salesforce', description: 'Sync CRM data', icon: '☁️', connected: false },
 ]
+
+const STORAGE_KEY = 'integrationConnections'
 
 export default function IntegrationsSettingsPage() {
   const [integrations, setIntegrations] = useState(INTEGRATIONS)
 
+  // Hydrate persisted connection state.
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      try {
+        const map = JSON.parse(raw) as Record<string, boolean>
+        setIntegrations((prev) => prev.map((i) => (i.id in map ? { ...i, connected: map[i.id] } : i)))
+      } catch { /* ignore corrupt cache */ }
+    }
+  }, [])
+
   const toggleConnection = (id: string) => {
-    setIntegrations(integrations.map(i =>
-      i.id === id ? { ...i, connected: !i.connected } : i
-    ))
+    // EXTERNAL: needs each provider's OAuth flow + an Integration table. Demo path persists locally.
+    setIntegrations((prev) => {
+      const next = prev.map((i) => (i.id === id ? { ...i, connected: !i.connected } : i))
+      const map = Object.fromEntries(next.map((i) => [i.id, i.connected]))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(map))
+      return next
+    })
   }
 
   const connectedCount = integrations.filter(i => i.connected).length
@@ -85,10 +104,13 @@ export default function IntegrationsSettingsPage() {
         {/* Request Integration */}
         <div className="mt-8 text-center">
           <p className="text-peak-muted mb-2">Don&apos;t see what you need?</p>
-          <button className="inline-flex items-center gap-2 text-peak-primary-300 hover:text-peak-primary transition-colors">
+          <a
+            href={`mailto:integrations@peakone.ai?subject=${encodeURIComponent('Integration request from ' + MOCK_ORG_IDENTITY.company)}&body=${encodeURIComponent('Hi Peak One team,\n\nWe would like to request the following integration:\n\n')}`}
+            className="inline-flex items-center gap-2 text-peak-primary-300 hover:text-peak-primary transition-colors"
+          >
             Request an integration
             <ExternalLink className="w-4 h-4" />
-          </button>
+          </a>
         </div>
       </div>
     </div>

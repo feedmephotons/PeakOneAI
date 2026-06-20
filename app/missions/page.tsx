@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   PeakShell,
   GlassPanel,
@@ -9,7 +10,7 @@ import {
   ProgressRing,
   AskLisaBar,
 } from '@/components/peak'
-import { MOCK_MISSIONS } from '@/lib/peak/mock'
+import { MOCK_MISSIONS, MOCK_USER } from '@/lib/peak/mock'
 import type { Mission, MissionStatus } from '@/lib/peak/types'
 import {
   Plus,
@@ -19,6 +20,8 @@ import {
   CheckCircle2,
   TrendingUp,
   Activity,
+  X,
+  Loader2,
 } from 'lucide-react'
 
 // ----------------------------------------------------------------------------
@@ -181,13 +184,11 @@ function MissionCard({ mission }: { mission: Mission }) {
 // New Mission stub card
 // ----------------------------------------------------------------------------
 
-function NewMissionCard() {
+function NewMissionCard({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={() =>
-        alert('New Mission — mission creation flow coming soon. Lisa will help you scope objectives, milestones, and a team.')
-      }
+      onClick={onClick}
       className="group flex h-full min-h-[200px] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-peak-border bg-white/[0.015] p-6 text-center transition-all duration-200 hover:border-peak-primary/40 hover:bg-peak-primary/[0.04]"
     >
       <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/20 transition-transform duration-200 group-hover:scale-105">
@@ -202,12 +203,190 @@ function NewMissionCard() {
 }
 
 // ----------------------------------------------------------------------------
+// New Mission modal — POSTs to /api/missions (mock fallback baked in)
+// ----------------------------------------------------------------------------
+
+function NewMissionModal({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean
+  onClose: () => void
+  onCreated: (m: Mission) => void
+}) {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [targetDate, setTargetDate] = useState('')
+  const [status, setStatus] = useState<MissionStatus>('ON_TRACK')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!open) return null
+
+  const reset = () => {
+    setName('')
+    setDescription('')
+    setTargetDate('')
+    setStatus('ON_TRACK')
+    setError(null)
+  }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) {
+      setError('Mission name is required.')
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+
+    const payload = {
+      name: name.trim(),
+      description: description.trim() || null,
+      status,
+      progress: 0,
+      targetDate: targetDate ? new Date(targetDate).toISOString() : null,
+    }
+
+    try {
+      const res = await fetch('/api/missions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.data) {
+        onCreated(json.data as Mission)
+      } else {
+        throw new Error(json?.error || 'create failed')
+      }
+    } catch {
+      // Optimistic local mission so the demo flow never dead-ends.
+      const now = new Date().toISOString()
+      const local: Mission = {
+        id: `local-mission-${now}`,
+        name: payload.name,
+        description: payload.description,
+        status,
+        progress: 0,
+        targetDate: payload.targetDate,
+        workspaceId: 'workspace-acme',
+        owner: { id: MOCK_USER.id, name: MOCK_USER.name, avatarUrl: MOCK_USER.avatarUrl },
+        objectiveCount: 0,
+        riskCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      }
+      onCreated(local)
+    } finally {
+      setSubmitting(false)
+      reset()
+      onClose()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <GlassPanel className="relative z-10 w-full max-w-lg p-6">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-peak">New Mission</h2>
+            <p className="mt-1 text-sm text-peak-muted">
+              Scope a new objective. You can refine the plan, team, and risks with Lisa after.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-peak-muted transition-colors hover:text-peak"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-peak-muted">Mission name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              placeholder="e.g. Expand into Enterprise"
+              className="w-full rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5 text-sm text-peak placeholder:text-peak-muted focus:border-peak-primary/40 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-peak-muted">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="What outcome does this mission drive?"
+              className="w-full resize-none rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5 text-sm text-peak placeholder:text-peak-muted focus:border-peak-primary/40 focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-peak-muted">Target date</label>
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="w-full rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5 text-sm text-peak focus:border-peak-primary/40 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-peak-muted">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as MissionStatus)}
+                className="w-full rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5 text-sm text-peak focus:border-peak-primary/40 focus:outline-none"
+              >
+                <option value="ON_TRACK">On Track</option>
+                <option value="AT_RISK">At Risk</option>
+                <option value="BEHIND">Behind</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </div>
+          </div>
+
+          {error ? <p className="text-xs text-peak-red">{error}</p> : null}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-peak-border bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-peak transition-colors hover:bg-white/[0.06]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex items-center gap-2 rounded-xl bg-peak-primary px-4 py-2.5 text-sm font-semibold text-white shadow-peak-glow transition-colors hover:bg-peak-primary-600 disabled:opacity-60"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Create Mission
+            </button>
+          </div>
+        </form>
+      </GlassPanel>
+    </div>
+  )
+}
+
+// ----------------------------------------------------------------------------
 // Page
 // ----------------------------------------------------------------------------
 
 export default function MissionsPage() {
+  const router = useRouter()
   const [missions, setMissions] = useState<Mission[]>(MOCK_MISSIONS)
   const [filter, setFilter] = useState<'ALL' | MissionStatus>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
 
   // Try the live API; fall back gracefully to mock fixtures.
   useEffect(() => {
@@ -274,9 +453,7 @@ export default function MissionsPage() {
           </div>
           <button
             type="button"
-            onClick={() =>
-              alert('New Mission — mission creation flow coming soon.')
-            }
+            onClick={() => setShowCreate(true)}
             className="flex shrink-0 items-center gap-2 rounded-xl bg-peak-primary px-4 py-2.5 text-sm font-semibold text-white shadow-peak-glow transition-colors hover:bg-peak-primary-600"
           >
             <Plus className="h-4 w-4" />
@@ -375,7 +552,7 @@ export default function MissionsPage() {
         {visible.map((mission) => (
           <MissionCard key={mission.id} mission={mission} />
         ))}
-        {filter === 'ALL' ? <NewMissionCard /> : null}
+        {filter === 'ALL' ? <NewMissionCard onClick={() => setShowCreate(true)} /> : null}
       </div>
 
       {visible.length === 0 ? (
@@ -383,6 +560,17 @@ export default function MissionsPage() {
           No missions in this state.
         </div>
       ) : null}
+
+      <NewMissionModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={(m) => {
+          // Optimistically prepend the new mission, then deep-link into it.
+          setMissions((prev) => [m, ...prev])
+          setFilter('ALL')
+          router.push(`/missions/${m.id}`)
+        }}
+      />
     </PeakShell>
   )
 }

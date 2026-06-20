@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
 import { useNotifications } from '@/components/notifications/NotificationProvider'
-import { notifications } from '@/lib/notifications'
+import { notifications, notify } from '@/lib/notifications'
 import {
   Upload, FolderPlus, Search, Grid, List, Trash2, Share2, Download,
   MoreVertical, File, Image as ImageIcon, FileText, Video, Music, Archive,
   ChevronRight, Home, Star, Clock, HardDrive, Link2, Users,
-  Eye, Edit3, Copy, Move, X, FolderOpen, ChevronDown
+  Eye, Edit3, Copy, Move, X, FolderOpen, ChevronDown, RotateCcw, Check
 } from 'lucide-react'
 import FileContextPanel from '@/components/files/FileContextPanel'
+import { loadFiles, saveFiles, type StoredFile } from '@/components/files/fileStore'
 
 // Pinned "now" for deterministic relative-time math (avoids hydration #418).
 const PEAK_NOW = Date.parse('2026-06-18T09:00:00.000Z')
@@ -36,12 +37,16 @@ interface FileItem {
   permissions?: 'view' | 'edit' | 'admin'
   version?: number
   lastModifiedBy?: string
+  deleted?: boolean
+  missionId?: string | null
 }
 
 interface BreadcrumbItem {
   id: string
   name: string
 }
+
+type SortKey = 'name' | 'modified' | 'size'
 
 export default function FilesPage() {
   const { } = useNotifications()
@@ -56,121 +61,37 @@ export default function FilesPage() {
   const [loading, setLoading] = useState(true)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent' | 'shared' | 'trash'>('all')
-  const [sortBy] = useState<'name' | 'modified' | 'size'>('modified')
+  const [sortBy, setSortBy] = useState<SortKey>('modified')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null)
   const [selectedFileForContext, setSelectedFileForContext] = useState<FileItem | null>(null)
-  const [showContextPanel, setShowContextPanel] = useState(true)
+  const [showContextPanel] = useState(true)
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
+  const [moveModal, setMoveModal] = useState<{ ids: string[] } | null>(null)
 
-  // Load files from localStorage
+  const hydrate = (rows: StoredFile[]): FileItem[] =>
+    rows.map((f) => ({
+      ...f,
+      createdAt: new Date(f.createdAt),
+      modifiedAt: new Date(f.modifiedAt),
+    }))
+
+  // Load files from the shared canonical store (seeds from MOCK_FILES on first run).
   useEffect(() => {
-    const savedFiles = localStorage.getItem('fileManager')
-    if (savedFiles) {
-      const parsed = JSON.parse(savedFiles)
-      setFiles(parsed.map((f: FileItem) => ({
-        ...f,
-        createdAt: new Date(f.createdAt),
-        modifiedAt: new Date(f.modifiedAt)
-      })))
-    } else {
-      // Initialize with sample files
-      const mockFiles: FileItem[] = [
-        {
-          id: '1',
-          name: 'Project Documents',
-          type: 'folder',
-          createdAt: new Date(Date.now() - 86400000 * 5),
-          modifiedAt: new Date(Date.now() - 86400000),
-          parentId: null,
-        },
-        {
-          id: '2',
-          name: 'Q4 Sales Report.pdf',
-          type: 'file',
-          mimeType: 'application/pdf',
-          size: 2457600,
-          url: '/files/report.pdf',
-          createdAt: new Date(Date.now() - 86400000 * 2),
-          modifiedAt: new Date(Date.now() - 86400000),
-          starred: true,
-          aiSummary: 'Quarterly sales report showing 23% YoY growth with detailed analysis of regional performance',
-          aiTags: ['sales', 'q4', 'report', 'finance'],
-          parentId: null,
-          version: 3,
-          lastModifiedBy: 'John Doe'
-        },
-        {
-          id: '3',
-          name: 'Product Screenshots',
-          type: 'folder',
-          createdAt: new Date(Date.now() - 86400000 * 10),
-          modifiedAt: new Date(Date.now() - 86400000 * 3),
-          starred: true,
-          parentId: null,
-        },
-        {
-          id: '4',
-          name: 'Dashboard.png',
-          type: 'file',
-          mimeType: 'image/png',
-          size: 1843200,
-          url: '/files/dashboard.png',
-          thumbnailUrl: 'https://via.placeholder.com/300x200',
-          createdAt: new Date(Date.now() - 86400000 * 3),
-          modifiedAt: new Date(Date.now() - 86400000 * 2),
-          parentId: '3',
-          sharedWith: ['team@example.com'],
-          isPublic: true,
-          shareLink: 'https://files.saasx.com/share/abc123'
-        },
-        {
-          id: '5',
-          name: 'Marketing Assets',
-          type: 'folder',
-          createdAt: new Date(Date.now() - 86400000 * 15),
-          modifiedAt: new Date(Date.now() - 86400000 * 4),
-          parentId: null,
-        },
-        {
-          id: '6',
-          name: 'Presentation.pptx',
-          type: 'file',
-          mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          size: 5242880,
-          url: '/files/presentation.pptx',
-          createdAt: new Date(Date.now() - 86400000),
-          modifiedAt: new Date(Date.now() - 3600000),
-          sharedWith: ['john@example.com', 'sarah@example.com'],
-          parentId: '1',
-          permissions: 'edit',
-          version: 2
-        },
-        {
-          id: '7',
-          name: 'Budget 2025.xlsx',
-          type: 'file',
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          size: 1048576,
-          url: '/files/budget.xlsx',
-          createdAt: new Date(Date.now() - 86400000 * 7),
-          modifiedAt: new Date(Date.now() - 86400000 * 5),
-          parentId: '1',
-          permissions: 'view',
-          aiSummary: 'Annual budget planning document with departmental allocations',
-          aiTags: ['finance', 'budget', '2025']
-        }
-      ]
-      setFiles(mockFiles)
-      localStorage.setItem('fileManager', JSON.stringify(mockFiles))
-    }
+    setFiles(hydrate(loadFiles()))
     setLoading(false)
   }, [])
 
-  // Save files to localStorage when changed
+  // Persist files to the shared store when changed (ISO strings, no blob URLs).
   useEffect(() => {
-    if (files.length > 0) {
-      localStorage.setItem('fileManager', JSON.stringify(files))
-    }
-  }, [files])
+    if (loading) return
+    const serialized: StoredFile[] = files.map((f) => ({
+      ...f,
+      createdAt: f.createdAt.toISOString(),
+      modifiedAt: f.modifiedAt.toISOString(),
+    }))
+    saveFiles(serialized)
+  }, [files, loading])
 
   // Update breadcrumbs when folder changes
   useEffect(() => {
@@ -196,7 +117,18 @@ export default function FilesPage() {
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach(file => {
-      const fileId = Date.now().toString() + Math.random().toString(36).substr(2, 9)
+      const fileId = 'upload-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9)
+
+      // For images, read a persistable data: URL so the thumbnail survives reload
+      // (blob: URLs are revoked/invalid after a refresh — the store strips them).
+      const readPreview = (): Promise<string | undefined> =>
+        new Promise((resolve) => {
+          if (!file.type.startsWith('image/')) return resolve(undefined)
+          const reader = new FileReader()
+          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : undefined)
+          reader.onerror = () => resolve(undefined)
+          reader.readAsDataURL(file)
+        })
 
       setUploadProgress(prev => ({ ...prev, [fileId]: 0 }))
 
@@ -206,23 +138,23 @@ export default function FilesPage() {
           if (current >= 100) {
             clearInterval(interval)
 
-            const newFile: FileItem = {
-              id: fileId,
-              name: file.name,
-              type: 'file',
-              mimeType: file.type,
-              size: file.size,
-              createdAt: new Date(),
-              modifiedAt: new Date(),
-              parentId: currentFolderId,
-              url: URL.createObjectURL(file),
-              thumbnailUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-              version: 1,
-              lastModifiedBy: 'You'
-            }
-
-            setFiles(prevFiles => [...prevFiles, newFile])
-            notifications.file.uploadSuccess(file.name)
+            void readPreview().then((dataUrl) => {
+              const newFile: FileItem = {
+                id: fileId,
+                name: file.name,
+                type: 'file',
+                mimeType: file.type,
+                size: file.size,
+                createdAt: new Date(),
+                modifiedAt: new Date(),
+                parentId: currentFolderId,
+                thumbnailUrl: dataUrl,
+                version: 1,
+                lastModifiedBy: 'Sarah Chen',
+              }
+              setFiles(prevFiles => [...prevFiles, newFile])
+              notifications.file.uploadSuccess(file.name)
+            })
 
             const rest = Object.fromEntries(
               Object.entries(prev).filter(([key]) => key !== fileId)
@@ -250,11 +182,22 @@ export default function FilesPage() {
         newSelection.add(file.id)
       }
       setSelectedFiles(newSelection)
-    } else if (event?.shiftKey && selectedFiles.size > 0) {
-      // Range select with Shift
-      // Implementation would go here
+      setLastClickedId(file.id)
+    } else if (event?.shiftKey && lastClickedId) {
+      // Range select with Shift — select everything between the last click and here.
+      const order = filteredFiles.map((f) => f.id)
+      const a = order.indexOf(lastClickedId)
+      const b = order.indexOf(file.id)
+      if (a !== -1 && b !== -1) {
+        const [start, end] = a < b ? [a, b] : [b, a]
+        const range = order.slice(start, end + 1)
+        const newSelection = new Set(selectedFiles)
+        range.forEach((id) => newSelection.add(id))
+        setSelectedFiles(newSelection)
+      }
     } else {
       // Single select or open
+      setLastClickedId(file.id)
       if (file.type === 'folder') {
         setCurrentFolderId(file.id)
         setSelectedFiles(new Set())
@@ -266,24 +209,53 @@ export default function FilesPage() {
     }
   }
 
+  const toggleSelect = (fileId: string) => {
+    setSelectedFiles((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileId)) next.delete(fileId)
+      else next.add(fileId)
+      return next
+    })
+    setLastClickedId(fileId)
+  }
+
+  const moveFiles = (ids: string[], targetFolderId: string | null) => {
+    setFiles(files.map((f) => (ids.includes(f.id) ? { ...f, parentId: targetFolderId, modifiedAt: new Date() } : f)))
+    setMoveModal(null)
+    setSelectedFiles(new Set())
+    notify.success('Moved', `Moved ${ids.length} item(s)`)
+  }
+
   const handleContextMenu = (event: React.MouseEvent, file: FileItem) => {
     event.preventDefault()
     setContextMenu({ x: event.clientX, y: event.clientY, file })
   }
 
   const handleDelete = (fileIds: string[]) => {
-    if (confirm(`Delete ${fileIds.length} item(s)?`)) {
-      const deletedFiles = files.filter(f => fileIds.includes(f.id))
-      setFiles(files.filter(f => !fileIds.includes(f.id)))
+    // In Trash, "delete" is permanent; elsewhere it's a soft-delete (restorable).
+    const permanent = filterType === 'trash'
+    if (confirm(permanent ? `Permanently delete ${fileIds.length} item(s)?` : `Move ${fileIds.length} item(s) to Trash?`)) {
+      const affected = files.filter(f => fileIds.includes(f.id))
+      if (permanent) {
+        setFiles(files.filter(f => !fileIds.includes(f.id)))
+      } else {
+        setFiles(files.map(f => fileIds.includes(f.id) ? { ...f, deleted: true } : f))
+      }
       setSelectedFiles(new Set())
-      deletedFiles.forEach(file => {
+      affected.forEach(file => {
         notifications.file.deleteSuccess(file.name)
       })
     }
   }
 
+  const handleRestore = (fileIds: string[]) => {
+    setFiles(files.map(f => fileIds.includes(f.id) ? { ...f, deleted: false } : f))
+    setSelectedFiles(new Set())
+    notify.success('Restored', `Restored ${fileIds.length} item(s)`)
+  }
+
   const handleShare = (file: FileItem) => {
-    const link = `https://files.saasx.com/share/${file.id}`
+    const link = `https://files.acmecorp.com/share/${file.id}`
     const updated = files.map(f =>
       f.id === file.id ? { ...f, isPublic: true, shareLink: link } : f
     )
@@ -345,23 +317,33 @@ export default function FilesPage() {
 
   // Filter and sort files
   const filteredFiles = files.filter(file => {
-    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFolder = currentFolderId ? file.parentId === currentFolderId : file.parentId === null
+    const matchesSearch =
+      file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (file.aiSummary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (file.aiTags || []).some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    // Trash ignores folder scoping (it's a flat list of everything deleted).
+    if (filterType === 'trash') {
+      return file.deleted === true && matchesSearch
+    }
+
+    // Every non-trash view hides soft-deleted files.
+    if (file.deleted) return false
+
+    const matchesFolder = currentFolderId ? file.parentId === currentFolderId : (file.parentId === null || file.parentId === undefined)
 
     let matchesFilter = true
     switch (filterType) {
       case 'starred':
         matchesFilter = file.starred === true
         break
-      case 'recent':
+      case 'recent': {
         const threeDaysAgo = PEAK_NOW - (3 * 24 * 60 * 60 * 1000)
         matchesFilter = file.modifiedAt.getTime() > threeDaysAgo
         break
+      }
       case 'shared':
         matchesFilter = (file.sharedWith && file.sharedWith.length > 0) || file.isPublic === true
-        break
-      case 'trash':
-        matchesFilter = false // Would need a trash flag
         break
     }
 
@@ -387,9 +369,9 @@ export default function FilesPage() {
     }
   })
 
-  // Calculate storage usage
-  const totalStorage = 10 * 1024 * 1024 * 1024 // 10 GB
-  const usedStorage = files.reduce((sum, file) => sum + (file.size || 0), 0)
+  // Calculate storage usage — canonical 100 GB plan (matches /storage/files).
+  const totalStorage = 100 * 1024 * 1024 * 1024 // 100 GB
+  const usedStorage = files.filter(f => !f.deleted).reduce((sum, file) => sum + (file.size || 0), 0)
   const storagePercent = (usedStorage / totalStorage) * 100
 
   return (
@@ -465,13 +447,8 @@ export default function FilesPage() {
             </button>
             <button
               onClick={() => {
-                const targetFolderId = prompt('Enter folder ID to move to (or leave empty for root):')
-                const updated = files.map(f =>
-                  f.id === contextMenu.file.id ? { ...f, parentId: targetFolderId || null } : f
-                )
-                setFiles(updated)
+                setMoveModal({ ids: [contextMenu.file.id] })
                 setContextMenu(null)
-                notifications.general.success('File moved successfully')
               }}
               className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center gap-2"
             >
@@ -638,9 +615,27 @@ export default function FilesPage() {
                     <span className="text-sm text-peak-muted">
                       {selectedFiles.size} selected
                     </span>
+                    {filterType === 'trash' ? (
+                      <button
+                        onClick={() => handleRestore(Array.from(selectedFiles))}
+                        className="p-2 text-peak-primary-300 hover:bg-peak-primary/10 rounded-lg transition"
+                        title="Restore"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setMoveModal({ ids: Array.from(selectedFiles) })}
+                        className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition"
+                        title="Move"
+                      >
+                        <Move className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(Array.from(selectedFiles))}
                       className="p-2 text-peak-red hover:bg-peak-red/10 rounded-lg transition"
+                      title={filterType === 'trash' ? 'Delete permanently' : 'Move to Trash'}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -661,11 +656,33 @@ export default function FilesPage() {
                 </button>
                 <div className="relative">
                   <button
+                    onClick={() => setSortMenuOpen((o) => !o)}
                     className="p-2 text-peak-muted hover:bg-white/[0.04] hover:text-peak rounded-lg transition flex items-center gap-1"
                   >
                     <span className="text-sm">{sortBy === 'name' ? 'Name' : sortBy === 'modified' ? 'Modified' : 'Size'}</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
+                  {sortMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setSortMenuOpen(false)} />
+                      <div className="absolute right-0 mt-1 z-50 w-40 bg-peak-glass border border-peak-border rounded-xl shadow-xl py-1 backdrop-blur-xl">
+                        {([
+                          { key: 'name', label: 'Name' },
+                          { key: 'modified', label: 'Modified' },
+                          { key: 'size', label: 'Size' },
+                        ] as { key: SortKey; label: string }[]).map((opt) => (
+                          <button
+                            key={opt.key}
+                            onClick={() => { setSortBy(opt.key); setSortMenuOpen(false) }}
+                            className="w-full px-4 py-2 text-left text-sm text-peak-muted hover:bg-white/[0.04] hover:text-peak flex items-center justify-between"
+                          >
+                            {opt.label}
+                            {sortBy === opt.key && <Check className="w-4 h-4 text-peak-primary-300" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button
                   onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
@@ -802,7 +819,7 @@ export default function FilesPage() {
                         <input
                           type="checkbox"
                           checked={selectedFiles.has(file.id)}
-                          onChange={() => {}}
+                          onChange={() => toggleSelect(file.id)}
                           onClick={(e) => e.stopPropagation()}
                           className="accent-peak-primary"
                         />
@@ -914,6 +931,47 @@ export default function FilesPage() {
           )}
         </div>
       </div>
+
+      {/* Move Modal — pick a destination folder (replaces the raw prompt) */}
+      {moveModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl w-full max-w-md p-6 backdrop-blur-xl">
+            <h3 className="text-xl font-semibold text-peak mb-4">
+              Move {moveModal.ids.length} item{moveModal.ids.length > 1 ? 's' : ''}
+            </h3>
+            <div className="space-y-1 max-h-64 overflow-auto mb-4">
+              <button
+                onClick={() => moveFiles(moveModal.ids, null)}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
+              >
+                <Home className="w-4 h-4" /> All Files (root)
+              </button>
+              {files
+                .filter((f) => f.type === 'folder' && !f.deleted && !moveModal.ids.includes(f.id))
+                .map((folder) => (
+                  <button
+                    key={folder.id}
+                    onClick={() => moveFiles(moveModal.ids, folder.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-peak-muted hover:bg-white/[0.04] hover:text-peak transition"
+                  >
+                    <FolderOpen className="w-4 h-4 text-peak-primary-300" /> {folder.name}
+                  </button>
+                ))}
+              {files.filter((f) => f.type === 'folder' && !f.deleted && !moveModal.ids.includes(f.id)).length === 0 && (
+                <p className="text-sm text-peak-dim px-3 py-2">No other folders. Create one first.</p>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setMoveModal(null)}
+                className="px-6 py-2 border border-peak-border text-peak-muted rounded-xl hover:bg-white/[0.04] hover:text-peak transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Folder Modal */}
       {isCreateFolderOpen && (
@@ -1042,5 +1100,3 @@ export default function FilesPage() {
     </div>
   )
 }
-
-import React from 'react'

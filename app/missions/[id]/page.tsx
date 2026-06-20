@@ -16,6 +16,7 @@ import {
   MOCK_MISSION,
   MOCK_MISSION_RECOMMENDATIONS,
   getMockMission,
+  getMockFiles,
 } from '@/lib/peak/mock'
 import type {
   Mission,
@@ -23,6 +24,7 @@ import type {
   MissionRisk,
   MissionMember,
   MissionStatus,
+  MissionDependency,
   RiskLevel,
 } from '@/lib/peak/types'
 import {
@@ -41,6 +43,7 @@ import {
   Users,
   TrendingUp,
   Layers,
+  FileText,
   Code2,
   PenTool,
   Megaphone,
@@ -195,33 +198,46 @@ function ObjectivesPanel({ mission }: { mission: Mission }) {
 // Key Metrics block
 // ----------------------------------------------------------------------------
 
-function KeyMetricsPanel() {
+function KeyMetricsPanel({ mission }: { mission: Mission }) {
+  const km = mission.keyMetrics
+  // Honest empty state when a mission has no key-metrics defined.
+  if (!km) {
+    return (
+      <GlassPanel>
+        <SectionLabel>Key Metrics</SectionLabel>
+        <div className="mt-6 py-6 text-center text-sm text-peak-muted">
+          No outcome metrics defined for this mission yet.
+        </div>
+      </GlassPanel>
+    )
+  }
+  const confidenceLabel = km.confidence >= 8 ? 'High' : km.confidence >= 5 ? 'Medium' : 'Low'
   return (
     <GlassPanel>
       <SectionLabel>Key Metrics</SectionLabel>
       <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
         <div>
-          <StatTile icon={<DollarSign className="h-5 w-5" />} value="$12.4M" label="Revenue Impact" tone="green" />
+          <StatTile icon={<DollarSign className="h-5 w-5" />} value={km.revenueImpact} label="Revenue Impact" tone="green" />
           <div className="mt-1.5 flex items-center gap-1 px-2 text-xs font-medium text-peak-green">
-            <TrendingUp className="h-3 w-3" /> 22%
+            <TrendingUp className="h-3 w-3" /> Projected
           </div>
         </div>
         <div>
-          <StatTile icon={<Users className="h-5 w-5" />} value="48K" label="Customer Impact" tone="blue" />
+          <StatTile icon={<Users className="h-5 w-5" />} value={km.customerImpact} label="Customer Impact" tone="blue" />
           <div className="mt-1.5 flex items-center gap-1 px-2 text-xs font-medium text-peak-blue">
-            <TrendingUp className="h-3 w-3" /> 18%
+            <TrendingUp className="h-3 w-3" /> Reach
           </div>
         </div>
         <div>
-          <StatTile icon={<TrendingUp className="h-5 w-5" />} value="$120M" label="Market Opportunity" tone="primary" />
+          <StatTile icon={<TrendingUp className="h-5 w-5" />} value={km.marketOpportunity} label="Market Opportunity" tone="primary" />
           <div className="mt-1.5 flex items-center gap-1 px-2 text-xs font-medium text-peak-primary-300">
-            <Sparkles className="h-3 w-3" /> High
+            <Sparkles className="h-3 w-3" /> TAM
           </div>
         </div>
         <div>
-          <StatTile icon={<Activity className="h-5 w-5" />} value="8.7/10" label="Confidence Score" tone="amber" />
+          <StatTile icon={<Activity className="h-5 w-5" />} value={`${km.confidence.toFixed(1)}/10`} label="Confidence Score" tone="amber" />
           <div className="mt-1.5 flex items-center gap-1 px-2 text-xs font-medium text-peak-green">
-            <TrendingUp className="h-3 w-3" /> 0.6 pts
+            <TrendingUp className="h-3 w-3" /> {confidenceLabel}
           </div>
         </div>
       </div>
@@ -233,60 +249,82 @@ function KeyMetricsPanel() {
 // Dependencies flow
 // ----------------------------------------------------------------------------
 
-interface DepNode {
-  team: string
-  work: string
-  status: 'Completed' | 'In Progress' | 'Upcoming'
-  icon: React.ReactNode
+// Dependency status → tint + friendly label.
+const DEP_STATUS_META: Record<
+  MissionDependency['status'],
+  { label: string; tint: string }
+> = {
+  DONE: { label: 'Completed', tint: 'text-peak-green' },
+  ON_TRACK: { label: 'On Track', tint: 'text-peak-primary-300' },
+  AT_RISK: { label: 'At Risk', tint: 'text-peak-amber' },
+  BLOCKED: { label: 'Blocked', tint: 'text-peak-red' },
 }
 
-const DEPENDENCIES: DepNode[] = [
-  { team: 'Platform Team', work: 'API Development', status: 'Completed', icon: <Code2 className="h-4 w-4" /> },
-  { team: 'Design Team', work: 'UI/UX System', status: 'In Progress', icon: <PenTool className="h-4 w-4" /> },
-  { team: 'Marketing Team', work: 'Campaign Assets', status: 'In Progress', icon: <Megaphone className="h-4 w-4" /> },
-]
-
-const DEP_STATUS: Record<DepNode['status'], string> = {
-  Completed: 'text-peak-green',
-  'In Progress': 'text-peak-primary-300',
-  Upcoming: 'text-peak-dim',
+// Pick an icon per dependency from its label keywords (purely cosmetic).
+function depIcon(label: string): React.ReactNode {
+  const l = label.toLowerCase()
+  if (l.includes('legal') || l.includes('compliance') || l.includes('security')) return <ShieldAlert className="h-4 w-4" />
+  if (l.includes('comms') || l.includes('marketing') || l.includes('pr') || l.includes('campaign')) return <Megaphone className="h-4 w-4" />
+  if (l.includes('design') || l.includes('ui')) return <PenTool className="h-4 w-4" />
+  return <Code2 className="h-4 w-4" />
 }
 
-function DependenciesPanel() {
+function DependenciesPanel({ mission, onViewAll }: { mission: Mission; onViewAll?: () => void }) {
+  const deps = mission.dependencies ?? []
   return (
     <GlassPanel>
       <SectionLabel
         action={
-          <Link href="#" className="inline-flex items-center gap-1 text-peak-primary-300 hover:text-peak-primary">
-            View all dependencies <ArrowRight className="h-3 w-3" />
-          </Link>
+          onViewAll ? (
+            <button
+              type="button"
+              onClick={onViewAll}
+              className="inline-flex items-center gap-1 text-peak-primary-300 hover:text-peak-primary"
+            >
+              View all dependencies <ArrowRight className="h-3 w-3" />
+            </button>
+          ) : undefined
         }
       >
         Dependencies
       </SectionLabel>
-      <div className="mt-4 flex flex-col items-stretch gap-3 md:flex-row md:items-center">
-        {DEPENDENCIES.map((dep, i) => (
-          <React.Fragment key={dep.team}>
-            <div className="flex-1 rounded-xl border border-peak-border bg-white/[0.02] p-4">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
-                  {dep.icon}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-peak">{dep.team}</div>
-                  <div className="truncate text-xs text-peak-muted">{dep.work}</div>
+      {deps.length === 0 ? (
+        <div className="mt-6 py-6 text-center text-sm text-peak-muted">No dependencies tracked.</div>
+      ) : (
+        <div className="mt-4 flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-stretch">
+          {deps.map((dep, i) => {
+            const meta = DEP_STATUS_META[dep.status]
+            return (
+              <React.Fragment key={dep.id}>
+                <div className="flex-1 rounded-xl border border-peak-border bg-white/[0.02] p-4 md:min-w-[200px]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
+                      {depIcon(dep.label)}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-peak">{dep.label}</div>
+                      {dep.detail ? (
+                        <div className="truncate text-xs text-peak-muted">{dep.detail}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className={['text-xs font-medium', meta.tint].join(' ')}>{meta.label}</span>
+                    {dep.owner ? (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-peak-primary/20 text-[9px] font-semibold text-peak-primary-300" title={dep.owner.name}>
+                        {initials(dep.owner.name)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <div className={['mt-3 text-xs font-medium', DEP_STATUS[dep.status]].join(' ')}>
-                {dep.status}
-              </div>
-            </div>
-            {i < DEPENDENCIES.length - 1 ? (
-              <ArrowRight className="mx-auto hidden h-4 w-4 shrink-0 text-peak-dim md:block" />
-            ) : null}
-          </React.Fragment>
-        ))}
-      </div>
+                {i < deps.length - 1 ? (
+                  <ArrowRight className="mx-auto hidden h-4 w-4 shrink-0 self-center text-peak-dim md:block" />
+                ) : null}
+              </React.Fragment>
+            )
+          })}
+        </div>
+      )}
     </GlassPanel>
   )
 }
@@ -295,10 +333,10 @@ function DependenciesPanel() {
 // Right rail blocks
 // ----------------------------------------------------------------------------
 
-function TopRisksPanel({ risks }: { risks: MissionRisk[] }) {
+function TopRisksPanel({ risks, onViewAll }: { risks: MissionRisk[]; onViewAll?: () => void }) {
   return (
     <GlassPanel className="p-5">
-      <SectionLabel action={<Link href="#" className="text-peak-primary-300 hover:text-peak-primary">View all</Link>}>
+      <SectionLabel action={<button type="button" onClick={onViewAll} className="text-peak-primary-300 hover:text-peak-primary">View all</button>}>
         Top Risks
       </SectionLabel>
       <div className="mt-4 space-y-4">
@@ -336,12 +374,12 @@ function TopRisksPanel({ risks }: { risks: MissionRisk[] }) {
   )
 }
 
-function MissionTeamPanel({ members }: { members: MissionMember[] }) {
+function MissionTeamPanel({ members, onViewAll }: { members: MissionMember[]; onViewAll?: () => void }) {
   const shown = members.slice(0, 4)
   const overflow = members.length - shown.length
   return (
     <GlassPanel className="p-5">
-      <SectionLabel action={<Link href="#" className="text-peak-primary-300 hover:text-peak-primary">View all</Link>}>
+      <SectionLabel action={<button type="button" onClick={onViewAll} className="text-peak-primary-300 hover:text-peak-primary">View all</button>}>
         Mission Team
       </SectionLabel>
       <div className="mt-4 space-y-3.5">
@@ -391,14 +429,14 @@ function MissionTeamPanel({ members }: { members: MissionMember[] }) {
   )
 }
 
-function UpcomingMilestonesPanel({ mission }: { mission: Mission }) {
+function UpcomingMilestonesPanel({ mission, onViewAll }: { mission: Mission; onViewAll?: () => void }) {
   const upcoming = (mission.milestones ?? [])
     .filter((m) => m.state !== 'DONE')
     .sort((a, b) => (a.date && b.date ? new Date(a.date).getTime() - new Date(b.date).getTime() : 0))
 
   return (
     <GlassPanel className="p-5">
-      <SectionLabel action={<Link href="#" className="text-peak-primary-300 hover:text-peak-primary">View all</Link>}>
+      <SectionLabel action={<button type="button" onClick={onViewAll} className="text-peak-primary-300 hover:text-peak-primary">View all</button>}>
         Upcoming Milestones
       </SectionLabel>
       <div className="mt-4 space-y-3">
@@ -431,7 +469,7 @@ function UpcomingMilestonesPanel({ mission }: { mission: Mission }) {
   )
 }
 
-function LisaRecommendationsPanel() {
+function LisaRecommendationsPanel({ onViewAll }: { onViewAll?: () => void }) {
   const recs = MOCK_MISSION_RECOMMENDATIONS
   return (
     <div className="relative overflow-hidden rounded-2xl border border-peak-primary/20 bg-peak-primary/[0.06] p-5 backdrop-blur-xl">
@@ -473,6 +511,7 @@ function LisaRecommendationsPanel() {
 
         <button
           type="button"
+          onClick={onViewAll}
           className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-peak-primary/15 px-3 py-2 text-sm font-medium text-peak-primary-300 transition-colors hover:bg-peak-primary/25"
         >
           View All Recommendations
@@ -555,6 +594,59 @@ function TeamTab({ members }: { members: MissionMember[] }) {
 }
 
 // ----------------------------------------------------------------------------
+// Documents tab — mission-linked files from the canonical fixtures
+// ----------------------------------------------------------------------------
+
+function DocumentsTab({ missionId }: { missionId: string }) {
+  const files = getMockFiles({ missionId })
+  return (
+    <GlassPanel>
+      <SectionLabel
+        action={
+          <Link href="/files" className="inline-flex items-center gap-1 text-peak-primary-300 hover:text-peak-primary">
+            Open in Files <ArrowRight className="h-3 w-3" />
+          </Link>
+        }
+      >
+        Documents
+      </SectionLabel>
+      {files.length === 0 ? (
+        <div className="mt-6 flex flex-col items-center justify-center gap-2 py-10 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-peak-primary/15 text-peak-primary-300">
+            <Layers className="h-6 w-6" />
+          </span>
+          <div className="text-sm font-medium text-peak">No documents linked yet</div>
+          <p className="max-w-sm text-xs text-peak-muted">
+            Specs, runbooks, and decision docs for this mission will appear here once attached.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {files.map((f) => (
+            <Link
+              key={f.id}
+              href={`/files?file=${f.id}`}
+              className="flex items-center gap-3 rounded-xl border border-peak-border bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.05]"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-peak-primary/15 text-peak-primary-300">
+                <FileText className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-peak">{f.name}</div>
+                {f.aiSummary ? (
+                  <div className="truncate text-xs text-peak-muted">{f.aiSummary}</div>
+                ) : null}
+              </div>
+              <span className="shrink-0 text-xs text-peak-dim">{f.owner.name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </GlassPanel>
+  )
+}
+
+// ----------------------------------------------------------------------------
 // Main page
 // ----------------------------------------------------------------------------
 
@@ -563,6 +655,55 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
   const [mission, setMission] = useState<Mission>(() => getMockMission(id) ?? MOCK_MISSION)
   const [tab, setTab] = useState<Tab>('Overview')
   const [starred, setStarred] = useState(true)
+  const [shareToast, setShareToast] = useState(false)
+
+  // --- Persist the starred flag per-mission in localStorage ---------------
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = localStorage.getItem('peak.starredMissions')
+      const set: string[] = raw ? JSON.parse(raw) : []
+      setStarred(set.includes(id))
+    } catch {
+      /* default false */
+    }
+  }, [id])
+
+  const toggleStar = () => {
+    setStarred((prev) => {
+      const next = !prev
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('peak.starredMissions')
+          const set: string[] = raw ? JSON.parse(raw) : []
+          const updated = next ? [...new Set([...set, id])] : set.filter((m) => m !== id)
+          localStorage.setItem('peak.starredMissions', JSON.stringify(updated))
+        } catch {
+          /* ignore */
+        }
+      }
+      return next
+    })
+  }
+
+  // Copy a shareable link to this mission.
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : `/missions/${id}`
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      /* clipboard may be unavailable */
+    }
+    setShareToast(true)
+    setTimeout(() => setShareToast(false), 2000)
+  }
+
+  // Open Lisa scoped to this mission (Settings / More / Reports / Recs).
+  const openLisa = (prompt: string) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openPeakAI', { detail: { prompt } }))
+    }
+  }
 
   // Try the live API; fall back to whatever mock we already have.
   useEffect(() => {
@@ -608,8 +749,9 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
             <h1 className="text-4xl font-semibold tracking-tight text-peak">{mission.name}</h1>
             <button
               type="button"
-              onClick={() => setStarred((s) => !s)}
-              aria-label="Star mission"
+              onClick={toggleStar}
+              aria-label={starred ? 'Unstar mission' : 'Star mission'}
+              aria-pressed={starred}
               className="text-peak-dim transition-colors hover:text-peak-amber"
             >
               <Star className={['h-6 w-6', starred ? 'fill-peak-amber text-peak-amber' : ''].join(' ')} />
@@ -629,18 +771,36 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <button className="flex items-center gap-2 rounded-xl border border-peak-border bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-peak transition-colors hover:bg-white/[0.06]">
+        <div className="relative flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => openLisa(`Open settings for the "${mission.name}" mission — owner, target date, budget, and team.`)}
+            className="flex items-center gap-2 rounded-xl border border-peak-border bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-peak transition-colors hover:bg-white/[0.06]"
+          >
             <Settings2 className="h-4 w-4" />
             <span className="hidden sm:inline">Mission Settings</span>
           </button>
-          <button className="flex items-center gap-2 rounded-xl border border-peak-border bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-peak transition-colors hover:bg-white/[0.06]">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex items-center gap-2 rounded-xl border border-peak-border bg-white/[0.03] px-3.5 py-2 text-sm font-medium text-peak transition-colors hover:bg-white/[0.06]"
+          >
             <Share2 className="h-4 w-4" />
             <span className="hidden sm:inline">Share</span>
           </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-peak-border bg-white/[0.03] text-peak transition-colors hover:bg-white/[0.06]">
+          <button
+            type="button"
+            onClick={() => openLisa(`What should I know about the "${mission.name}" mission right now?`)}
+            aria-label="More mission actions"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-peak-border bg-white/[0.03] text-peak transition-colors hover:bg-white/[0.06]"
+          >
             <MoreHorizontal className="h-4 w-4" />
           </button>
+          {shareToast ? (
+            <span className="absolute -bottom-9 right-0 whitespace-nowrap rounded-lg bg-peak-primary px-3 py-1.5 text-xs font-medium text-white shadow-peak-glow">
+              Link copied to clipboard
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -662,9 +822,16 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                         Overall Progress
                       </span>
                       <span className="text-5xl font-semibold tracking-tight text-peak">{mission.progress}%</span>
-                      <span className="mt-1 flex items-center gap-1 text-xs font-medium text-peak-green">
-                        <TrendingUp className="h-3 w-3" /> 8% vs last week
-                      </span>
+                      {mission.keyMetrics?.deltaCaption ? (
+                        <span
+                          className={[
+                            'mt-1 flex items-center gap-1 text-xs font-medium',
+                            mission.keyMetrics.deltaCaption.trim().startsWith('-') ? 'text-peak-red' : 'text-peak-green',
+                          ].join(' ')}
+                        >
+                          <TrendingUp className="h-3 w-3" /> {mission.keyMetrics.deltaCaption}
+                        </span>
+                      ) : null}
                     </span>
                   }
                 />
@@ -738,10 +905,10 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                       <MissionTimeline steps={timelineSteps(mission)} />
                     </div>
                   </GlassPanel>
-                  <KeyMetricsPanel />
+                  <KeyMetricsPanel mission={mission} />
                 </div>
               </div>
-              <DependenciesPanel />
+              <DependenciesPanel mission={mission} onViewAll={() => setTab('Dependencies')} />
             </div>
           ) : null}
 
@@ -756,26 +923,13 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
             </GlassPanel>
           ) : null}
 
-          {tab === 'Dependencies' ? <DependenciesPanel /> : null}
+          {tab === 'Dependencies' ? <DependenciesPanel mission={mission} /> : null}
 
           {tab === 'Risks' ? <RisksTab risks={risks} /> : null}
 
           {tab === 'Team' ? <TeamTab members={members} /> : null}
 
-          {tab === 'Documents' ? (
-            <GlassPanel>
-              <SectionLabel>Documents</SectionLabel>
-              <div className="mt-6 flex flex-col items-center justify-center gap-2 py-10 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-peak-primary/15 text-peak-primary-300">
-                  <Layers className="h-6 w-6" />
-                </span>
-                <div className="text-sm font-medium text-peak">No documents linked yet</div>
-                <p className="max-w-sm text-xs text-peak-muted">
-                  Specs, runbooks, and decision docs for this mission will appear here once attached.
-                </p>
-              </div>
-            </GlassPanel>
-          ) : null}
+          {tab === 'Documents' ? <DocumentsTab missionId={mission.id} /> : null}
 
           {tab === 'Reports' ? (
             <GlassPanel>
@@ -787,19 +941,28 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                 <StatTile icon={<ShieldAlert className="h-5 w-5" />} value={risks.length} label="Open Risks" tone="red" />
               </div>
               <p className="mt-5 text-xs text-peak-muted">
-                Full status reports and exportable summaries are generated by Lisa. Ask Lisa for
-                a weekly mission report from the command bar.
+                Full status reports and exportable summaries are generated by Lisa.
               </p>
+              <button
+                type="button"
+                onClick={() => openLisa(`Generate a weekly status report for the "${mission.name}" mission.`)}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-peak-primary/15 px-3 py-2 text-sm font-medium text-peak-primary-300 transition-colors hover:bg-peak-primary/25"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Ask Lisa for a weekly report
+              </button>
             </GlassPanel>
           ) : null}
         </div>
 
         {/* RIGHT RAIL */}
         <aside className="space-y-6">
-          <TopRisksPanel risks={risks} />
-          <MissionTeamPanel members={members} />
-          <UpcomingMilestonesPanel mission={mission} />
-          <LisaRecommendationsPanel />
+          <TopRisksPanel risks={risks} onViewAll={() => setTab('Risks')} />
+          <MissionTeamPanel members={members} onViewAll={() => setTab('Team')} />
+          <UpcomingMilestonesPanel mission={mission} onViewAll={() => setTab('Timeline')} />
+          <LisaRecommendationsPanel
+            onViewAll={() => openLisa(`Give me Lisa's full set of recommendations for the "${mission.name}" mission.`)}
+          />
         </aside>
       </div>
     </PeakShell>

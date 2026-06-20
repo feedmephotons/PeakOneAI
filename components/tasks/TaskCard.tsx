@@ -3,6 +3,14 @@
 import { Calendar, MessageSquare, Paperclip, Flag, MoreHorizontal, ChevronRight, Trash2 } from 'lucide-react'
 import { Task } from '@/app/tasks/page'
 import { useState } from 'react'
+import { tagManager } from '@/lib/tags'
+import { MOCK_TASK_TAGS, FIXED_TODAY } from '@/lib/peak/mock'
+
+// Static label map from the canonical tags so cards render readable labels even
+// before the TagManager store hydrates (SSR-safe).
+const TAG_LABELS: Record<string, string> = Object.fromEntries(
+  MOCK_TASK_TAGS.map((t) => [t.id, t.label])
+)
 
 interface TaskCardProps {
   task: Task
@@ -25,8 +33,18 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
     }
   }
 
+  const resolveTagLabel = (tagId: string) => {
+    if (TAG_LABELS[tagId]) return TAG_LABELS[tagId]
+    if (typeof window !== 'undefined') {
+      const tag = tagManager.getTag(tagId)
+      if (tag) return tag.name
+    }
+    return tagId
+  }
+
   const formatDueDate = (date: Date) => {
-    const today = new Date()
+    // Pinned "today" keeps due-date math deterministic / SSR-safe.
+    const today = new Date(FIXED_TODAY)
     const dueDate = new Date(date)
     const diffTime = dueDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -146,7 +164,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
               key={tag}
               className="text-xs px-2 py-0.5 bg-white/[0.06] text-peak-muted rounded ring-1 ring-peak-border"
             >
-              {tag}
+              {resolveTagLabel(tag)}
             </span>
           ))}
         </div>
@@ -186,13 +204,24 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isSelected, o
 
         {/* Assignee */}
         {task.assignee && (
-          <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={task.assignee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${task.assignee.name}`}
-              alt={task.assignee.name}
-              className="w-6 h-6 rounded-full"
-            />
+          <div className="flex items-center gap-2" title={task.assignee.name}>
+            {task.assignee.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={task.assignee.avatar}
+                alt={task.assignee.name}
+                className="w-6 h-6 rounded-full"
+              />
+            ) : (
+              <span className="w-6 h-6 rounded-full bg-peak-primary/20 ring-1 ring-peak-primary/30 text-peak-primary-300 text-[10px] font-semibold flex items-center justify-center">
+                {task.assignee.name
+                  .split(' ')
+                  .map((p) => p[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </span>
+            )}
           </div>
         )}
       </div>

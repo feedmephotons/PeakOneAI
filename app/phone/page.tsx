@@ -1,6 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { MOCK_PEOPLE, MOCK_CALLS, FIXED_TODAY } from '@/lib/peak/mock';
+import type { CallRecord } from '@/lib/peak/types';
 
 interface Call {
   id: string;
@@ -13,9 +17,10 @@ interface Call {
   transcribed: boolean;
   aiSummary: boolean;
   status?: 'active' | 'ended';
-  transcriptText?: string;
-  summaryText?: string;
+  summaryId: string; // canonical call id for /calls/summary/[id]
   actionItems?: { text: string; severity?: string }[];
+  summaryText?: string;
+  transcriptText?: string;
 }
 
 interface Contact {
@@ -28,17 +33,76 @@ interface Contact {
   favorite?: boolean;
 }
 
-export default function PhonePage() {
+const NOW = new Date(FIXED_TODAY).getTime();
+
+function relTime(iso: string): string {
+  const diff = NOW - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor(diff / 3600000);
+  if (diff < 0) return new Date(iso).toLocaleDateString();
+  if (hours < 1) return 'Just now';
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+// Look up a phone number for a participant from the canonical contacts.
+function phoneFor(name: string): string {
+  const p = MOCK_PEOPLE.find((m) => m.name === name);
+  return p?.phoneNumber || '+1 (415) 555-0100';
+}
+
+// Seed the call list from the canonical MOCK_CALLS (Acme world).
+function seedCalls(): Call[] {
+  return MOCK_CALLS.map((c: CallRecord) => {
+    const other = c.participants.find((p) => p.name !== 'Sarah Chen') || c.participants[0];
+    const type: Call['type'] =
+      c.direction === 'INBOUND' ? 'incoming' : c.direction === 'MISSED' ? 'missed' : 'outgoing';
+    return {
+      id: c.id,
+      summaryId: c.id,
+      type,
+      contact: c.title,
+      phoneNumber: phoneFor(other.name),
+      time: relTime(c.startTime),
+      duration: c.durationSec > 0 ? c.durationLabel : undefined,
+      recorded: c.hasRecording,
+      transcribed: !!(c.transcript && c.transcript.length),
+      aiSummary: !!c.aiSummary,
+      summaryText: c.aiSummary || undefined,
+      transcriptText: c.transcript?.map((t) => `${t.speaker}: ${t.text}`).join('\n'),
+      actionItems: c.actionItems?.map((a) => ({ text: a, severity: 'HIGH' })),
+      status: 'ended',
+    };
+  });
+}
+
+// Seed contacts from the canonical people directory.
+function seedContacts(): Contact[] {
+  return MOCK_PEOPLE.map((p) => ({
+    id: p.id,
+    name: p.name,
+    phoneNumber: p.phoneNumber || '',
+    email: p.email || undefined,
+    company: p.company || undefined,
+    favorite: p.favorite,
+  }));
+}
+
+function PhonePageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<'recent' | 'contacts' | 'recordings'>('recent');
   const [isCallActive, setIsCallActive] = useState(false);
   const [dialNumber, setDialNumber] = useState('');
   const [showNewContactModal, setShowNewContactModal] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
 
-  const [calls, setCalls] = useState<Call[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [transcribingCallId, setTranscribingCallId] = useState<string | null>(null);
-  const [summarizingCallId, setSummarizingCallId] = useState<string | null>(null);
+  const [calls, setCalls] = useState<Call[]>(() => seedCalls());
+  const [contacts, setContacts] = useState<Contact[]>(() => seedContacts());
+
+  const dialerRef = useRef<HTMLInputElement | null>(null);
 
   // New Contact form state
   const [newContactName, setNewContactName] = useState('');
@@ -46,123 +110,61 @@ export default function PhonePage() {
   const [newContactEmail, setNewContactEmail] = useState('');
   const [newContactCompany, setNewContactCompany] = useState('');
 
+  // Read contact / autoDial query params (deep-link from /messages).
   useEffect(() => {
-    const fetchCalls = async () => {
-      try {
-        const res = await fetch('/api/calls');
-        const data = await res.json();
-        if (res.ok && data.success) {
-          setCalls(data.calls);
-        }
-      } catch (e) {
-        console.error('Error fetching calls:', e);
-      }
-    };
-
-    const fetchContacts = async () => {
-      try {
-        const res = await fetch('/api/contacts');
-        const data = await res.json();
-        if (res.ok && data.success) {
-          setContacts(data.contacts);
-        }
-      } catch (e) {
-        console.error('Error fetching contacts:', e);
-      }
-    };
-
-    fetchCalls();
-    fetchContacts();
-  }, []);
-
-  const handleTranscribe = async (callId: string) => {
-    setTranscribingCallId(callId);
-    try {
-      const res = await fetch('/api/calls/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callId })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setCalls(prev => prev.map(c => {
-          if (c.id === callId) {
-            return {
-              ...c,
-              transcribed: true,
-              transcriptText: data.transcript
-            };
-          }
-          return c;
-        }));
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setTranscribingCallId(null);
+    const contactParam = searchParams.get('contact');
+    const autoDial = searchParams.get('autoDial');
+    if (!contactParam) return;
+    const match = contacts.find(
+      (c) => c.name.toLowerCase() === contactParam.toLowerCase()
+    );
+    const number = match?.phoneNumber || contactParam;
+    setDialNumber(number);
+    setCallError(null);
+    if (autoDial === 'true' && number.trim()) {
+      setIsCallActive(true);
     }
-  };
+    dialerRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
-  const handleGenerateSummary = async (callId: string) => {
-    setSummarizingCallId(callId);
-    try {
-      const res = await fetch('/api/calls/summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callId })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setCalls(prev => prev.map(c => {
-          if (c.id === callId) {
-            return {
-              ...c,
-              aiSummary: true,
-              summaryText: data.summary,
-              actionItems: data.actionItems
-            };
-          }
-          return c;
-        }));
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSummarizingCallId(null);
-    }
-  };
+  // Stat tiles derived from the calls array (no hardcoded 47/3.5h/23/92%).
+  const insights = useMemo(() => {
+    const totalSec = MOCK_CALLS.reduce((s, c) => s + c.durationSec, 0);
+    const totalMin = Math.round(totalSec / 60);
+    const hours = (totalSec / 3600).toFixed(1);
+    const avgMin = calls.length ? Math.round(totalMin / calls.length) : 0;
+    const actionItems = MOCK_CALLS.reduce((s, c) => s + (c.actionItems?.length || 0), 0);
+    const transcribed = calls.filter((c) => c.transcribed).length;
+    const rate = calls.length ? Math.round((transcribed / calls.length) * 100) : 0;
+    return { total: calls.length, hours, avgMin, actionItems, rate };
+  }, [calls]);
 
-  const handleAddContact = async () => {
+  const handleAddContact = () => {
     if (!newContactName.trim() || !newContactPhone.trim()) {
-      alert('Name and Phone Number are required.');
+      setCallError('Name and Phone Number are required.');
       return;
     }
-    try {
-      const res = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newContactName,
-          phoneNumber: newContactPhone,
-          email: newContactEmail || undefined,
-          company: newContactCompany || undefined,
-          favorite: false
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setContacts(prev => [...prev, data.contact]);
-        setNewContactName('');
-        setNewContactPhone('');
-        setNewContactEmail('');
-        setNewContactCompany('');
-        setShowNewContactModal(false);
-      } else {
-        alert(data.error || 'Failed to add contact');
-      }
-    } catch (e) {
-      console.error('Error adding contact:', e);
-    }
+    const newContact: Contact = {
+      id: `contact-${Date.now()}`,
+      name: newContactName.trim(),
+      phoneNumber: newContactPhone.trim(),
+      email: newContactEmail || undefined,
+      company: newContactCompany || undefined,
+      favorite: false,
+    };
+    setContacts((prev) => [...prev, newContact]);
+    setNewContactName('');
+    setNewContactPhone('');
+    setNewContactEmail('');
+    setNewContactCompany('');
+    setShowNewContactModal(false);
+  };
+
+  const focusDialer = () => {
+    setActiveTab('recent');
+    dialerRef.current?.focus();
+    dialerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   const recentCalls = calls;
@@ -224,21 +226,31 @@ export default function PhonePage() {
 
         <div className="flex items-center space-x-2">
           {call.aiSummary && (
-            <button className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors">
+            <Link
+              href={`/calls/summary/${call.summaryId}`}
+              className="px-3 py-1.5 bg-violet-100 text-violet-700 text-sm rounded-lg hover:bg-violet-200 transition-colors"
+            >
               Summary
-            </button>
+            </Link>
           )}
           {call.transcribed && (
-            <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
+            <Link
+              href={`/calls/summary/${call.summaryId}#transcript`}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+            >
               Transcript
-            </button>
+            </Link>
           )}
-          {call.recorded && (
-            <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
-              Play
-            </button>
-          )}
-          <button className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+          <button
+            onClick={() => {
+              setDialNumber(call.phoneNumber);
+              setCallError(null);
+              setIsCallActive(true);
+              focusDialer();
+            }}
+            title="Call back"
+            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
@@ -278,16 +290,22 @@ export default function PhonePage() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+          <Link
+            href={`/messages?contact=${encodeURIComponent(contact.name)}`}
+            title="Message"
+            className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
-          </button>
+          </Link>
           <button
             onClick={() => {
               setDialNumber(contact.phoneNumber);
               setCallError(null);
+              focusDialer();
             }}
+            title="Call"
             className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +335,10 @@ export default function PhonePage() {
               >
                 Add Contact
               </button>
-              <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium">
+              <button
+                onClick={focusDialer}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all text-sm font-medium"
+              >
                 New Call
               </button>
             </div>
@@ -339,6 +360,7 @@ export default function PhonePage() {
 
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6">
               <input
+                ref={dialerRef}
                 type="tel"
                 value={dialNumber}
                 onChange={(e) => {
@@ -369,30 +391,28 @@ export default function PhonePage() {
             <div className="flex space-x-3">
               {isCallActive ? (
                 <button
-                  onClick={async () => {
+                  // EXTERNAL: needs Twilio to place a real outbound call + recording media.
+                  // Demo path: logs the call to the in-memory recents list.
+                  onClick={() => {
                     setIsCallActive(false);
                     setCallError(null);
-                    try {
-                      const contactName = contacts.find(c => c.phoneNumber === dialNumber)?.name || dialNumber || 'Unknown Number';
-                      const res = await fetch('/api/calls', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          type: 'outgoing',
-                          phoneNumber: dialNumber || 'Unknown Number',
-                          contactName,
-                          duration: '0:15',
-                          recorded: true,
-                          status: 'ended'
-                        })
-                      });
-                      const data = await res.json();
-                      if (res.ok && data.success) {
-                        setCalls(prev => [data.call, ...prev]);
-                      }
-                    } catch (e) {
-                      console.error('Failed to log outgoing call:', e);
-                    }
+                    const contactName =
+                      contacts.find((c) => c.phoneNumber === dialNumber)?.name ||
+                      dialNumber || 'Unknown Number';
+                    const newCall: Call = {
+                      id: `call-${Date.now()}`,
+                      summaryId: 'call-q2-campaign',
+                      type: 'outgoing',
+                      contact: contactName,
+                      phoneNumber: dialNumber || 'Unknown Number',
+                      time: 'Just now',
+                      duration: '0:15',
+                      recorded: true,
+                      transcribed: false,
+                      aiSummary: false,
+                      status: 'ended',
+                    };
+                    setCalls((prev) => [newCall, ...prev]);
                   }}
                   className="flex-1 bg-red-500 hover:bg-red-600 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
                 >
@@ -523,34 +543,25 @@ export default function PhonePage() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    {!call.transcribed && (
-                      <button
-                        onClick={() => handleTranscribe(call.id)}
-                        disabled={transcribingCallId === call.id}
-                        className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors transcribe-btn"
-                      >
-                        {transcribingCallId === call.id ? 'Transcribing...' : 'Transcribe'}
-                      </button>
-                    )}
-                    {call.transcribed && !call.aiSummary && (
-                      <button
-                        onClick={() => handleGenerateSummary(call.id)}
-                        disabled={summarizingCallId === call.id}
-                        className="px-3 py-1.5 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 transition-colors summary-btn"
-                      >
-                        {summarizingCallId === call.id ? 'Generating...' : 'Request Summary'}
-                      </button>
-                    )}
-                    <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
-                      Play
-                    </button>
+                    <Link
+                      href={`/calls/summary/${call.summaryId}#transcript`}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      View Transcript
+                    </Link>
+                    <Link
+                      href={`/calls/summary/${call.summaryId}`}
+                      className="px-3 py-1.5 bg-violet-500 text-white text-sm rounded-lg hover:bg-violet-600 transition-colors"
+                    >
+                      View Summary
+                    </Link>
                   </div>
                 </div>
 
                 {call.transcribed && call.transcriptText && (
                   <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="text-xs font-semibold text-gray-500 mb-2">TRANSCRIPT:</div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 transcript-content-text">{call.transcriptText}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 transcript-content-text whitespace-pre-line">{call.transcriptText}</p>
                   </div>
                 )}
 
@@ -587,7 +598,10 @@ export default function PhonePage() {
               <span className="mr-2">🤖</span>
               Call Intelligence by Lisa
             </h3>
-            <button className="text-sm text-violet-600 hover:text-violet-700 font-medium">
+            <button
+              onClick={() => router.push('/calls')}
+              className="text-sm text-violet-600 hover:text-violet-700 font-medium"
+            >
               View All Insights
             </button>
           </div>
@@ -596,25 +610,25 @@ export default function PhonePage() {
             <div className="bg-violet-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">📞</span>
-                <span className="text-2xl font-bold text-gray-900">47</span>
+                <span className="text-2xl font-bold text-gray-900">{insights.total}</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Total Calls</p>
-              <p className="text-xs text-gray-500 mt-1">This week</p>
+              <p className="text-xs text-gray-500 mt-1">Recent activity</p>
             </div>
 
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">⏱️</span>
-                <span className="text-2xl font-bold text-gray-900">3.5h</span>
+                <span className="text-2xl font-bold text-gray-900">{insights.hours}h</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Total Duration</p>
-              <p className="text-xs text-gray-500 mt-1">Average: 4.5 min</p>
+              <p className="text-xs text-gray-500 mt-1">Average: {insights.avgMin} min</p>
             </div>
 
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">📝</span>
-                <span className="text-2xl font-bold text-gray-900">23</span>
+                <span className="text-2xl font-bold text-gray-900">{insights.actionItems}</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Action Items</p>
               <p className="text-xs text-gray-500 mt-1">Extracted from calls</p>
@@ -623,10 +637,10 @@ export default function PhonePage() {
             <div className="bg-orange-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">💬</span>
-                <span className="text-2xl font-bold text-gray-900">92%</span>
+                <span className="text-2xl font-bold text-gray-900">{insights.rate}%</span>
               </div>
               <p className="text-sm font-medium text-gray-900">Transcription Rate</p>
-              <p className="text-xs text-gray-500 mt-1">Accuracy score</p>
+              <p className="text-xs text-gray-500 mt-1">Calls transcribed</p>
             </div>
           </div>
         </div>
@@ -724,5 +738,13 @@ export default function PhonePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PhonePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+      <PhonePageInner />
+    </Suspense>
   );
 }

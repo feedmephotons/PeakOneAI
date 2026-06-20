@@ -12,6 +12,15 @@ import {
 } from 'lucide-react'
 import { useAppStore, type UIMode } from '@/stores/app-store'
 import { PeakShell, GlassPanel, SectionLabel, StatTile } from '@/components/peak'
+import {
+  FIXED_TODAY,
+  MOCK_USER,
+  ACME_TEAM_SIZE,
+  getMockCalendarEvents,
+  getMockTasks,
+  getMockThreads,
+  getMockOrgIdentity,
+} from '@/lib/peak/mock'
 
 // ─── AI Command Hero ────────────────────────────────────────────────────────
 
@@ -88,7 +97,7 @@ function CommandHero() {
     <section className="relative pb-10">
       <div className="max-w-3xl mx-auto text-center">
         <h1 className="text-3xl md:text-4xl font-semibold text-peak mb-2 tracking-tight">
-          Good {getGreeting()}
+          Good {getGreeting()}, {MOCK_USER.name.split(' ')[0]}
         </h1>
         <p className="text-base text-peak-muted mb-8">
           What would you like to work on?
@@ -275,25 +284,25 @@ function SuggestedNext() {
   const suggestions: Suggestion[] = [
     {
       id: 'follow-up',
-      text: 'You have 2 unread meeting notes from yesterday',
-      action: 'Review notes',
-      path: '/messages',
+      text: 'Legal review for Launch Product X is at risk',
+      action: 'Review mission',
+      path: '/missions/mission-launch-product-x',
     },
     {
       id: 'task-due',
-      text: '3 tasks are due today',
+      text: '5 tasks are due today across your missions',
       action: 'View tasks',
       path: '/tasks',
     },
     {
       id: 'meeting-prep',
-      text: 'Team standup in 45 minutes',
+      text: 'Q2 Campaign Review with Lisa Park at 6:00 PM',
       action: 'Prepare agenda',
       path: '/calendar',
     },
     {
       id: 'file-review',
-      text: 'New files shared with you this morning',
+      text: 'Beta defects burndown updated this morning',
       action: 'Open files',
       path: '/files',
     },
@@ -343,28 +352,70 @@ function SuggestedNext() {
 
 // ─── Today's Focus ──────────────────────────────────────────────────────────
 
+// Format an ISO timestamp as a UTC clock label (deterministic across SSR).
+function fmtClock(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  })
+}
+
+// Relative "X ago" anchored to the pinned world clock.
+function fmtAgo(iso?: string): string {
+  if (!iso) return ''
+  const diff = new Date(FIXED_TODAY).getTime() - new Date(iso).getTime()
+  const mins = Math.round(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs} hr ago`
+  const days = Math.round(hrs / 24)
+  return days === 1 ? 'Yesterday' : `${days}d ago`
+}
+
+function dashPriority(p: string): 'high' | 'medium' | 'low' {
+  if (p === 'URGENT' || p === 'HIGH') return 'high'
+  if (p === 'MEDIUM') return 'medium'
+  return 'low'
+}
+
 function TodaysFocus() {
   const router = useRouter()
 
-  const meetings = [
-    { id: '1', time: '9:00 AM', title: 'Team Standup', participants: ['Alex', 'Sarah', 'Mike'] },
-    { id: '2', time: '11:30 AM', title: 'Client Review', participants: ['Jordan', 'Lisa'] },
-    { id: '3', time: '2:00 PM', title: 'Sprint Planning', participants: ['Full team'] },
-    { id: '4', time: '4:30 PM', title: '1:1 with Manager', participants: ['Rachel'] },
-  ]
+  // Today's meetings — calendar events pinned to FIXED_TODAY.
+  const today = FIXED_TODAY.slice(0, 10)
+  const meetings = getMockCalendarEvents()
+    .filter((e) => e.start.slice(0, 10) === today)
+    .slice(0, 4)
+    .map((e) => ({
+      id: e.id,
+      time: fmtClock(e.start),
+      title: e.title,
+      participants: (e.attendees ?? []).map((a) => a.name.split(' ')[0]),
+      joinUrl: e.joinUrl,
+    }))
 
-  const tasks = [
-    { id: '1', title: 'Review Q4 proposal draft', priority: 'high' as const, aiGenerated: false },
-    { id: '2', title: 'Update onboarding docs', priority: 'medium' as const, aiGenerated: true },
-    { id: '3', title: 'Follow up with design team', priority: 'medium' as const, aiGenerated: true },
-    { id: '4', title: 'Prepare demo environment', priority: 'low' as const, aiGenerated: false },
-  ]
+  // Open tasks — canonical task board, in-progress / todo first.
+  const tasks = getMockTasks()
+    .filter((t) => t.status !== 'DONE')
+    .slice(0, 4)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      priority: dashPriority(t.priority),
+      aiGenerated: (t.tags ?? []).includes('tag-ai'),
+    }))
 
-  const threads = [
-    { id: '1', title: 'Product launch timeline', lastActivity: '12 min ago', unread: 3 },
-    { id: '2', title: 'Budget approval Q1', lastActivity: '1 hr ago', unread: 0 },
-    { id: '3', title: 'Engineering hiring pipeline', lastActivity: '2 hr ago', unread: 1 },
-  ]
+  // Active threads — canonical message threads with unread counts.
+  const threads = getMockThreads()
+    .slice(0, 3)
+    .map((th) => ({
+      id: th.id,
+      title: th.name,
+      lastActivity: fmtAgo(th.lastMessageAt),
+      unread: th.unread ?? 0,
+    }))
 
   const priorityColors = {
     high: 'bg-peak-red/15 text-peak-red ring-1 ring-peak-red/25',
@@ -396,7 +447,7 @@ function TodaysFocus() {
             {meetings.map((meeting) => (
               <button
                 key={meeting.id}
-                onClick={() => router.push('/calendar')}
+                onClick={() => router.push(meeting.joinUrl || '/calendar')}
                 className="w-full flex items-start gap-3 text-left group"
               >
                 <span className="text-xs font-mono text-peak-dim mt-0.5 w-16 flex-shrink-0">
@@ -508,26 +559,27 @@ function TodaysFocus() {
 // ─── Memory Layer ───────────────────────────────────────────────────────────
 
 function MemoryLayer() {
+  // Real cross-entity links from the Acme Corp world.
   const connections = [
     {
       id: '1',
-      from: 'Q4 Proposal.pdf',
+      from: 'Q2 Marketing Strategy',
       fromType: 'file' as const,
-      to: 'Client Review (11:30 AM)',
+      to: 'Q2 Campaign Review',
       toType: 'meeting' as const,
     },
     {
       id: '2',
-      from: 'Sprint Planning',
+      from: 'Launch Sync',
       fromType: 'meeting' as const,
-      to: 'Update onboarding docs',
+      to: 'GA candidate sign-off',
       toType: 'task' as const,
     },
     {
       id: '3',
-      from: 'Product launch timeline',
+      from: '#product-x',
       fromType: 'thread' as const,
-      to: 'Prepare demo environment',
+      to: 'Launch Product X',
       toType: 'task' as const,
     },
   ]
@@ -598,8 +650,8 @@ function AIObservations() {
     {
       id: 'unresolved',
       icon: AlertCircle,
-      text: 'unresolved items from last week',
-      count: 3,
+      text: 'open risks across your missions',
+      count: 4,
       type: 'info',
     },
     {
@@ -612,8 +664,7 @@ function AIObservations() {
     {
       id: 'duplicate',
       icon: Copy,
-      text: 'duplicate file detected',
-      count: 1,
+      text: 'Q2 Growth Engine is at risk on paid acquisition',
       type: 'warning',
     },
   ]
@@ -623,7 +674,7 @@ function AIObservations() {
       id: 'permission-review',
       icon: Shield,
       text: 'permission changes pending review',
-      count: 5,
+      count: 2,
       type: 'warning',
     },
     {
@@ -635,8 +686,8 @@ function AIObservations() {
     {
       id: 'user-activity',
       icon: Activity,
-      text: 'new users added this week',
-      count: 8,
+      text: 'active members on the workspace',
+      count: ACME_TEAM_SIZE,
       type: 'info',
     },
   ]
@@ -699,12 +750,26 @@ function AIObservations() {
 
 function EnterpriseAdminSummary() {
   const router = useRouter()
+  const org = getMockOrgIdentity()
 
+  const storagePct = Math.round((org.storageUsedGb / org.storageTotalGb) * 100)
   const stats = [
-    { label: 'Active Users', value: '142', change: '+12 this week', href: '/settings/org', tone: 'primary' as const },
-    { label: 'Storage Used', value: '68%', change: '340 GB of 500 GB', href: '/settings/billing', tone: 'blue' as const },
-    { label: 'Compliance Score', value: '94%', change: 'Last scanned 2h ago', href: '/settings/security', tone: 'green' as const },
-    { label: 'Open Tickets', value: '7', change: '3 high priority', href: '/help', tone: 'amber' as const },
+    {
+      label: 'Active Users',
+      value: String(org.seatsUsed),
+      change: `${org.seats} seats on ${org.plan}`,
+      href: '/settings/org',
+      tone: 'primary' as const,
+    },
+    {
+      label: 'Storage Used',
+      value: `${storagePct}%`,
+      change: `${org.storageUsedGb} GB of ${org.storageTotalGb} GB`,
+      href: '/settings/billing',
+      tone: 'blue' as const,
+    },
+    { label: 'Compliance Score', value: '94%', change: 'Last scanned today', href: '/settings/security', tone: 'green' as const },
+    { label: 'Open Risks', value: '4', change: '1 high priority', href: '/missions', tone: 'amber' as const },
   ]
 
   return (
@@ -735,11 +800,12 @@ function EnterpriseAdminSummary() {
 // ─── Personal AI Memory ──────────────────────────────────────────────────────
 
 function PersonalAIMemory() {
+  // First-person memory about the current user (Sarah Chen, Acme Corp CEO).
   const memories = [
-    { id: '1', text: 'Prefers morning meetings before 11 AM', source: 'Calendar patterns' },
-    { id: '2', text: 'Working on Q4 proposal -- due Friday', source: 'Task context' },
-    { id: '3', text: 'Usually replies to Sarah within 30 min', source: 'Communication habits' },
-    { id: '4', text: 'Frequently references Design System v2 docs', source: 'File activity' },
+    { id: '1', text: 'You prefer focus blocks in the morning before noon', source: 'Calendar patterns' },
+    { id: '2', text: 'Driving the Product X launch — GA candidate due June 30', source: 'Mission context' },
+    { id: '3', text: 'You usually reply to Mike Wilson within 30 minutes', source: 'Communication habits' },
+    { id: '4', text: 'Frequently reference the Q2 Marketing Strategy note', source: 'Memory activity' },
   ]
 
   return (
@@ -768,8 +834,10 @@ function PersonalAIMemory() {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+// Deterministic greeting tied to the pinned world clock (no Date.now() in
+// render — keeps SSR and first client render in sync, matching '/').
 function getGreeting(): string {
-  const hour = new Date().getHours()
+  const hour = new Date(FIXED_TODAY).getUTCHours()
   if (hour < 12) return 'morning'
   if (hour < 17) return 'afternoon'
   return 'evening'
