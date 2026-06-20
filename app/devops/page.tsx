@@ -1,234 +1,126 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Sparkles, Palette, Database, Cloud, Brain, CheckCircle2, Circle, Activity } from 'lucide-react'
+import { PeakShell, GlassPanel, SectionLabel, StatTile } from '@/components/peak'
+import {
+  DEVOPS_PHASES, DEVOPS_AREAS, DEVOPS_EXTERNAL, DEVOPS_FOLLOWUPS, DEVOPS_UPDATED,
+  type AreaState,
+} from '@/lib/peak/devops-status'
+import { CheckCircle2, Plug, Wrench, ListChecks } from 'lucide-react'
 
-interface ApiStatus {
-  loading: boolean
-  success: boolean | null
-  message?: string
+const STATE_META: Record<AreaState, { label: string; cls: string }> = {
+  'done': { label: 'Done', cls: 'text-peak-green bg-peak-green/12 ring-peak-green/30' },
+  'demo-ready': { label: 'Demo-ready', cls: 'text-peak-primary-300 bg-peak-primary/12 ring-peak-primary/30' },
+  'needs-service': { label: 'Needs service', cls: 'text-peak-amber bg-peak-amber/12 ring-peak-amber/30' },
+  'in-progress': { label: 'In progress', cls: 'text-peak-blue bg-peak-blue/12 ring-peak-blue/30' },
 }
 
 export default function DevOpsPage() {
-  const [activeSection, setActiveSection] = useState('overview')
-  const [dbStatus, setDbStatus] = useState<ApiStatus>({ loading: true, success: null })
-  const [storageStatus, setStorageStatus] = useState<ApiStatus>({ loading: true, success: null })
-  const [aiStatus, setAiStatus] = useState<ApiStatus>({ loading: true, success: null })
-
-  useEffect(() => {
-    // Fetch DB status
-    fetch('/api/test/db')
-      .then(res => res.json())
-      .then(data => setDbStatus({ loading: false, success: data.success, message: data.message || 'Connected' }))
-      .catch(() => setDbStatus({ loading: false, success: false, message: 'Database connection failed' }))
-
-    // Fetch Storage status
-    fetch('/api/test/storage')
-      .then(res => res.json())
-      .then(data => setStorageStatus({ loading: false, success: data.success, message: data.message || 'Connected' }))
-      .catch(() => setStorageStatus({ loading: false, success: false, message: 'Storage connection failed' }))
-
-    // Fetch AI status
-    fetch('/api/test/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Hello Lisa, are you working?' })
-    })
-      .then(res => res.json())
-      .then(data => setAiStatus({ loading: false, success: data.success, message: data.response || 'Connected' }))
-      .catch(() => setAiStatus({ loading: false, success: false, message: 'AI service connection failed' }))
-  }, [])
-
-  const sections = [
-    { id: 'overview', title: 'Visual Identity', icon: Palette },
-    { id: 'roadmap', title: 'Feature Roadmap', icon: Sparkles },
-    { id: 'diagnostics', title: 'System Diagnostics', icon: Activity },
-  ]
+  const done = DEVOPS_AREAS.filter(a => a.state === 'done').length
+  const demo = DEVOPS_AREAS.filter(a => a.state === 'demo-ready').length
+  const svc = DEVOPS_AREAS.filter(a => a.state === 'needs-service').length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="flex">
-        {/* Sidebar Navigation */}
-        <div className="w-64 min-h-screen bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-700 sticky top-0 flex flex-col justify-between">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Peak AI
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Design Document</p>
-              </div>
-            </div>
+    <PeakShell>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <SectionLabel>Build Status</SectionLabel>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-peak md:text-4xl">
+              Functionality Tracker
+            </h1>
+            <p className="mt-1 text-peak-muted">
+              What&apos;s wired, what&apos;s demo-ready, and what needs an external service to go fully live.
+            </p>
+          </div>
+          <span className="text-xs text-peak-dim">Updated {DEVOPS_UPDATED}</span>
+        </div>
 
-            <nav className="space-y-1">
-              {sections.map((section) => {
-                const Icon = section.icon
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                      activeSection === section.id
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">{section.title}</span>
-                  </button>
-                )
-              })}
-            </nav>
+        {/* Overview */}
+        <GlassPanel className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:divide-x lg:divide-peak-border">
+          <StatTile icon={<CheckCircle2 className="h-5 w-5" />} value={String(done)} label="Fully done" sublabel="works end-to-end" tone="green" />
+          <StatTile icon={<ListChecks className="h-5 w-5" />} value={String(demo)} label="Demo-ready" sublabel="canon data, wired" tone="primary" />
+          <StatTile icon={<Plug className="h-5 w-5" />} value={String(svc)} label="Needs service" sublabel="external dependency" tone="amber" />
+          <StatTile icon={<CheckCircle2 className="h-5 w-5" />} value="0" label="Placeholders left" sublabel="48-route scan" tone="green" />
+        </GlassPanel>
+
+        {/* Completed phases */}
+        <div>
+          <SectionLabel>Completed</SectionLabel>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {DEVOPS_PHASES.map((p) => (
+              <GlassPanel key={p.title} className="flex items-start gap-3 p-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-peak-green" />
+                <div>
+                  <div className="font-medium text-peak">{p.title}</div>
+                  <div className="text-sm text-peak-muted">{p.detail}</div>
+                </div>
+              </GlassPanel>
+            ))}
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-8 max-w-5xl mx-auto">
-          {activeSection === 'overview' && (
-            <div className="space-y-8">
-              {/* Default section requirements */}
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  Visual Identity
-                </h2>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Style Guidelines</h3>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      Peak AI follows a <strong>Minimalist Apple aesthetic</strong> with neural, futuristic highlights. Whites, charcoals, and soft gradients define our background palette, providing a clean surface that breathes.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Milestone Feature Roadmap</h3>
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-200 dark:divide-gray-700">
-                      {[
-                        { name: 'Lisa AI Chat Assistant', status: 'COMPLETE', badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
-                        { name: 'File Upload UI & AI', status: 'COMPLETE', badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
-                        { name: 'Kanban Tasks DB Sync', status: 'COMPLETE/IN_PROGRESS', badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' },
-                        { name: 'DevOps & Navigation', status: 'IN_PROGRESS', badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
-                        { name: 'E2E Test & Build Verification', status: 'PLANNED', badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/10">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${item.badge}`}>{item.status}</span>
-                        </div>
-                      ))}
+        {/* Per-area status */}
+        <div>
+          <SectionLabel>Per-area status</SectionLabel>
+          <GlassPanel className="mt-3 divide-y divide-peak-border p-0">
+            {DEVOPS_AREAS.map((a) => {
+              const m = STATE_META[a.state]
+              return (
+                <div key={a.area} className="flex flex-wrap items-start gap-3 px-5 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-peak">{a.area}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${m.cls}`}>{m.label}</span>
                     </div>
+                    <div className="mt-0.5 text-sm text-peak-muted">{a.detail}</div>
                   </div>
-
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Integration Status</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Database Status */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Database className="w-5 h-5 text-blue-500" />
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">Database</span>
-                        </div>
-                        {dbStatus.loading ? (
-                          <span className="text-xs text-gray-400">Loading...</span>
-                        ) : dbStatus.success ? (
-                          <span className="text-xs text-green-500 font-semibold">● Connected</span>
-                        ) : (
-                          <span className="text-xs text-red-500 font-semibold">● Connection Failed</span>
-                        )}
-                      </div>
-
-                      {/* Storage Status */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Cloud className="w-5 h-5 text-green-500" />
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">Storage</span>
-                        </div>
-                        {storageStatus.loading ? (
-                          <span className="text-xs text-gray-400">Loading...</span>
-                        ) : storageStatus.success ? (
-                          <span className="text-xs text-green-500 font-semibold">● Connected</span>
-                        ) : (
-                          <span className="text-xs text-red-500 font-semibold">● Connection Failed</span>
-                        )}
-                      </div>
-
-                      {/* AI Status */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Brain className="w-5 h-5 text-purple-500" />
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">AI Services</span>
-                        </div>
-                        {aiStatus.loading ? (
-                          <span className="text-xs text-gray-400">Loading...</span>
-                        ) : aiStatus.success ? (
-                          <span className="text-xs text-green-500 font-semibold">● Connected</span>
-                        ) : (
-                          <span className="text-xs text-red-500 font-semibold">● Connection Failed</span>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a.routes.map((r) => (
+                      <code key={r} className="rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-peak-dim ring-1 ring-peak-border">{r}</code>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )
+            })}
+          </GlassPanel>
+        </div>
 
-          {activeSection === 'roadmap' && (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Roadmap Status</h2>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Track the development progress across all project milestones.
-                </p>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Lisa AI Chat Assistant', status: 'COMPLETE' },
-                    { name: 'File Upload UI & AI', status: 'COMPLETE' },
-                    { name: 'Kanban Tasks DB Sync', status: 'COMPLETE/IN_PROGRESS' },
-                    { name: 'DevOps & Navigation', status: 'IN_PROGRESS' },
-                    { name: 'E2E Test & Build Verification', status: 'PLANNED' },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-4">
-                      {item.status.includes('COMPLETE') ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                      ) : item.status === 'IN_PROGRESS' ? (
-                        <Circle className="w-5 h-5 text-yellow-500 shrink-0 fill-yellow-500" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600 shrink-0" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.status}</p>
-                      </div>
-                    </div>
+        {/* External dependencies */}
+        <div>
+          <SectionLabel>Needs an external service to go fully live</SectionLabel>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {DEVOPS_EXTERNAL.map((e) => (
+              <GlassPanel key={e.service} className="p-4">
+                <div className="flex items-center gap-2">
+                  <Plug className="h-4 w-4 text-peak-amber" />
+                  <span className="font-medium text-peak">{e.service}</span>
+                </div>
+                <div className="mt-1 text-sm text-peak"><span className="text-peak-muted">Blocks:</span> {e.blocks}</div>
+                <div className="mt-1 text-sm text-peak-muted">{e.note}</div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {e.routes.map((r) => (
+                    <code key={r} className="rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-peak-dim ring-1 ring-peak-border">{r}</code>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
+              </GlassPanel>
+            ))}
+          </div>
+        </div>
 
-          {activeSection === 'diagnostics' && (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Integration Diagnostics</h2>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 space-y-4">
-                <div className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-xl">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">Database</span>
-                  {dbStatus.loading ? 'Checking...' : dbStatus.success ? 'Success' : 'Failed'}
-                </div>
-                <div className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-xl">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">Storage</span>
-                  {storageStatus.loading ? 'Checking...' : storageStatus.success ? 'Success' : 'Failed'}
-                </div>
-                <div className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-xl">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">AI Assistant</span>
-                  {aiStatus.loading ? 'Checking...' : aiStatus.success ? 'Success' : 'Failed'}
-                </div>
+        {/* Follow-ups */}
+        <div>
+          <SectionLabel>Known follow-ups</SectionLabel>
+          <GlassPanel className="mt-3 space-y-2.5 p-5">
+            {DEVOPS_FOLLOWUPS.map((f, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-peak-dim" />
+                <span className="text-sm text-peak-muted">{f}</span>
               </div>
-            </div>
-          )}
+            ))}
+          </GlassPanel>
         </div>
       </div>
-    </div>
+    </PeakShell>
   )
 }

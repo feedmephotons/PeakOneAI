@@ -27,7 +27,7 @@ export default function ActivityHeatmap({
 
   data.forEach((day, index) => {
     const date = new Date(day.date)
-    const dayOfWeek = date.getDay()
+    const dayOfWeek = date.getUTCDay()
 
     if (dayOfWeek === 0 && currentWeek.length > 0) {
       weeks.push(currentWeek)
@@ -55,8 +55,8 @@ export default function ActivityHeatmap({
   const monthLabels = weeks.map((week, index) => {
     if (week.length === 0) return null
     const firstDay = new Date(week[0].date)
-    if (firstDay.getDate() <= 7 || index === 0) {
-      return firstDay.toLocaleDateString('en-US', { month: 'short' })
+    if (firstDay.getUTCDate() <= 7 || index === 0) {
+      return firstDay.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short' })
     }
     return null
   })
@@ -100,7 +100,7 @@ export default function ActivityHeatmap({
                 {/* Fill empty days at start of first week */}
                 {weekIndex === 0 && week.length > 0 && (
                   <>
-                    {Array.from({ length: new Date(week[0].date).getDay() }).map((_, i) => (
+                    {Array.from({ length: new Date(week[0].date).getUTCDay() }).map((_, i) => (
                       <div
                         key={`empty-${i}`}
                         style={{ width: cellSize, height: cellSize }}
@@ -117,7 +117,7 @@ export default function ActivityHeatmap({
                       key={dayIndex}
                       style={{ width: cellSize, height: cellSize }}
                       className={`${getLevelColor(day.level)} rounded-sm cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all`}
-                      title={`${date.toLocaleDateString()}: ${day.count} activities`}
+                      title={`${date.toLocaleDateString('en-US', { timeZone: 'UTC' })}: ${day.count} activities`}
                     />
                   )
                 })}
