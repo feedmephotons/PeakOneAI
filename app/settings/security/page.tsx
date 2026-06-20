@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Key, Smartphone, Monitor, AlertTriangle, Check } from 'lucide-react'
+import Link from 'next/link'
+import { Key, Smartphone, Monitor, AlertTriangle, Check, ArrowLeft } from 'lucide-react'
+import { GlassPanel, SectionLabel } from '@/components/peak'
 import { MOCK_USER } from '@/lib/peak/mock'
 
 // Shared 2FA source of truth with the main /settings page (Account tab).
@@ -57,52 +59,61 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="p-6 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Security</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
+        {/* Back to settings */}
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 text-sm text-peak-muted hover:text-peak transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Settings
+        </Link>
+
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak mb-2">Security</h1>
+        <p className="text-peak-muted mb-8">
           Manage security settings for {MOCK_USER.name} ({MOCK_USER.email})
         </p>
 
         {/* Password */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <GlassPanel className="p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                <Key className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <div className="w-10 h-10 bg-white/[0.05] rounded-lg flex items-center justify-center">
+                <Key className="w-5 h-5 text-peak-muted" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Password</h3>
-                <p className="text-sm text-gray-500">Last changed 30 days ago</p>
+                <h3 className="font-medium text-peak">Password</h3>
+                <p className="text-sm text-peak-muted">Last changed 30 days ago</p>
               </div>
             </div>
             <button
               onClick={changePassword}
-              className="px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition"
+              className="px-4 py-2 text-sm text-peak-primary-300 hover:text-peak-primary hover:bg-white/[0.04] rounded-lg transition-colors"
             >
               Change Password
             </button>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Two-Factor */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <GlassPanel className="p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <Smartphone className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="w-10 h-10 bg-peak-green/15 rounded-lg flex items-center justify-center ring-1 ring-peak-green/20">
+                <Smartphone className="w-5 h-5 text-peak-green" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="font-medium text-peak">Two-Factor Authentication</h3>
+                <p className="text-sm text-peak-muted">
                   {twoFactorEnabled ? 'Enabled via authenticator app' : 'Add an extra layer of security'}
                 </p>
               </div>
             </div>
             <button
               onClick={toggle2FA}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                twoFactorEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                twoFactorEnabled ? 'bg-peak-primary' : 'bg-white/[0.12]'
               }`}
               aria-label="Toggle two-factor authentication"
             >
@@ -111,33 +122,33 @@ export default function SecuritySettingsPage() {
               }`} />
             </button>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Active Sessions */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Active Sessions</h2>
+        <div className="bg-peak-glass border border-peak-border rounded-2xl overflow-hidden mb-6 shadow-peak backdrop-blur">
+          <div className="p-4 border-b border-peak-border flex items-center justify-between">
+            <SectionLabel>Active Sessions</SectionLabel>
             {sessions.some((s) => !s.current) && (
-              <button onClick={signOutAllOthers} className="text-sm text-red-600 hover:underline">
+              <button onClick={signOutAllOthers} className="text-sm text-peak-red hover:underline">
                 Sign out all other sessions
               </button>
             )}
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-peak-border">
             {sessions.map(session => (
               <div key={session.id} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <Monitor className="w-5 h-5 text-gray-400" />
+                  <Monitor className="w-5 h-5 text-peak-dim" />
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-peak">
                       {session.device}
-                      {session.current && <span className="ml-2 text-xs text-green-600">(Current)</span>}
+                      {session.current && <span className="ml-2 text-xs text-peak-green">(Current)</span>}
                     </p>
-                    <p className="text-sm text-gray-500">{session.location} • {session.lastActive}</p>
+                    <p className="text-sm text-peak-muted">{session.location} • {session.lastActive}</p>
                   </div>
                 </div>
                 {!session.current && (
-                  <button onClick={() => signOutSession(session.id)} className="text-sm text-red-600 hover:underline">
+                  <button onClick={() => signOutSession(session.id)} className="text-sm text-peak-red hover:underline">
                     Sign out
                   </button>
                 )}
@@ -147,12 +158,12 @@ export default function SecuritySettingsPage() {
         </div>
 
         {/* Security Tip */}
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800 p-4">
+        <div className="bg-peak-amber/10 rounded-2xl border border-peak-amber/25 p-4">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <AlertTriangle className="w-5 h-5 text-peak-amber" />
             <div>
-              <p className="font-medium text-yellow-800 dark:text-yellow-200">Security Tip</p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              <p className="font-medium text-peak">Security Tip</p>
+              <p className="text-sm text-peak-muted">
                 Review your active sessions regularly and sign out of devices you don&apos;t recognize.
               </p>
             </div>
@@ -161,8 +172,8 @@ export default function SecuritySettingsPage() {
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg shadow-lg">
-          <Check className="w-4 h-4 text-green-400" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-peak-glass border border-peak-border text-peak rounded-xl shadow-lg backdrop-blur">
+          <Check className="w-4 h-4 text-peak-green" />
           <span className="text-sm">{toast}</span>
         </div>
       )}

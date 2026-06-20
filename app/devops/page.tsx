@@ -2,7 +2,7 @@
 
 import { PeakShell, GlassPanel, SectionLabel, StatTile } from '@/components/peak'
 import {
-  DEVOPS_PHASES, DEVOPS_AREAS, DEVOPS_EXTERNAL, DEVOPS_FOLLOWUPS, DEVOPS_UPDATED,
+  DEVOPS_PHASES, DEVOPS_AREAS, DEVOPS_EXTERNAL, DEVOPS_FOLLOWUPS, DEVOPS_UPDATED, DEVOPS_LOGIN,
   type AreaState,
 } from '@/lib/peak/devops-status'
 import { CheckCircle2, Plug, Wrench, ListChecks } from 'lucide-react'
@@ -33,7 +33,12 @@ export default function DevOpsPage() {
               What&apos;s wired, what&apos;s demo-ready, and what needs an external service to go fully live.
             </p>
           </div>
-          <span className="text-xs text-peak-dim">Updated {DEVOPS_UPDATED}</span>
+          <div className="text-right">
+            <div className="rounded-lg bg-peak-primary/10 px-3 py-1.5 text-xs text-peak-primary-300 ring-1 ring-peak-primary/25">
+              Demo login: <code className="text-peak">{DEVOPS_LOGIN}</code>
+            </div>
+            <span className="mt-1 block text-xs text-peak-dim">Updated {DEVOPS_UPDATED}</span>
+          </div>
         </div>
 
         {/* Overview */}

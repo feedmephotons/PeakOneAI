@@ -6,6 +6,7 @@ import {
   ArrowLeft, Upload, FileText, Brain, Plus, Trash2, Check, Edit3,
   AlertCircle, BookOpen, Settings, ToggleLeft, ToggleRight, Shield, X
 } from 'lucide-react'
+import { GlassPanel } from '@/components/peak'
 import { MOCK_BRAND_VOICE } from '@/lib/peak/mock'
 
 interface BrandGuideline {
@@ -193,61 +194,57 @@ export default function BrandVoiceSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/settings"
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Brain className="w-6 h-6 text-indigo-500" />
-                  Brand Voice Intelligence
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Configure brand guidelines to keep all communications on-brand
-                </p>
-              </div>
-            </div>
+    <div className="p-6 sm:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 text-sm text-peak-muted hover:text-peak transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Settings
+        </Link>
 
-            <button
-              onClick={() => { setEditing(null); setNewGuideline({ name: '', description: '', voiceTone: 'professional' }); setShowUploadModal(true) }}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add Guidelines
-            </button>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak flex items-center gap-3">
+              <Brain className="w-8 h-8 text-peak-primary-300" />
+              Brand Voice Intelligence
+            </h1>
+            <p className="text-peak-muted mt-2">
+              Configure brand guidelines to keep all communications on-brand
+            </p>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+          <button
+            onClick={() => { setEditing(null); setNewGuideline({ name: '', description: '', voiceTone: 'professional' }); setShowUploadModal(true) }}
+            className="flex items-center gap-2 px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Guidelines
+          </button>
+        </div>
+
         {/* Global Settings */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Settings className="w-5 h-5 text-gray-500" />
+        <GlassPanel className="p-6 mb-8">
+          <h2 className="text-lg font-semibold text-peak mb-4 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-peak-muted" />
             Workspace Settings
           </h2>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Enable/Disable */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-white/[0.04] border border-peak-border rounded-xl">
               <div>
-                <div className="font-medium text-gray-900 dark:text-white">Brand Voice Assistant</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="font-medium text-peak">Brand Voice Assistant</div>
+                <div className="text-sm text-peak-muted">
                   Enable real-time brand voice analysis for all users
                 </div>
               </div>
               <button
                 onClick={() => { const next = !brandVoiceEnabled; setBrandVoiceEnabled(next); persistSettings({ brandVoiceEnabled: next }) }}
-                className={`p-1 rounded-full transition ${
-                  brandVoiceEnabled ? 'text-purple-600' : 'text-gray-400'
+                className={`p-1 rounded-full transition-colors ${
+                  brandVoiceEnabled ? 'text-peak-primary-300' : 'text-peak-dim'
                 }`}
                 aria-label="Toggle brand voice assistant"
               >
@@ -260,13 +257,13 @@ export default function BrandVoiceSettingsPage() {
             </div>
 
             {/* Default Enforcement Level */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <div className="font-medium text-gray-900 dark:text-white mb-2">Default Enforcement Level</div>
+            <div className="p-4 bg-white/[0.04] border border-peak-border rounded-xl">
+              <div className="font-medium text-peak mb-2">Default Enforcement Level</div>
               <select
                 value={defaultLevel}
                 onChange={(e) => { const v = Number(e.target.value); setDefaultLevel(v); persistSettings({ defaultLevel: v }) }}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                  dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-peak-border text-peak
+                  placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
               >
                 {ENFORCEMENT_LEVELS.map((level) => (
                   <option key={level.level} value={level.level}>
@@ -276,62 +273,62 @@ export default function BrandVoiceSettingsPage() {
               </select>
             </div>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Guidelines List */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-purple-500" />
+        <GlassPanel className="!p-0 overflow-hidden">
+          <div className="p-6 border-b border-peak-border">
+            <h2 className="text-lg font-semibold text-peak flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-peak-primary-300" />
               Brand Guidelines
             </h2>
           </div>
 
           {isLoading ? (
             <div className="p-12 text-center">
-              <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Loading guidelines...</p>
+              <div className="w-8 h-8 border-2 border-peak-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-peak-muted">Loading guidelines...</p>
             </div>
           ) : guidelines.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-purple-500" />
+              <div className="w-16 h-16 bg-peak-primary/15 ring-1 ring-peak-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-peak-primary-300" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-lg font-semibold text-peak mb-2">
                 No Brand Guidelines Yet
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
+              <p className="text-peak-muted mb-4 max-w-md mx-auto">
                 Upload your brand guidelines PDF or create them manually to enable AI-powered brand voice enforcement.
               </p>
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Upload Guidelines PDF
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="divide-y divide-peak-border">
               {guidelines.map((guideline) => (
-                <div key={guideline.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                <div key={guideline.id} className="p-6 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                        <h3 className="font-semibold text-peak">
                           {guideline.name}
                         </h3>
                         {guideline.isDefault && (
-                          <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs rounded-full">
+                          <span className="px-2 py-0.5 bg-peak-primary/15 text-peak-primary-300 ring-1 ring-peak-primary/20 text-xs rounded-full">
                             Default
                           </span>
                         )}
                         <button
                           onClick={() => toggleActive(guideline.id)}
-                          className={`px-2 py-0.5 text-xs rounded-full transition ${
+                          className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
                             guideline.isActive
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              ? 'bg-peak-green/15 text-peak-green ring-1 ring-peak-green/20'
+                              : 'bg-white/[0.05] text-peak-muted ring-1 ring-peak-border'
                           }`}
                         >
                           {guideline.isActive ? 'Active' : 'Inactive'}
@@ -339,26 +336,26 @@ export default function BrandVoiceSettingsPage() {
                       </div>
 
                       {guideline.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-peak-muted mt-1">
                           {guideline.description}
                         </p>
                       )}
 
                       <div className="flex items-center gap-4 mt-3 text-sm">
-                        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1 text-peak-muted">
                           <Shield className="w-4 h-4" />
                           {guideline.voiceTone}
                         </span>
-                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <span className="text-green-600 dark:text-green-400">
+                        <span className="text-peak-dim">•</span>
+                        <span className="text-peak-green">
                           {guideline._count.approvedTerms} approved terms
                         </span>
-                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <span className="text-red-600 dark:text-red-400">
+                        <span className="text-peak-dim">•</span>
+                        <span className="text-peak-red">
                           {guideline._count.forbiddenTerms} forbidden terms
                         </span>
-                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <span className="text-blue-600 dark:text-blue-400">
+                        <span className="text-peak-dim">•</span>
+                        <span className="text-peak-primary-300">
                           {guideline._count.messagingRules} rules
                         </span>
                       </div>
@@ -368,7 +365,7 @@ export default function BrandVoiceSettingsPage() {
                           {guideline.personality.slice(0, 5).map((trait, i) => (
                             <span
                               key={i}
-                              className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full"
+                              className="px-2 py-0.5 bg-white/[0.05] ring-1 ring-peak-border text-peak-muted text-xs rounded-full"
                             >
                               {trait}
                             </span>
@@ -380,17 +377,17 @@ export default function BrandVoiceSettingsPage() {
                     <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => startEdit(guideline)}
-                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
+                        className="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                         aria-label="Edit guideline"
                       >
-                        <Edit3 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <Edit3 className="w-4 h-4 text-peak-muted" />
                       </button>
                       <button
                         onClick={() => deleteGuideline(guideline.id)}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition"
+                        className="p-2 hover:bg-peak-red/15 rounded-lg transition-colors"
                         aria-label="Delete guideline"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 text-peak-red" />
                       </button>
                     </div>
                   </div>
@@ -398,52 +395,51 @@ export default function BrandVoiceSettingsPage() {
               ))}
             </div>
           )}
-        </div>
+        </GlassPanel>
 
         {/* Info Box */}
-        <div className="mt-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20
-          rounded-2xl p-6 border border-purple-100 dark:border-purple-800">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-purple-500" />
+        <GlassPanel className="mt-8 p-6 bg-peak-primary/[0.06] border-peak-primary/20">
+          <h3 className="font-semibold text-peak mb-2 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-peak-primary-300" />
             How Brand Voice Works
           </h3>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <ul className="space-y-2 text-sm text-peak-muted">
             <li className="flex items-start gap-2">
-              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <Check className="w-4 h-4 text-peak-green mt-0.5 flex-shrink-0" />
               Upload your brand guidelines PDF and AI will extract voice, tone, and rules automatically
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <Check className="w-4 h-4 text-peak-green mt-0.5 flex-shrink-0" />
               As team members write emails, messages, and documents, they get real-time suggestions
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <Check className="w-4 h-4 text-peak-green mt-0.5 flex-shrink-0" />
               Enforcement levels let you choose from gentle suggestions to automatic rewrites
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <Check className="w-4 h-4 text-peak-green mt-0.5 flex-shrink-0" />
               Admins control workspace-wide settings; users can enable personal mode to bypass
             </li>
           </ul>
-        </div>
+        </GlassPanel>
       </div>
 
       {/* Upload / Edit Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-peak-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-peak">
                 {editing ? 'Edit Brand Guidelines' : 'Add Brand Guidelines'}
               </h3>
-              <button onClick={resetModal} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                <X className="w-5 h-5 text-gray-500" />
+              <button onClick={resetModal} className="p-1 hover:bg-white/[0.04] rounded transition-colors">
+                <X className="w-5 h-5 text-peak-muted" />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Guideline Name *
                 </label>
                 <input
@@ -451,13 +447,13 @@ export default function BrandVoiceSettingsPage() {
                   value={newGuideline.name}
                   onChange={(e) => setNewGuideline({ ...newGuideline, name: e.target.value })}
                   placeholder="e.g., Company Brand Voice"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                    dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-peak-border text-peak
+                    placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Description
                 </label>
                 <textarea
@@ -465,20 +461,20 @@ export default function BrandVoiceSettingsPage() {
                   onChange={(e) => setNewGuideline({ ...newGuideline, description: e.target.value })}
                   placeholder="Brief description of these guidelines..."
                   rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                    dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-peak-border text-peak
+                    placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-peak-muted mb-1">
                   Default Voice Tone
                 </label>
                 <select
                   value={newGuideline.voiceTone}
                   onChange={(e) => setNewGuideline({ ...newGuideline, voiceTone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                    dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-peak-border text-peak
+                    placeholder:text-peak-dim focus:outline-none focus:border-peak-primary/50"
                 >
                   {VOICE_TONES.map((tone) => (
                     <option key={tone.value} value={tone.value}>
@@ -489,7 +485,7 @@ export default function BrandVoiceSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-peak-muted mb-2">
                   Upload Brand Guidelines PDF (Optional)
                 </label>
                 {/* Single file input + real drag-and-drop (no double-fire). */}
@@ -497,29 +493,29 @@ export default function BrandVoiceSettingsPage() {
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-xl p-6 text-center transition ${
-                    isDragging ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-300 dark:border-gray-600'
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                    isDragging ? 'border-peak-primary/50 bg-peak-primary/[0.08]' : 'border-peak-border'
                   }`}
                 >
                   {uploadFile ? (
                     <div className="flex items-center justify-center gap-3">
-                      <FileText className="w-8 h-8 text-purple-500" />
+                      <FileText className="w-8 h-8 text-peak-primary-300" />
                       <div className="text-left">
-                        <div className="font-medium text-gray-900 dark:text-white">{uploadFile.name}</div>
-                        <div className="text-sm text-gray-500">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                        <div className="font-medium text-peak">{uploadFile.name}</div>
+                        <div className="text-sm text-peak-muted">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</div>
                       </div>
                       <button
                         onClick={() => setUploadFile(null)}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                        className="p-1 hover:bg-white/[0.04] rounded transition-colors"
                         aria-label="Remove file"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 text-peak-red" />
                       </button>
                     </div>
                   ) : (
                     <>
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      <Upload className="w-8 h-8 text-peak-dim mx-auto mb-2" />
+                      <p className="text-sm text-peak-muted mb-2">
                         Drag &amp; drop a PDF here, or
                       </p>
                       <input
@@ -532,31 +528,31 @@ export default function BrandVoiceSettingsPage() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-block px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                        className="inline-block px-4 py-2 bg-white/[0.05] border border-peak-border text-peak rounded-lg cursor-pointer hover:bg-white/[0.04] transition-colors"
                       >
                         Choose File
                       </button>
                     </>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs text-peak-muted mt-2">
                   {/* EXTERNAL: needs Gemini PDF extraction to auto-derive voice + terminology + rules. */}
                   AI will analyze the PDF and extract brand voice, terminology, and messaging rules automatically.
                 </p>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-6 border-t border-peak-border flex justify-end gap-3">
               <button
                 onClick={resetModal}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                className="px-4 py-2 border border-peak-border text-peak rounded-xl hover:bg-white/[0.04] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!newGuideline.name.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 disabled:opacity-50 transition-colors"
               >
                 <Brain className="w-4 h-4" />
                 {editing ? 'Save Changes' : 'Create Guidelines'}

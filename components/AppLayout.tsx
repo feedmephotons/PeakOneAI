@@ -19,7 +19,7 @@ import { useAppStore } from '@/stores/app-store'
 const PEAK_OS_ROUTES = [
   '/', '/missions', '/memory', '/people', '/lisa',
   '/home', '/tasks', '/calendar', '/messages', '/calls',
-  '/files', '/analytics', '/automation', '/settings/integrations',
+  '/files', '/analytics', '/automation', '/settings',
   '/create', '/devops',
 ]
 

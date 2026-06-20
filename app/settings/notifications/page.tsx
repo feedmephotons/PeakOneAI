@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Mail, Smartphone, Check } from 'lucide-react'
+import Link from 'next/link'
+import { Bell, Mail, Smartphone, Check, ArrowLeft } from 'lucide-react'
+import { GlassPanel, SectionLabel } from '@/components/peak'
 
 interface NotificationSetting {
   id: string
@@ -58,50 +60,59 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="p-6 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Notifications</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">Choose how you want to be notified</p>
+        <div className="flex items-center gap-3 mb-2">
+          <Link
+            href="/settings"
+            className="p-2 -ml-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+            aria-label="Back to settings"
+          >
+            <ArrowLeft className="w-5 h-5 text-peak-muted" />
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak">Notifications</h1>
+        </div>
+        <p className="text-peak-muted mb-8">Choose how you want to be notified</p>
 
         {/* Channel Headers */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+        <GlassPanel className="overflow-hidden">
+          <div className="grid grid-cols-4 gap-4 p-4 border-b border-peak-border bg-white/[0.03]">
             <div className="col-span-1">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Notification Type</span>
+              <span className="text-sm font-medium text-peak-muted">Notification Type</span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</span>
+                <Mail className="w-4 h-4 text-peak-dim" />
+                <span className="text-sm font-medium text-peak-muted">Email</span>
               </div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <Smartphone className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Push</span>
+                <Smartphone className="w-4 h-4 text-peak-dim" />
+                <span className="text-sm font-medium text-peak-muted">Push</span>
               </div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <Bell className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">In-App</span>
+                <Bell className="w-4 h-4 text-peak-dim" />
+                <span className="text-sm font-medium text-peak-muted">In-App</span>
               </div>
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-peak-border">
             {settings.map(setting => (
               <div key={setting.id} className="grid grid-cols-4 gap-4 p-4 items-center">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{setting.label}</p>
-                  <p className="text-sm text-gray-500">{setting.description}</p>
+                  <p className="font-medium text-peak">{setting.label}</p>
+                  <p className="text-sm text-peak-muted">{setting.description}</p>
                 </div>
                 {(['email', 'push', 'inApp'] as const).map(channel => (
                   <div key={channel} className="text-center">
                     <button
                       onClick={() => toggleSetting(setting.id, channel)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                        setting[channel] ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
+                        setting[channel] ? 'bg-peak-primary' : 'bg-white/[0.08]'
                       }`}
                       aria-label={`Toggle ${setting.label} ${channel}`}
                     >
@@ -114,48 +125,48 @@ export default function NotificationSettingsPage() {
               </div>
             ))}
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Quiet Hours */}
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Quiet Hours</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <GlassPanel className="mt-8 p-6">
+          <SectionLabel className="mb-4">Quiet Hours</SectionLabel>
+          <p className="text-sm text-peak-muted mb-4">
             Pause notifications during specific hours
           </p>
           <div className="flex items-center gap-4">
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">From</label>
+              <label className="text-sm text-peak-muted">From</label>
               <select
                 value={quietFrom}
                 onChange={(e) => setQuietFrom(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-lg focus:border-peak-primary/50"
               >
                 {QUIET_FROM.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">To</label>
+              <label className="text-sm text-peak-muted">To</label>
               <select
                 value={quietTo}
                 onChange={(e) => setQuietTo(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-peak-border text-peak rounded-lg focus:border-peak-primary/50"
               >
                 {QUIET_TO.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Save */}
         <div className="mt-8 flex items-center justify-end gap-3">
           {saved && (
-            <span className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-2 text-sm text-peak-green">
               <Check className="w-4 h-4" /> Preferences saved.
             </span>
           )}
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-6 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors"
           >
             Save Preferences
           </button>

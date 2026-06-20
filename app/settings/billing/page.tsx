@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { CreditCard, Download, Check, X } from 'lucide-react'
+import Link from 'next/link'
+import { CreditCard, Download, Check, X, ArrowLeft } from 'lucide-react'
+import { GlassPanel, SectionLabel } from '@/components/peak'
 import { MOCK_ORG_IDENTITY } from '@/lib/peak/mock'
 
 const ORG = MOCK_ORG_IDENTITY
@@ -44,37 +46,45 @@ export default function BillingSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="p-6 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Billing</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">Manage your subscription and payment methods</p>
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 text-sm text-peak-muted hover:text-peak transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Settings
+        </Link>
+
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak mb-2">Billing</h1>
+        <p className="text-peak-muted mb-8">Manage your subscription and payment methods</p>
 
         {/* Account Holder */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Account Holder</h2>
-          <p className="text-gray-900 dark:text-white font-medium">{ORG.user.name}</p>
-          <p className="text-sm text-gray-500">{ORG.billingEmail} • {ORG.company}</p>
-        </div>
+        <GlassPanel className="mb-8">
+          <SectionLabel className="mb-3">Account Holder</SectionLabel>
+          <p className="text-peak font-medium">{ORG.user.name}</p>
+          <p className="text-sm text-peak-muted">{ORG.billingEmail} • {ORG.company}</p>
+        </GlassPanel>
 
         {/* Current Plan */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Current Plan</h2>
+        <GlassPanel className="mb-8">
+          <SectionLabel className="mb-4">Current Plan</SectionLabel>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{ORG.plan}</p>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-2xl font-semibold tracking-tight text-peak">{ORG.plan}</p>
+              <p className="text-peak-muted">
                 ${PER_SEAT}/user/month • {ORG.seatsUsed} users = {MONTHLY_TOTAL}/month
               </p>
-              <p className="text-sm text-gray-500 mt-1">Next invoice {formatInvoiceDate(ORG.nextInvoiceDate)}</p>
+              <p className="text-sm text-peak-dim mt-1">Next invoice {formatInvoiceDate(ORG.nextInvoiceDate)}</p>
             </div>
             <button
               onClick={() => openModal('Upgrade Plan', 'In production this opens Stripe Checkout to change your subscription. Acme Corp is on the Business plan.')}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              className="px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors"
             >
               Upgrade Plan
             </button>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -82,15 +92,15 @@ export default function BillingSettingsPage() {
             <button
               key={plan.name}
               onClick={() => !plan.current && openModal(`Switch to ${plan.name}`, `In production this starts a Stripe Checkout session for the ${plan.name} plan.`)}
-              className={`text-left bg-white dark:bg-gray-800 rounded-xl border-2 p-6 transition ${plan.current ? 'border-purple-500' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+              className={`text-left bg-peak-glass rounded-2xl border-2 p-6 transition-colors ${plan.current ? 'border-peak-primary' : 'border-peak-border hover:border-peak-primary/50'}`}
             >
-              {plan.current && <span className="text-xs text-purple-600 font-medium">CURRENT PLAN</span>}
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-2">{plan.name}</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{plan.price}</p>
+              {plan.current && <span className="text-xs text-peak-primary-300 font-medium">CURRENT PLAN</span>}
+              <h3 className="text-xl font-semibold tracking-tight text-peak mt-2">{plan.name}</h3>
+              <p className="text-2xl font-semibold tracking-tight text-peak mt-2">{plan.price}</p>
               <ul className="mt-4 space-y-2">
                 {plan.features.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Check className="w-4 h-4 text-green-500" />
+                  <li key={i} className="flex items-center gap-2 text-sm text-peak-muted">
+                    <Check className="w-4 h-4 text-peak-green" />
                     {f}
                   </li>
                 ))}
@@ -100,45 +110,45 @@ export default function BillingSettingsPage() {
         </div>
 
         {/* Payment Method */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h2>
+        <GlassPanel className="mb-8">
+          <SectionLabel className="mb-4">Payment Method</SectionLabel>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded flex items-center justify-center">
+            <div className="w-12 h-8 bg-peak-primary rounded flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">{ORG.cardBrand} •••• •••• •••• {ORG.cardLast4}</p>
-              <p className="text-sm text-gray-500">Expires {ORG.cardExpiry}</p>
+              <p className="font-medium text-peak">{ORG.cardBrand} •••• •••• •••• {ORG.cardLast4}</p>
+              <p className="text-sm text-peak-dim">Expires {ORG.cardExpiry}</p>
             </div>
             <button
               onClick={() => openModal('Update Payment Method', 'In production this opens the Stripe billing portal to update the card on file.')}
-              className="ml-auto text-sm text-purple-600 hover:underline"
+              className="ml-auto text-sm text-peak-primary-300 hover:text-peak-primary transition-colors"
             >
               Update
             </button>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Invoices */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Billing History</h2>
+        <div className="bg-peak-glass border border-peak-border rounded-2xl overflow-hidden">
+          <div className="p-4 border-b border-peak-border">
+            <h2 className="font-semibold text-peak">Billing History</h2>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-peak-border">
             {ORG.invoices.map(invoice => (
               <div key={invoice.id} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{formatInvoiceDate(invoice.date)}</p>
-                  <p className="text-sm text-gray-500">{invoice.amount}</p>
+                  <p className="font-medium text-peak">{formatInvoiceDate(invoice.date)}</p>
+                  <p className="text-sm text-peak-muted">{invoice.amount}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-green-600">{invoice.status === 'PAID' ? 'Paid' : invoice.status === 'DUE' ? 'Due' : 'Failed'}</span>
+                  <span className="text-sm text-peak-green">{invoice.status === 'PAID' ? 'Paid' : invoice.status === 'DUE' ? 'Due' : 'Failed'}</span>
                   <button
                     onClick={() => downloadInvoice(invoice.id, invoice.date, invoice.amount)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                    className="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                     aria-label={`Download invoice ${invoice.id}`}
                   >
-                    <Download className="w-4 h-4 text-gray-400" />
+                    <Download className="w-4 h-4 text-peak-dim" />
                   </button>
                 </div>
               </div>
@@ -150,18 +160,18 @@ export default function BillingSettingsPage() {
       {/* Mock action modal */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setModal(null)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{modal.title}</h3>
-              <button onClick={() => setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                <X className="w-5 h-5 text-gray-500" />
+          <div className="bg-peak-glass border border-peak-border rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-peak-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-peak">{modal.title}</h3>
+              <button onClick={() => setModal(null)} className="p-1 hover:bg-white/[0.04] rounded transition-colors">
+                <X className="w-5 h-5 text-peak-muted" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">{modal.body}</p>
+              <p className="text-sm text-peak-muted">{modal.body}</p>
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <button onClick={() => setModal(null)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <div className="p-6 border-t border-peak-border flex justify-end">
+              <button onClick={() => setModal(null)} className="px-4 py-2 bg-peak-primary text-white rounded-xl hover:bg-peak-primary-600 transition-colors">
                 Got it
               </button>
             </div>

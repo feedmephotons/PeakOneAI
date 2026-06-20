@@ -18,6 +18,9 @@ export interface DevOpsExternal {
 
 export const DEVOPS_UPDATED = '2026-06-20'
 
+// Primary login for the seeded Acme world (real DB data after sign-in).
+export const DEVOPS_LOGIN = 'sarah.chen@acmecorp.com / Demo123!'
+
 export const DEVOPS_PHASES: { title: string; done: boolean; detail: string }[] = [
   { title: 'Navy/purple OS redesign', done: true, detail: 'Design system + shell + 5 Tier-1 pages (Daily Brief, Missions, Memory, People, Lisa).' },
   { title: 'All nav pages converted to navy', done: true, detail: 'Tasks, Calendar, Messages, Calls, Files, Analytics, Automation, Integrations, Home.' },
@@ -26,6 +29,8 @@ export const DEVOPS_PHASES: { title: string; done: boolean; detail: string }[] =
   { title: 'Canonical Acme Corp dataset', done: true, detail: 'One coherent world (Sarah Chen @ Acme) across tasks/files/threads/calls/emails/calendar/notifications/activity/missions.' },
   { title: 'Reseed + wire every page', done: true, detail: 'Placeholder data replaced; dead controls wired; broken items fixed across the app.' },
   { title: 'End-to-end test pass', done: true, detail: '48 routes: 0 placeholders remaining, 0 hydration errors, 0 empty pages.' },
+  { title: 'Live DB seeded + real login', done: true, detail: 'prisma db push (additive) + idempotent seed of the Acme world into Supabase. Sign in as sarah.chen@acmecorp.com / Demo123! to see persistent DB data.' },
+  { title: 'Settings pages restyled to navy', done: true, detail: 'All settings sub-pages converted to the Peak design; one canonical Acme/Sarah identity.' },
 ]
 
 export const DEVOPS_AREAS: DevOpsArea[] = [
@@ -47,21 +52,20 @@ export const DEVOPS_AREAS: DevOpsArea[] = [
   { area: 'Teams', state: 'demo-ready', detail: 'Canon team/workspaces; create/invite/open wired (local).', routes: ['/teams'] },
   { area: 'Settings', state: 'demo-ready', detail: 'One Acme/Sarah identity across profile/org/billing; brand voice seeded; toggles persist (localStorage).', routes: ['/settings', '/settings/billing', '/settings/org', '/settings/security', '/settings/brand-voice', '/settings/notifications', '/settings/integrations'] },
   { area: 'Lisa assistant', state: 'demo-ready', detail: 'On-world keyless fallback + real Gemini stream; command palette + Document Operator.', routes: ['/lisa'] },
-  { area: 'Video rooms', state: 'needs-service', detail: 'Meetings hub + scheduling work in demo; joining a live room needs Daily.co.', routes: ['/video', '/video/room/[id]', '/meeting/[id]'] },
+  { area: 'Video rooms', state: 'demo-ready', detail: 'Daily.co configured (DAILY_API_KEY) — live multi-party rooms create + join; meetings hub, scheduling, recordings all canon.', routes: ['/video', '/video/room/[id]', '/meeting/[id]'] },
   { area: 'Browser Agent', state: 'needs-service', detail: 'Shell renders; real automation needs Supabase auth + server Puppeteer/Chromium.', routes: ['/agent'] },
 ]
 
 export const DEVOPS_EXTERNAL: DevOpsExternal[] = [
-  { service: 'Daily.co (DAILY_API_KEY)', blocks: 'Joining a live multi-party video room', routes: ['/video/room/[id]'], note: 'Scheduling, recordings list, and meeting intelligence all demo from canon; only the live WebRTC room needs the key.' },
-  { service: 'socket.io server (NEXT_PUBLIC_SOCKET_URL)', blocks: 'Live typing indicators + read receipts in Messages', routes: ['/messages'], note: 'Optimistic local send/receive works without it; messages persist via API/localStorage in demo.' },
+  { service: 'socket.io server (NEXT_PUBLIC_SOCKET_URL — NOT set yet)', blocks: 'Live typing indicators + read receipts in Messages', routes: ['/messages'], note: 'No socket URL is configured in the env yet. Optimistic send/receive + persistence work without it; flip on by deploying a socket server and setting NEXT_PUBLIC_SOCKET_URL.' },
   { service: 'Twilio', blocks: 'Real outbound telephony + recording playback', routes: ['/phone', '/calls'], note: 'Call history, transcripts, and AI summaries are canon; dialing simulates.' },
   { service: 'OAuth (Meta / TikTok / Instagram / Google)', blocks: 'Live social/marketing analytics + integration connect', routes: ['/create (social dashboard)', '/settings/integrations'], note: 'Connect buttons + realistic mock data present; tokens/ingestion are V2.' },
   { service: 'Puppeteer / Chromium on server', blocks: 'Browser Agent actions', routes: ['/agent'], note: 'Needs Supabase auth + Prisma migration + headless Chromium in the runtime.' },
 ]
 
 export const DEVOPS_FOLLOWUPS: string[] = [
-  'Run `prisma db push` + seed so the new Note/Mission/Relationship tables persist for authenticated users (demo uses canon mock + localStorage today).',
-  'Clean stale Gemini test rows from the live DB (e.g. the old "Alex Rivera" conversation) — demo already bypasses them via the demo-user guard.',
-  'A few legacy settings sub-pages keep light theme chrome; data is canon but full navy restyle is a polish follow-up.',
-  'Wire real send paths (Resend email, Gemini email-outreach regenerate) — keys exist; currently demo-safe.',
+  'Stand up a socket.io server and set NEXT_PUBLIC_SOCKET_URL to enable live typing indicators + read receipts in Messages.',
+  'Add Twilio (telephony) and Meta/TikTok/Google OAuth when ready — Calls and the social dashboard already render canon data + connect affordances.',
+  'Wire real send paths (Resend email is configured; Gemini email-outreach regenerate) — currently demo-safe.',
+  'Browser Agent (/agent) needs server-side Puppeteer/Chromium in the runtime to run live automations.',
 ]

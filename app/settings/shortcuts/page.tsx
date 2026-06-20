@@ -1,6 +1,8 @@
 'use client'
 
-import { Keyboard, Search, Command } from 'lucide-react'
+import Link from 'next/link'
+import { Keyboard, Command, ArrowLeft } from 'lucide-react'
+import { GlassPanel, SectionLabel } from '@/components/peak'
 
 const SHORTCUTS = [
   { category: 'Navigation', items: [
@@ -32,54 +34,62 @@ const SHORTCUTS = [
 
 export default function ShortcutsSettingsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="p-6 sm:p-8">
       <div className="max-w-4xl mx-auto">
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 text-sm text-peak-muted hover:text-peak transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Settings
+        </Link>
+
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <Keyboard className="w-7 h-7 text-white" />
+          <div className="w-14 h-14 bg-peak-primary/15 rounded-2xl flex items-center justify-center ring-1 ring-peak-primary/20">
+            <Keyboard className="w-7 h-7 text-peak-primary-300" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Keyboard Shortcuts</h1>
-            <p className="text-gray-600 dark:text-gray-400">Speed up your workflow with these shortcuts</p>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-peak">Keyboard Shortcuts</h1>
+            <p className="text-peak-muted">Speed up your workflow with these shortcuts</p>
           </div>
         </div>
 
         {/* Quick Search */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6 mb-8">
+        <GlassPanel className="p-6 mb-8">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <Command className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-600 dark:text-gray-400">+</span>
-              <span className="text-gray-900 dark:text-white font-mono">K</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/[0.05] border border-peak-border rounded-xl">
+              <Command className="w-4 h-4 text-peak-dim" />
+              <span className="text-peak-muted">+</span>
+              <span className="text-peak font-mono">K</span>
             </div>
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">Pro Tip: Use Command Palette</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="font-medium text-peak">Pro Tip: Use Command Palette</p>
+              <p className="text-sm text-peak-muted">
                 Press ⌘K to quickly access any feature or page
               </p>
             </div>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Shortcuts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {SHORTCUTS.map(section => (
-            <div key={section.category} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-white">{section.category}</h2>
+            <GlassPanel key={section.category} className="p-0 overflow-hidden">
+              <div className="px-4 py-3 border-b border-peak-border">
+                <SectionLabel>{section.category}</SectionLabel>
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              <div className="divide-y divide-peak-border">
                 {section.items.map((shortcut, idx) => (
                   <div key={idx} className="p-4 flex items-center justify-between">
-                    <span className="text-gray-700 dark:text-gray-300">{shortcut.description}</span>
+                    <span className="text-peak-muted">{shortcut.description}</span>
                     <div className="flex items-center gap-1">
                       {shortcut.keys.map((key, keyIdx) => (
                         <span key={keyIdx}>
-                          <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-mono border border-gray-200 dark:border-gray-600">
+                          <kbd className="px-2 py-1 bg-white/[0.05] text-peak rounded text-sm font-mono border border-peak-border">
                             {key}
                           </kbd>
                           {keyIdx < shortcut.keys.length - 1 && (
-                            <span className="text-gray-400 mx-1">+</span>
+                            <span className="text-peak-dim mx-1">+</span>
                           )}
                         </span>
                       ))}
@@ -87,13 +97,13 @@ export default function ShortcutsSettingsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </GlassPanel>
           ))}
         </div>
 
         {/* Customize Note */}
         <div className="mt-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
+          <p className="text-peak-muted text-sm">
             Keyboard shortcuts cannot be customized at this time.
           </p>
         </div>
