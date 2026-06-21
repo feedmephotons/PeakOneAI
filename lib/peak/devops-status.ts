@@ -31,6 +31,7 @@ export const DEVOPS_PHASES: { title: string; done: boolean; detail: string }[] =
   { title: 'End-to-end test pass', done: true, detail: '48 routes: 0 placeholders remaining, 0 hydration errors, 0 empty pages.' },
   { title: 'Live DB seeded + real login', done: true, detail: 'prisma db push (additive) + idempotent seed of the Acme world into Supabase. Sign in as sarah.chen@acmecorp.com / Demo123! to see persistent DB data.' },
   { title: 'Settings pages restyled to navy', done: true, detail: 'All settings sub-pages converted to the Peak design; one canonical Acme/Sarah identity.' },
+  { title: 'Live messaging via Supabase Realtime', done: true, detail: 'Replaced the socket.io stub with Supabase Realtime — live messages (Postgres Changes), typing (Broadcast), presence — RLS-scoped per participant, zero extra infrastructure.' },
 ]
 
 export const DEVOPS_AREAS: DevOpsArea[] = [
@@ -41,7 +42,7 @@ export const DEVOPS_AREAS: DevOpsArea[] = [
   { area: 'Create Studio', state: 'done', detail: 'Reports/decks/spreadsheets/dashboards; real Gemini generation + .xlsx/.pptx export.', routes: ['/create', '/create/[id]'] },
   { area: 'Tasks', state: 'demo-ready', detail: 'Kanban seeded from 29 canon tasks, assignee picker, tags, bulk-tag, drag persistence (localStorage).', routes: ['/tasks', '/projects/tasks'] },
   { area: 'Calendar', state: 'demo-ready', detail: 'Month/week/day from canon events, Join links, schedule modal; sync route is a no-op success.', routes: ['/calendar'] },
-  { area: 'Messages', state: 'demo-ready', detail: 'Canon threads (#product-x, #general, DMs), compose, pin/mute; live typing/receipts need socket.io.', routes: ['/messages'] },
+  { area: 'Messages', state: 'done', detail: 'Live cross-client messaging, typing, and presence via Supabase Realtime (Postgres Changes + Broadcast + Presence, RLS-scoped per participant). Canon threads, compose, pin/mute. No socket.io server needed.', routes: ['/messages'] },
   { area: 'Calls', state: 'demo-ready', detail: 'Per-id call summaries with transcripts/action items; live telephony needs Twilio.', routes: ['/calls', '/calls/summary/[id]', '/phone'] },
   { area: 'Files', state: 'demo-ready', detail: 'Canon files w/ inline-SVG thumbnails, sort/upload→store; AI analysis needs Gemini (configured).', routes: ['/files', '/storage/files', '/files/upload'] },
   { area: 'Email', state: 'demo-ready', detail: 'Inbox/Sent/Archive/Trash/Starred fixed; reply/forward/star wired; live send needs Resend.', routes: ['/email', '/email/outreach'] },
@@ -57,14 +58,13 @@ export const DEVOPS_AREAS: DevOpsArea[] = [
 ]
 
 export const DEVOPS_EXTERNAL: DevOpsExternal[] = [
-  { service: 'socket.io server (NEXT_PUBLIC_SOCKET_URL — NOT set yet)', blocks: 'Live typing indicators + read receipts in Messages', routes: ['/messages'], note: 'No socket URL is configured in the env yet. Optimistic send/receive + persistence work without it; flip on by deploying a socket server and setting NEXT_PUBLIC_SOCKET_URL.' },
   { service: 'Twilio', blocks: 'Real outbound telephony + recording playback', routes: ['/phone', '/calls'], note: 'Call history, transcripts, and AI summaries are canon; dialing simulates.' },
   { service: 'OAuth (Meta / TikTok / Instagram / Google)', blocks: 'Live social/marketing analytics + integration connect', routes: ['/create (social dashboard)', '/settings/integrations'], note: 'Connect buttons + realistic mock data present; tokens/ingestion are V2.' },
   { service: 'Puppeteer / Chromium on server', blocks: 'Browser Agent actions', routes: ['/agent'], note: 'Needs Supabase auth + Prisma migration + headless Chromium in the runtime.' },
 ]
 
 export const DEVOPS_FOLLOWUPS: string[] = [
-  'Stand up a socket.io server and set NEXT_PUBLIC_SOCKET_URL to enable live typing indicators + read receipts in Messages.',
+  'Cross-client read receipts in Messages would need one more Supabase broadcast event (live messages + typing + presence already work via Realtime).',
   'Add Twilio (telephony) and Meta/TikTok/Google OAuth when ready — Calls and the social dashboard already render canon data + connect affordances.',
   'Wire real send paths (Resend email is configured; Gemini email-outreach regenerate) — currently demo-safe.',
   'Browser Agent (/agent) needs server-side Puppeteer/Chromium in the runtime to run live automations.',

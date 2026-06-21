@@ -8,7 +8,7 @@ import {
   File, Mic, BellOff, Lock, MessageSquare
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { io } from 'socket.io-client'
+import { useRealtimeMessages } from '@/lib/peak/use-realtime-messages'
 import { MOCK_USER, MOCK_TEAM, MOCK_PEOPLE } from '@/lib/peak/mock'
 
 // Canonical Acme directory for the New Message compose modal (team + external contacts).
@@ -69,7 +69,7 @@ export default function MessagesPage() {
   const [typingUsers, setTypingUsers] = useState<{ [userId: string]: string }>({})
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [isOffline, setIsOffline] = useState(false)
-  const [socketConnected, setSocketConnected] = useState(true)
+  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [showCompose, setShowCompose] = useState(false)
   const [composeSearch, setComposeSearch] = useState('')
@@ -77,10 +77,11 @@ export default function MessagesPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const socketRef = useRef<any>(null)
-  const prevConversationIdRef = useRef<string | null>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const typingTimeoutsRef = useRef<{ [userId: string]: NodeJS.Timeout }>({})
   const isSyncingRef = useRef(false)
+  // Mirror of `messages` for stable access inside realtime callbacks.
+  const messagesRef = useRef<Message[]>([])
+  messagesRef.current = messages
 
   // 1. Detect browser online/offline status using window event listeners and socket connection status
   useEffect(() => {
@@ -98,7 +99,7 @@ export default function MessagesPage() {
     }
   }, [])
 
-  const offlineActive = isOffline || !socketConnected
+  const offlineActive = isOffline
 
   // 2. Fetch authenticated user profile using Supabase client, falling back to demo user profile
   useEffect(() => {
@@ -188,140 +189,122 @@ export default function MessagesPage() {
     fetchMessages()
   }, [selectedConversation])
 
-  // 4. Initialize and handle socket.io-client connection on port 3001
+  // 4. Mark the selected conversation as read on selection (was a socket side
+  //    effect; now a plain API call). Realtime delivery is handled by the hook.
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
-    if (!socketUrl) return
-    const socket = io(socketUrl)
-    socketRef.current = socket
+    if (!currentUser || !selectedConversation) return
+    markAsReadAPI(selectedConversation.id)
+  }, [selectedConversation, currentUser])
 
-    socket.on('connect', () => {
-      console.log('Connected to socket server')
-      setSocketConnected(true)
-    })
-
-    socket.on('disconnect', () => {
-      console.log('Disconnected from socket server')
-      setSocketConnected(false)
-    })
-
-    return () => {
-      socket.disconnect()
-    }
-  }, [])
-
-  // 5. Integrate room joining/leaving on conversation selection (using join-chat)
-  useEffect(() => {
-    const socket = socketRef.current
-    if (!currentUser || !socket) return
-
-    // Leave previous room if any
-    if (prevConversationIdRef.current && prevConversationIdRef.current !== selectedConversation?.id) {
-      socket.emit('leave-chat', {
-        conversationId: prevConversationIdRef.current,
-        userId: currentUser.id
-      })
-    }
-
-    if (selectedConversation) {
-      // Join new room
-      socket.emit('join-chat', {
-        conversationId: selectedConversation.id,
-        userId: currentUser.id,
-        userName: currentUser.name || currentUser.email
-      })
-
-      prevConversationIdRef.current = selectedConversation.id
-
-      // Emit read-receipt via socket
-      socket.emit('read-receipt', {
-        conversationId: selectedConversation.id,
-        userId: currentUser.id
-      })
-
-      // Mark messages in the conversation as read via API PUT
-      markAsReadAPI(selectedConversation.id)
-    } else {
-      prevConversationIdRef.current = null
-    }
-  }, [selectedConversation, currentUser, socketConnected])
-
-  // Clear typing users and close the options menu when conversation changes
+  // Clear typing users / online state and close the options menu when the
+  // conversation changes.
   useEffect(() => {
     setTypingUsers({})
+    setOnlineUserIds([])
     setShowThreadMenu(false)
+    // Drop any pending per-user typing auto-clear timers.
+    Object.values(typingTimeoutsRef.current).forEach(clearTimeout)
+    typingTimeoutsRef.current = {}
   }, [selectedConversation])
 
-  // 6. Listen to incoming socket events
-  useEffect(() => {
-    const socket = socketRef.current
-    if (!socket) return
+  // 5. SUPABASE REALTIME — live messages (Postgres Changes), typing (Broadcast),
+  //    and presence. Authenticated users only; the demo/unauth path is skipped
+  //    inside the hook (it checks supabase.auth.getUser()).
+  //
+  // Resolve a sender's display name/avatar from the data the page already has:
+  // existing messages in state (same senderId), then the Acme directory.
+  const resolveSender = (senderId: string): { name: string; avatar?: string } => {
+    const fromState = messagesRef.current.find(m => m.senderId === senderId)
+    if (fromState && fromState.senderName && fromState.senderName !== 'You') {
+      return { name: fromState.senderName, avatar: fromState.senderAvatar }
+    }
+    const dir = DIRECTORY.find(p => p.id === senderId)
+    if (dir) return { name: dir.name }
+    const team = MOCK_TEAM.find(m => m.id === senderId)
+    if (team) return { name: team.name, avatar: team.avatarUrl || undefined }
+    return { name: 'Member' }
+  }
 
-    const handleNewChatMessage = (msg: Message) => {
-      if (selectedConversation && msg.conversationId === selectedConversation.id) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === msg.id)) return prev
-          return [...prev, { ...msg, timestamp: new Date(msg.timestamp) }]
-        })
+  // Route an incoming realtime message by its conversationId. The single
+  // session-wide channel delivers messages for EVERY conversation, so:
+  //   - Always update the matching conversation's preview / unread / last-activity.
+  //   - Only append to the visible thread (+ auto-mark-read) when it belongs to
+  //     the currently-open conversation.
+  // Dedup by id (the sender added it optimistically and Postgres Changes also
+  // echoes the sender's own insert); reconcile an optimistic temp with the same
+  // id by clearing its pending flag.
+  const appendRealtimeMessage = (msg: Message) => {
+    const isCurrent = selectedConversation?.id === msg.conversationId
+    const isOwn = msg.senderId === currentUser?.id
 
-        // Mark as read in DB and emit read receipt
-        markAsReadAPI(selectedConversation.id)
-        socket.emit('read-receipt', {
-          conversationId: selectedConversation.id,
-          userId: currentUser?.id
-        })
-      }
-
-      // Update last message & unread count
-      setConversations(prev => prev.map(conv => {
-        if (conv.id === msg.conversationId) {
-          const isCurrent = selectedConversation?.id === msg.conversationId
-          return {
-            ...conv,
-            lastMessage: msg.content || (msg.type === 'image' ? 'Sent an image' : 'Sent a file'),
-            lastMessageTime: new Date(msg.timestamp),
-            unreadCount: isCurrent ? 0 : conv.unreadCount + 1
-          }
+    // Append to the visible thread ONLY for the open conversation.
+    if (isCurrent) {
+      setMessages(prev => {
+        const idx = prev.findIndex(m => m.id === msg.id)
+        if (idx !== -1) {
+          // Already present (optimistic or duplicate) — reconcile, clear pending.
+          const next = [...prev]
+          next[idx] = { ...next[idx], ...msg, pending: false }
+          return next
         }
-        return conv
-      }))
+        return [...prev, msg]
+      })
+
+      // Clear this sender's typing indicator now that their message arrived.
+      setTypingUsers(prev => {
+        if (!(msg.senderId in prev)) return prev
+        const next = { ...prev }
+        delete next[msg.senderId]
+        return next
+      })
+      if (typingTimeoutsRef.current[msg.senderId]) {
+        clearTimeout(typingTimeoutsRef.current[msg.senderId])
+        delete typingTimeoutsRef.current[msg.senderId]
+      }
     }
 
-    const handleUserTyping = ({ userId, userName }: { userId: string, userName: string }) => {
-      setTypingUsers(prev => ({ ...prev, [userId]: userName }))
-    }
+    // Update conversation preview + unread count for ANY conversation.
+    setConversations(prev => prev.map(conv => {
+      if (conv.id !== msg.conversationId) return conv
+      return {
+        ...conv,
+        lastMessage: msg.content || (msg.type === 'image' ? 'Sent an image' : 'Sent a file'),
+        lastMessageTime: msg.timestamp,
+        unreadCount: isCurrent || isOwn ? 0 : conv.unreadCount + 1,
+      }
+    }))
 
-    const handleUserStopTyping = ({ userId }: { userId: string }) => {
+    // Mark as read if it landed in the open conversation and isn't our own.
+    if (isCurrent && !isOwn) {
+      markAsReadAPI(msg.conversationId)
+    }
+  }
+
+  const handleRealtimeTyping = ({ userId, name, conversationId }: { userId: string; name: string; conversationId: string }) => {
+    // Single session-wide channel delivers typing for every conversation — only
+    // surface the indicator when it belongs to the currently-open conversation
+    // and isn't our own.
+    if (conversationId !== selectedConversation?.id || userId === currentUser?.id) return
+    setTypingUsers(prev => ({ ...prev, [userId]: name }))
+    // Auto-clear after ~3s of silence.
+    if (typingTimeoutsRef.current[userId]) clearTimeout(typingTimeoutsRef.current[userId])
+    typingTimeoutsRef.current[userId] = setTimeout(() => {
       setTypingUsers(prev => {
         const next = { ...prev }
         delete next[userId]
         return next
       })
-    }
+      delete typingTimeoutsRef.current[userId]
+    }, 3000)
+  }
 
-    const handleReadStatus = ({ conversationId, userId, lastReadAt }: { conversationId: string, userId: string, lastReadAt: string }) => {
-      if (selectedConversation && conversationId === selectedConversation.id) {
-        setMessages(prev => prev.map(msg => {
-          if ((msg.senderId === 'user' || msg.senderId === currentUser?.id) && new Date(msg.timestamp) <= new Date(lastReadAt)) {
-            return { ...msg, isRead: true }
-          }
-          return msg
-        }))
-      }
-    }
-
-    socket.on('new-chat-message', handleNewChatMessage)
-    socket.on('user-typing', handleUserTyping)
-    socket.on('user-stop-typing', handleUserStopTyping)
-    socket.on('read-status', handleReadStatus)
-
-    return () => {
-      socket.off('new-chat-message', handleNewChatMessage)
-      socket.off('user-typing', handleUserTyping)
-      socket.off('user-stop-typing', handleUserStopTyping)
-      socket.off('read-status', handleReadStatus)
-    }
-  }, [selectedConversation, currentUser])
+  const { sendTyping } = useRealtimeMessages({
+    currentUser,
+    resolveSender,
+    onMessage: appendRealtimeMessage,
+    onTyping: handleRealtimeTyping,
+    onPresence: setOnlineUserIds,
+  })
 
   // 7. Sync offline queue when coming back online using exponential backoff retry loop
   useEffect(() => {
@@ -390,13 +373,7 @@ export default function MessagesPage() {
               const savedMsg = data.message
 
               setMessages(prev => prev.map(m => m.id === msg.id ? { ...savedMsg, pending: false, timestamp: new Date(savedMsg.timestamp) } : m))
-
-              if (socketRef.current) {
-                socketRef.current.emit('send-chat-message', {
-                  conversationId: msg.conversationId,
-                  message: savedMsg
-                })
-              }
+              // Persistence triggers Supabase Realtime for every other client.
             } else {
               throw new Error('Server error: ' + response.status)
             }
@@ -503,13 +480,8 @@ export default function MessagesPage() {
         const savedMsg = data.message
 
         setMessages(prev => prev.map(m => m.id === clientMsgId ? { ...savedMsg, pending: false, timestamp: new Date(savedMsg.timestamp) } : m))
-
-        if (socketRef.current) {
-          socketRef.current.emit('send-chat-message', {
-            conversationId: selectedConversation.id,
-            message: savedMsg
-          })
-        }
+        // No manual fan-out: the DB INSERT drives Supabase Realtime for everyone
+        // else (and echoes back to us, deduped by id in appendRealtimeMessage).
       } catch (err) {
         console.error('Error sending message, queueing instead:', err)
         queueOfflineMessage(newMsg)
@@ -519,45 +491,17 @@ export default function MessagesPage() {
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
-    if (socketRef.current && currentUser) {
-      socketRef.current.emit('stop-typing', {
-        conversationId: selectedConversation.id,
-        userId: currentUser.id
-      })
-    }
-
     sendMessage(newMessage)
     setNewMessage('')
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value)
-
     if (!selectedConversation || !currentUser) return
-
-    const socket = socketRef.current
-    if (socket) {
-      socket.emit('typing', {
-        conversationId: selectedConversation.id,
-        userId: currentUser.id,
-        userName: currentUser.name || currentUser.email
-      })
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('stop-typing', {
-          conversationId: selectedConversation.id,
-          userId: currentUser.id
-        })
-      }, 2000)
-    }
+    // Throttled (~1.5s) typing broadcast over Supabase Realtime, tagged with the
+    // active conversation id. No-op on the demo/unauth path (the hook has no live
+    // channel there).
+    sendTyping(selectedConversation.id)
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -712,6 +656,16 @@ export default function MessagesPage() {
     ? messages.filter(msg => msg.conversationId === selectedConversation.id)
     : []
 
+  // Presence-driven online flag for the open conversation: true when any OTHER
+  // participant is currently tracked in the channel. Falls back to the
+  // conversation's seeded `isOnline` (demo) when presence has no data yet.
+  const hasPresence = onlineUserIds.length > 0
+  const otherOnline = selectedConversation
+    ? hasPresence
+      ? onlineUserIds.some(id => id !== currentUser?.id)
+      : !!selectedConversation.isOnline
+    : false
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -833,7 +787,7 @@ export default function MessagesPage() {
                     <div className="w-10 h-10 bg-peak-primary rounded-full flex items-center justify-center text-white font-semibold">
                       {selectedConversation.name.charAt(0)}
                     </div>
-                    {selectedConversation.isOnline && (
+                    {otherOnline && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-peak-green rounded-full border-2 border-peak-bg" />
                     )}
                   </div>
@@ -848,7 +802,7 @@ export default function MessagesPage() {
                     </span>
                   </div>
                   <p className="text-sm text-peak-muted">
-                    {selectedConversation.type === 'direct' && selectedConversation.isOnline ? 'Active now' :
+                    {selectedConversation.type === 'direct' && otherOnline ? 'Active now' :
                      selectedConversation.type === 'channel' ? `${selectedConversation.participants.length} members` :
                      selectedConversation.type === 'group' ? `${selectedConversation.participants.length} members` :
                      'Offline'}
