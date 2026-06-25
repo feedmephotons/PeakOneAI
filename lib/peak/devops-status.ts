@@ -32,6 +32,7 @@ export const DEVOPS_PHASES: { title: string; done: boolean; detail: string }[] =
   { title: 'Live DB seeded + real login', done: true, detail: 'prisma db push (additive) + idempotent seed of the Acme world into Supabase. Sign in as sarah.chen@acmecorp.com / Demo123! to see persistent DB data.' },
   { title: 'Settings pages restyled to navy', done: true, detail: 'All settings sub-pages converted to the Peak design; one canonical Acme/Sarah identity.' },
   { title: 'Live messaging via Supabase Realtime', done: true, detail: 'Replaced the socket.io stub with Supabase Realtime — live messages (Postgres Changes), typing (Broadcast), presence — RLS-scoped per participant, zero extra infrastructure.' },
+  { title: 'Twilio telephony wired', done: true, detail: 'In-browser softphone (@twilio/voice-sdk + Voice Access Token + TwiML app), SMS send, and click-to-call against the live Twilio account. Trial ⇒ verified numbers only until upgrade + toll-free verification.' },
 ]
 
 export const DEVOPS_AREAS: DevOpsArea[] = [
@@ -43,7 +44,7 @@ export const DEVOPS_AREAS: DevOpsArea[] = [
   { area: 'Tasks', state: 'demo-ready', detail: 'Kanban seeded from 29 canon tasks, assignee picker, tags, bulk-tag, drag persistence (localStorage).', routes: ['/tasks', '/projects/tasks'] },
   { area: 'Calendar', state: 'demo-ready', detail: 'Month/week/day from canon events, Join links, schedule modal; sync route is a no-op success.', routes: ['/calendar'] },
   { area: 'Messages', state: 'done', detail: 'Live cross-client messaging, typing, and presence via Supabase Realtime (Postgres Changes + Broadcast + Presence, RLS-scoped per participant). Canon threads, compose, pin/mute. No socket.io server needed.', routes: ['/messages'] },
-  { area: 'Calls', state: 'demo-ready', detail: 'Per-id call summaries with transcripts/action items; live telephony needs Twilio.', routes: ['/calls', '/calls/summary/[id]', '/phone'] },
+  { area: 'Calls & Phone', state: 'demo-ready', detail: 'Twilio WIRED: in-browser softphone (@twilio/voice-sdk + Voice token + TwiML app), SMS send, and click-to-call — all hitting the live Twilio account (+18664356491). Trial account ⇒ delivers to VERIFIED numbers only until upgraded; toll-free SMS needs Toll-Free Verification. Per-id call summaries/transcripts are canon.', routes: ['/calls', '/calls/summary/[id]', '/phone'] },
   { area: 'Files', state: 'demo-ready', detail: 'Canon files w/ inline-SVG thumbnails, sort/upload→store; AI analysis needs Gemini (configured).', routes: ['/files', '/storage/files', '/files/upload'] },
   { area: 'Email', state: 'demo-ready', detail: 'Inbox/Sent/Archive/Trash/Starred fixed; reply/forward/star wired; live send needs Resend.', routes: ['/email', '/email/outreach'] },
   { area: 'Notifications & Activity', state: 'done', detail: 'Deterministic canon feeds with deep-link navigation.', routes: ['/notifications', '/activity'] },
@@ -58,7 +59,7 @@ export const DEVOPS_AREAS: DevOpsArea[] = [
 ]
 
 export const DEVOPS_EXTERNAL: DevOpsExternal[] = [
-  { service: 'Twilio', blocks: 'Real outbound telephony + recording playback', routes: ['/phone', '/calls'], note: 'Call history, transcripts, and AI summaries are canon; dialing simulates.' },
+  { service: 'Twilio — account upgrade + Toll-Free Verification', blocks: 'Sending SMS / calling UNVERIFIED numbers (trial limit) and reliable toll-free A2P SMS', routes: ['/phone', '/calls'], note: 'Twilio is fully WIRED (softphone, SMS, click-to-call). Trial account reaches verified numbers only; upgrade off Trial + submit Toll-Free Verification (real business info required) to message any number.' },
   { service: 'OAuth (Meta / TikTok / Instagram / Google)', blocks: 'Live social/marketing analytics + integration connect', routes: ['/create (social dashboard)', '/settings/integrations'], note: 'Connect buttons + realistic mock data present; tokens/ingestion are V2.' },
   { service: 'Puppeteer / Chromium on server', blocks: 'Browser Agent actions', routes: ['/agent'], note: 'Needs Supabase auth + Prisma migration + headless Chromium in the runtime.' },
 ]

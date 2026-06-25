@@ -8,14 +8,16 @@ import {
   SectionLabel,
   StatTile,
   AskLisaBar,
+  SmsComposeModal,
 } from '@/components/peak'
 import {
   Phone, Video, Clock, Users, Play, Search,
   PhoneIncoming, PhoneOutgoing, PhoneMissed, MoreVertical,
-  FileText, Shield, Brain, Lock
+  FileText, Shield, Brain, Lock, MessageSquare, PhoneCall, PhoneOff, MicOff, Mic
 } from 'lucide-react'
-import { MOCK_CALLS, FIXED_TODAY } from '@/lib/peak/mock'
+import { MOCK_CALLS, MOCK_PEOPLE, FIXED_TODAY } from '@/lib/peak/mock'
 import type { CallRecord } from '@/lib/peak/types'
+import { useSoftphone, formatCallDuration } from '@/lib/peak/use-softphone'
 
 // Canonical Acme calls (seeded from MOCK_CALLS). Deterministic / SSR-safe — no
 // Date.now()/random; "now" is anchored to FIXED_TODAY.
@@ -32,10 +34,28 @@ function uiDirection(call: CallRecord): 'incoming' | 'outgoing' | 'missed' {
   return 'outgoing'
 }
 
+// Resolve a phone number for a call's "other" participant via the canonical
+// people directory (CallRecord participants don't carry numbers themselves).
+function phoneForCall(call: CallRecord): { number: string; name: string } {
+  const other =
+    call.participants.find((p) => p.name !== 'Sarah Chen') || call.participants[0]
+  const name = other?.name || call.title
+  const person = MOCK_PEOPLE.find((m) => m.name === name)
+  return { number: person?.phoneNumber || '', name }
+}
+
 export default function CallsPage() {
   const router = useRouter()
   const [filter, setFilter] = useState<'all' | 'video' | 'audio' | 'missed'>('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Real in-browser softphone + navy SMS composer.
+  const phone = useSoftphone()
+  const phoneActive =
+    phone.status === 'connecting' ||
+    phone.status === 'ringing' ||
+    phone.status === 'in-call'
+  const [smsTarget, setSmsTarget] = useState<{ to: string; name?: string } | null>(null)
 
   const calls = MOCK_CALLS
 
@@ -246,6 +266,37 @@ export default function CallsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const { number, name } = phoneForCall(call)
+                      return (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              if (!number) return
+                              phone.call(number)
+                            }}
+                            disabled={!number || phoneActive}
+                            className="rounded-lg p-2 text-peak-green transition-colors hover:bg-peak-green/10 disabled:cursor-not-allowed disabled:opacity-40"
+                            title={number ? `Call ${name}` : 'No number on file'}
+                          >
+                            <PhoneCall className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              if (!number) return
+                              setSmsTarget({ to: number, name })
+                            }}
+                            disabled={!number}
+                            className="rounded-lg p-2 text-peak-primary-300 transition-colors hover:bg-peak-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+                            title={number ? `Message ${name}` : 'No number on file'}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                        </>
+                      )
+                    })()}
                     {call.hasRecording && (
                       <button
                         onClick={(e) => { e.preventDefault(); router.push(`/calls/summary/${call.id}`) }}
@@ -279,6 +330,71 @@ export default function CallsPage() {
           </div>
         )}
       </GlassPanel>
+
+      {/* SMS composer (navy Peak) — posts /api/twilio/sms, surfaces real result */}
+      <SmsComposeModal
+        open={!!smsTarget}
+        onClose={() => setSmsTarget(null)}
+        to={smsTarget?.to || ''}
+        contactName={smsTarget?.name}
+      />
+
+      {/* Floating live-call control (real Twilio Voice SDK state) */}
+      {(phoneActive || phone.status === 'initializing' || phone.status === 'error') && (
+        <div className="fixed bottom-6 right-6 z-50 w-72">
+          <div className="peak-glass p-4 text-peak shadow-peak-glow">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-peak-green/15 text-peak-green ring-1 ring-peak-green/25">
+                <Phone className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-peak">
+                  {phone.activeNumber || 'Voice line'}
+                </p>
+                <p className="text-xs text-peak-muted">
+                  {phone.status === 'initializing' && 'Setting up your line…'}
+                  {phone.status === 'connecting' && 'Connecting…'}
+                  {phone.status === 'ringing' && 'Ringing…'}
+                  {phone.status === 'in-call' &&
+                    `In call · ${formatCallDuration(phone.durationSec)}`}
+                  {phone.status === 'error' && (phone.error || 'Call error')}
+                </p>
+              </div>
+            </div>
+            {phoneActive && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={phone.toggleMute}
+                  disabled={phone.status !== 'in-call'}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
+                    phone.muted
+                      ? 'bg-peak-primary/20 text-peak-primary-300'
+                      : 'border border-peak-border text-peak-muted hover:text-peak'
+                  }`}
+                >
+                  {phone.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                  {phone.muted ? 'Unmute' : 'Mute'}
+                </button>
+                <button
+                  onClick={phone.hangup}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-peak-red px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-peak-red/80"
+                >
+                  <PhoneOff className="h-3.5 w-3.5" />
+                  Hang Up
+                </button>
+              </div>
+            )}
+            {phone.status === 'error' && (
+              <button
+                onClick={phone.reset}
+                className="mt-1 w-full rounded-lg border border-peak-border px-3 py-2 text-xs font-medium text-peak-muted transition-colors hover:text-peak"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

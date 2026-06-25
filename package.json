@@ -21,6 +21,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
     "@tanstack/react-query": "^5.89.0",
+    "@twilio/voice-sdk": "^2.18.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.2",
@@ -43,6 +44,7 @@
     "socket.io-client": "^4.8.1",
     "svix": "^1.76.1",
     "tailwind-merge": "^3.4.0",
+    "twilio": "^6.0.2",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.8"
   },

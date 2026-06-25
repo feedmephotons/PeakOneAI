@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MOCK_PEOPLE, MOCK_CALLS, FIXED_TODAY } from '@/lib/peak/mock';
 import type { CallRecord } from '@/lib/peak/types';
+import { useSoftphone, formatCallDuration } from '@/lib/peak/use-softphone';
+import { SmsComposeModal } from '@/components/peak';
 
 interface Call {
   id: string;
@@ -94,15 +96,74 @@ function PhonePageInner() {
   const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<'recent' | 'contacts' | 'recordings'>('recent');
-  const [isCallActive, setIsCallActive] = useState(false);
   const [dialNumber, setDialNumber] = useState('');
   const [showNewContactModal, setShowNewContactModal] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
+
+  // Real in-browser softphone (Twilio Voice SDK). The hook handles token fetch,
+  // Device registration, the active Call object, mute, hang up and live state.
+  const phone = useSoftphone();
+  const isCallActive =
+    phone.status === 'connecting' ||
+    phone.status === 'ringing' ||
+    phone.status === 'in-call';
+
+  // SMS composer (navy Peak modal) — target prefilled from a contact/dial number.
+  const [smsTarget, setSmsTarget] = useState<{ to: string; name?: string } | null>(null);
 
   const [calls, setCalls] = useState<Call[]>(() => seedCalls());
   const [contacts, setContacts] = useState<Contact[]>(() => seedContacts());
 
   const dialerRef = useRef<HTMLInputElement | null>(null);
+
+  // Surface Twilio/device errors from the softphone into the dialer banner.
+  useEffect(() => {
+    if (phone.status === 'error' && phone.error) {
+      setCallError(phone.error);
+    }
+  }, [phone.status, phone.error]);
+
+  // When a real call ends, log it into the in-memory recents list (once).
+  const loggedEndRef = useRef(false);
+  useEffect(() => {
+    if (phone.status === 'in-call' || phone.status === 'ringing' || phone.status === 'connecting') {
+      loggedEndRef.current = false;
+    }
+    if (phone.status === 'ended' && !loggedEndRef.current) {
+      loggedEndRef.current = true;
+      const dialed = phone.activeNumber || dialNumber || 'Unknown Number';
+      const contactName =
+        contacts.find((c) => c.phoneNumber === dialed)?.name || dialed;
+      const secs = phone.durationSec;
+      const newCall: Call = {
+        id: `call-${Date.now()}`,
+        summaryId: 'call-q2-campaign',
+        type: 'outgoing',
+        contact: contactName,
+        phoneNumber: dialed,
+        time: 'Just now',
+        duration: secs > 0 ? formatCallDuration(secs) : '0:00',
+        recorded: false,
+        transcribed: false,
+        aiSummary: false,
+        status: 'ended',
+      };
+      setCalls((prev) => [newCall, ...prev]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone.status]);
+
+  // Start a softphone call to a given number (used by dialer + contact/recent buttons).
+  const startCall = (number: string) => {
+    const num = (number || '').trim();
+    if (!num) {
+      setCallError('Please enter a phone number before calling.');
+      return;
+    }
+    setCallError(null);
+    setDialNumber(num);
+    phone.call(num);
+  };
 
   // New Contact form state
   const [newContactName, setNewContactName] = useState('');
@@ -122,7 +183,8 @@ function PhonePageInner() {
     setDialNumber(number);
     setCallError(null);
     if (autoDial === 'true' && number.trim()) {
-      setIsCallActive(true);
+      // Place a real softphone call to the deep-linked number.
+      startCall(number);
     }
     dialerRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,10 +305,8 @@ function PhonePageInner() {
           )}
           <button
             onClick={() => {
-              setDialNumber(call.phoneNumber);
-              setCallError(null);
-              setIsCallActive(true);
               focusDialer();
+              startCall(call.phoneNumber);
             }}
             title="Call back"
             className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
@@ -290,23 +350,25 @@ function PhonePageInner() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Link
-            href={`/messages?contact=${encodeURIComponent(contact.name)}`}
-            title="Message"
-            className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          <button
+            type="button"
+            onClick={() => setSmsTarget({ to: contact.phoneNumber, name: contact.name })}
+            title="Message (SMS)"
+            disabled={!contact.phoneNumber}
+            className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
-          </Link>
+          </button>
           <button
             onClick={() => {
-              setDialNumber(contact.phoneNumber);
-              setCallError(null);
               focusDialer();
+              startCall(contact.phoneNumber);
             }}
             title="Call"
-            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            disabled={!contact.phoneNumber}
+            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -388,50 +450,56 @@ function PhonePageInner() {
               ))}
             </div>
 
+            {/* Live call status banner (real Twilio Voice SDK state) */}
+            {isCallActive && (
+              <div className="mb-4 flex items-center justify-center gap-2 text-sm font-medium" id="softphone-status">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-300 opacity-75"></span>
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-400"></span>
+                </span>
+                {phone.status === 'connecting' && <span>Connecting…</span>}
+                {phone.status === 'ringing' && <span>Ringing…</span>}
+                {phone.status === 'in-call' && (
+                  <span>In call · {formatCallDuration(phone.durationSec)}</span>
+                )}
+              </div>
+            )}
+            {phone.status === 'initializing' && (
+              <div className="mb-4 text-center text-sm text-violet-100" id="softphone-status">
+                Setting up your line…
+              </div>
+            )}
+
             <div className="flex space-x-3">
               {isCallActive ? (
-                <button
-                  // EXTERNAL: needs Twilio to place a real outbound call + recording media.
-                  // Demo path: logs the call to the in-memory recents list.
-                  onClick={() => {
-                    setIsCallActive(false);
-                    setCallError(null);
-                    const contactName =
-                      contacts.find((c) => c.phoneNumber === dialNumber)?.name ||
-                      dialNumber || 'Unknown Number';
-                    const newCall: Call = {
-                      id: `call-${Date.now()}`,
-                      summaryId: 'call-q2-campaign',
-                      type: 'outgoing',
-                      contact: contactName,
-                      phoneNumber: dialNumber || 'Unknown Number',
-                      time: 'Just now',
-                      duration: '0:15',
-                      recorded: true,
-                      transcribed: false,
-                      aiSummary: false,
-                      status: 'ended',
-                    };
-                    setCalls((prev) => [newCall, ...prev]);
-                  }}
-                  className="flex-1 bg-red-500 hover:bg-red-600 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>End Call</span>
-                </button>
+                <>
+                  <button
+                    onClick={phone.toggleMute}
+                    disabled={phone.status !== 'in-call'}
+                    title={phone.muted ? 'Unmute' : 'Mute'}
+                    className={`px-5 rounded-lg backdrop-blur-sm transition-colors disabled:opacity-40 ${
+                      phone.muted
+                        ? 'bg-white/30 hover:bg-white/40'
+                        : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    {phone.muted ? 'Unmute' : 'Mute'}
+                  </button>
+                  <button
+                    onClick={phone.hangup}
+                    className="flex-1 bg-red-500 hover:bg-red-600 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Hang Up</span>
+                  </button>
+                </>
               ) : (
                 <button
-                  onClick={() => {
-                    if (!dialNumber.trim()) {
-                      setCallError('Please enter a phone number before calling.');
-                      return;
-                    }
-                    setCallError(null);
-                    setIsCallActive(true);
-                  }}
-                  className="flex-1 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors"
+                  onClick={() => startCall(dialNumber)}
+                  disabled={phone.status === 'initializing'}
+                  className="flex-1 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg py-3 flex items-center justify-center space-x-2 transition-colors disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -441,10 +509,12 @@ function PhonePageInner() {
               )}
               <button
                 onClick={() => {
+                  if (isCallActive) return;
                   setDialNumber('');
                   setCallError(null);
                 }}
-                className="px-6 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-colors"
+                disabled={isCallActive}
+                className="px-6 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-colors disabled:opacity-40"
               >
                 Clear
               </button>
@@ -645,6 +715,14 @@ function PhonePageInner() {
           </div>
         </div>
       </div>
+
+      {/* SMS Compose Modal (navy Peak) — posts /api/twilio/sms */}
+      <SmsComposeModal
+        open={!!smsTarget}
+        onClose={() => setSmsTarget(null)}
+        to={smsTarget?.to || ''}
+        contactName={smsTarget?.name}
+      />
 
       {/* New Contact Modal */}
       {showNewContactModal && (

@@ -43,3 +43,6 @@ export type { AskLisaBarProps } from './AskLisaBar'
 
 export { default as LisaInsight } from './LisaInsight'
 export type { LisaInsightProps } from './LisaInsight'
+
+export { default as SmsComposeModal } from './SmsComposeModal'
+export type { SmsComposeModalProps } from './SmsComposeModal'
