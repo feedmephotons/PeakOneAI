@@ -20,7 +20,7 @@ const PEAK_OS_ROUTES = [
   '/', '/missions', '/memory', '/people', '/lisa',
   '/home', '/tasks', '/calendar', '/messages', '/calls',
   '/files', '/analytics', '/automation', '/settings',
-  '/create', '/devops', '/phone',
+  '/create', '/devops', '/phone', '/teams', '/video', '/ai',
 ]
 
 function isPeakOsRoute(pathname: string | null): boolean {
